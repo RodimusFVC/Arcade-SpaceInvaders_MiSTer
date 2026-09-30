@@ -1,0 +1,59 @@
+<misterromdescription>
+    <name>Space Invaders (Electromar, Spanish)</name>
+    <region>Spain</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Space Invaders / Space Invaders M</series>
+    <year>19??</year>
+    <manufacturer>Electromar</manufacturer>
+    <category>Shooter</category>
+
+    <setname>invadersem</setname>
+    <parent>invaders</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (ccw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="FF,89,00,FF">
+        <dip name="Service Mode" bits="0" ids="Off,On" values="1,0"/>
+        <dip name="Lives" bits="16,17" ids="3,4,5,6"/>
+        <dip name="Bonus Life" bits="19" ids="1000,1500" values="1,0"/>
+        <dip name="Coin Info" bits="23" ids="Off,On" values="1,0"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="invadersem.zip|invaders.zip">
+        <part crc="7fc672a5" name="h.bin"/>
+        <part crc="ad518883" name="g.bin"/>
+        <part crc="f4a6c480" name="f.bin"/>
+        <part repeat="0x800">00</part>
+        <part crc="8f62c513" name="c.bin"/>
+        <part crc="2808e5c0" name="b.bin"/>
+        <part crc="04c9b084" name="a.bin"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, input map (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            00 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 11 14 13 00 05 03 04 00
+            00 00 15 00 05 03 04 00 00 00 00 00 00 00 00 00
+        </part>
+    </rom>
+
+    <remark>Space Invaders (Electromar, Spanish)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

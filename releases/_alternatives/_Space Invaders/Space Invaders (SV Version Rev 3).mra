@@ -1,0 +1,59 @@
+<misterromdescription>
+    <name>Space Invaders (SV Version Rev 3)</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Space Invaders / Space Invaders M</series>
+    <year>1978</year>
+    <manufacturer>Taito</manufacturer>
+    <category>Shooter</category>
+
+    <setname>sisv3</setname>
+    <parent>invaders</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (ccw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="FF,89,00,FF">
+        <dip name="Service Mode" bits="0" ids="Off,On" values="1,0"/>
+        <dip name="Lives" bits="16,17" ids="3,4,5,6"/>
+        <dip name="Bonus Life" bits="19" ids="1000,1500" values="1,0"/>
+        <dip name="Coin Info" bits="23" ids="Off,On" values="1,0"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="sisv3.zip|invaders.zip">
+        <part crc="86bb8cb6" name="sv0h.36"/>
+        <part crc="0e159534" name="sv02.35"/>
+        <part crc="483e651e" name="sv10.34"/>
+        <part repeat="0x800">00</part>
+        <part crc="1293b826" name="sv04.31"/>
+        <part crc="cd80b13f" name="sv09.42"/>
+        <part crc="2c68e0b4" name="sv06.41"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, input map (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            00 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 11 14 13 00 05 03 04 00
+            00 00 15 00 05 03 04 00 00 00 00 00 00 00 00 00
+        </part>
+    </rom>
+
+    <remark>Space Invaders (SV Version Rev 3) (Taito)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

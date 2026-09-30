@@ -1,0 +1,59 @@
+<misterromdescription>
+    <name>Super Invasion (Electromar, Spanish)</name>
+    <region>Spain</region>
+    <homebrew>no</homebrew>
+    <bootleg>yes</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Space Invaders / Space Invaders M</series>
+    <year>1979</year>
+    <manufacturer>bootleg (Electromar / Irecsa)</manufacturer>
+    <category>Shooter</category>
+
+    <setname>supinvsion</setname>
+    <parent>invaders</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (ccw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="FF,89,8B,FF">
+        <dip name="Lives" bits="16" ids="2,3"/>
+        <dip name="Pence Coinage" bits="17" ids="Off,On" values="1,0"/>
+        <dip name="Coinage" bits="23" ids="2C/1C 50p/3C (+ Bonus Life),1C/1C 50p/5C"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="supinvsion.zip|invaders.zip">
+        <part crc="281570f0" name="h-am4708.bin"/>
+        <part crc="c0b6cd79" name="g-am4708.bin"/>
+        <part crc="2a8d9cd5" name="f-am4708.bin"/>
+        <part crc="03e9ef33" name="e-am4708.bin"/>
+        <part crc="b2527c77" name="d-am4708.bin"/>
+        <part crc="a883ff01" name="c-am4708.bin"/>
+        <part crc="46e02fcf" name="b-am4708.bin"/>
+        <part crc="bf4d3267" name="a-am4708.bin"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, input map (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            00 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 11 14 13 00 05 03 04 00
+            00 00 12 00 05 03 04 00 00 00 00 00 00 00 00 00
+        </part>
+    </rom>
+
+    <remark>Super Invasion (Electromar, Spanish) (Electromar / Irecsa Bootleg)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

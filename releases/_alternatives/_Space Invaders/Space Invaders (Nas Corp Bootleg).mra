@@ -1,0 +1,60 @@
+<misterromdescription>
+    <name>Space Invaders (Nas Corp Bootleg)</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>yes</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Space Invaders / Space Invaders M</series>
+    <year>1978</year>
+    <manufacturer>bootleg (Nas Corp)</manufacturer>
+    <category>Shooter</category>
+
+    <setname>invadernc</setname>
+    <parent>invaders</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (ccw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="FE,89,00,FF">
+        <dip name="Unknown" bits="0" ids="Off,On" values="1,0"/>
+        <dip name="Lives" bits="16,17" ids="3,4,5,6"/>
+        <dip name="Bonus Life" bits="19" ids="1000,1500" values="1,0"/>
+        <dip name="Coin Info" bits="23" ids="Off,On" values="1,0"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="invadernc.zip|invaders.zip">
+        <part crc="499f253a" name="1.ic65"/>
+        <part crc="4b7f232e" name="2.ic66"/>
+        <part crc="5c6bdd47" name="3.ic67"/>
+        <part repeat="0x400">00</part>
+        <part crc="5a7bbf1f" name="7.ic57"/>
+        <part crc="455b1fa7" name="4.ic70"/>
+        <part crc="b9ea71a0" name="5.ic71"/>
+        <part crc="2c68e0b4" name="6.ic72"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, input map (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            00 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 11 14 13 00 05 03 04 00
+            00 00 15 00 05 03 04 00 00 00 00 00 00 00 00 00
+        </part>
+    </rom>
+
+    <remark>Space Invaders (Nas Corp Bootleg)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

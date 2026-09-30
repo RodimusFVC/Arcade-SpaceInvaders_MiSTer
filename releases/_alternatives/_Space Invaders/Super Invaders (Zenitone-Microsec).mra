@@ -1,0 +1,60 @@
+<misterromdescription>
+    <name>Super Invaders (Zenitone-Microsec)</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Space Invaders / Space Invaders M</series>
+    <year>1980?</year>
+    <manufacturer>Taito / Zenitone-Microsec</manufacturer>
+    <category>Shooter</category>
+
+    <setname>sinvzen</setname>
+    <parent>invaders</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (ccw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="FE,89,00,FF">
+        <dip name="Difficulty" bits="0" ids="Easy,Hard"/>
+        <dip name="Lives" bits="16,17" ids="3,4,5,6"/>
+        <dip name="Bonus Life" bits="19" ids="1000,1500" values="1,0"/>
+        <dip name="Coinage" bits="23" ids="2C/1C,1C/1C" values="1,0"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="sinvzen.zip|invaders.zip">
+        <part crc="9b0da779" name="1.bin"/>
+        <part crc="9858ccab" name="2.bin"/>
+        <part crc="a1cc38b5" name="3.bin"/>
+        <part crc="1f2db7a8" name="4.bin"/>
+        <part crc="9b505fcd" name="5.bin"/>
+        <part crc="de0ca0ae" name="6.bin"/>
+        <part crc="25a296f6" name="7.bin"/>
+        <part crc="f4bc4a98" name="8.bin"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, input map (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            00 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 11 14 13 00 05 03 04 00
+            00 00 15 00 05 03 04 00 00 00 00 00 00 00 00 00
+        </part>
+    </rom>
+
+    <remark>Super Invaders (Zenitone-Microsec) (Taito / Zenitone-Microsec)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

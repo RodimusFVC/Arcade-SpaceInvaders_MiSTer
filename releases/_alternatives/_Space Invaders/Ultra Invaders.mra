@@ -1,0 +1,59 @@
+<misterromdescription>
+    <name>Ultra Invaders</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Space Invaders / Space Invaders M</series>
+    <year>1980</year>
+    <manufacturer>Taito / Konami</manufacturer>
+    <category>Shooter</category>
+
+    <setname>ultrainv</setname>
+    <parent>invaders</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (ccw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="FE,89,00,FF">
+        <dip name="Unknown" bits="0" ids="Off,On" values="1,0"/>
+        <dip name="Lives" bits="16,17" ids="3,4,5,6"/>
+        <dip name="Bonus Life" bits="19" ids="1000,1500" values="1,0"/>
+        <dip name="Coin Info" bits="23" ids="Off,On" values="1,0"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="ultrainv.zip|invaders.zip">
+        <part crc="db9de599" name="in-01.bin"/>
+        <part crc="febe6d1a" name="in-02.bin"/>
+        <part crc="3d5c9820" name="in-03.bin"/>
+        <part repeat="0x800">00</part>
+        <part crc="1293b826" name="in-04.bin"/>
+        <part crc="e315a8c4" name="in-05.bin"/>
+        <part crc="d958478c" name="in-06.bin"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, input map (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            00 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 11 14 13 00 05 03 04 00
+            00 00 15 00 05 03 04 00 00 00 00 00 00 00 00 00
+        </part>
+    </rom>
+
+    <remark>Ultra Invaders (Taito / Konami)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

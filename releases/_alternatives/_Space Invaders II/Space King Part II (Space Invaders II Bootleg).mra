@@ -1,0 +1,61 @@
+<misterromdescription>
+    <name>Space King Part II (Space Invaders II Bootleg)</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>yes</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Space Invaders II</series>
+    <year>1980</year>
+    <manufacturer>bootleg (Irecsa)</manufacturer>
+    <category>Shooter</category>
+
+    <setname>spcking2ir</setname>
+    <parent>invad2ct</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (ccw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="08,09,00,F8">
+        <dip name="Unknown" bits="0" ids="Off,On"/>
+        <dip name="Unused" bits="24" ids="Off,On"/>
+        <dip name="Unused" bits="25" ids="Off,On"/>
+        <dip name="Unused" bits="26" ids="Off,On"/>
+        <dip name="Lives" bits="16,17" ids="3,4,5,6"/>
+        <dip name="Bonus Life" bits="19" ids="1000,1500" values="1,0"/>
+        <dip name="Display Coinage" bits="23" ids="Off,On" values="1,0"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="spcking2ir.zip|invad2ct.zip">
+        <part crc="a5cad5b7" name="gm2_1-2_tms2516.h"/>
+        <part crc="c7b5f8ae" name="gm2_3-4_tms2516.g"/>
+        <part crc="a5084884" name="gm2_5-6_tms2516.f"/>
+        <part crc="3ff5d28f" name="gm2_7-8_tms2516.e"/>
+        <part repeat="0x2000">00</part>
+        <part crc="98db0e7d" name="gm2_9-10_tms2516.d"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, input map (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            00 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 28 29 00 05 03 04 2A 11 14 13 00 05 03 04 00
+            00 00 00 00 05 03 04 00 00 00 00 00 00 00 00 00
+        </part>
+    </rom>
+
+    <remark>Space King Part II (Space Invaders II Bootleg) (Irecsa Bootleg)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>
