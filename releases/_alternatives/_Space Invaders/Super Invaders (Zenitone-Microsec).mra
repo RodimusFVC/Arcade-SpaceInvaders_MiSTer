@@ -46,12 +46,16 @@
         <part crc="f4bc4a98" name="8.bin"/>
     </rom>
 
-    <!-- Index 1: board variant, flags, sound board, input map (see Arcade-SpaceInvaders.sv) -->
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
     <rom index="1">
         <part>
             00 10 01 00 00 00 00 00 00 00 00 00 00 00 00 00
             00 00 00 00 00 00 00 00 11 14 13 00 05 03 04 00
             00 00 15 00 05 03 04 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            04 00 02 04 00 E0 FF FF FF 14 00 4C 00 E0 20 FF
+            20 00 00 14 10 86 20 FF 20 C6 00 E4 00 E0 FF 20
+            20
         </part>
     </rom>
 

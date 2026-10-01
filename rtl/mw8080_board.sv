@@ -47,6 +47,8 @@ module mw8080_board
     input  logic        ioctl_wr0,
 
     input  logic        crt_flip,
+    input  logic        ov_en,          // colour overlay on
+    input  logic [1031:0] ov_tab,       // overlay: byte 0 count, then 8 bytes per rectangle (MRA index 1 from 64)
 
     output logic        ce_pix,
     output logic  [7:0] video_r,
@@ -371,9 +373,40 @@ always_ff @(posedge clk) begin
     end
 end
 
-assign video_r = {8{vid}};
-assign video_g = {8{vid}};
-assign video_b = {8{vid}};
+// ---------------------------------------------------------------- colour overlay (MAME layout rectangles)
+
+// Rectangles are in picture coordinates (x 0-259 = hx 1-260, rows 0-223), half-open, later ones win. The bands follow
+// every flip (CRT Flip and the cocktail flip), so they stay on the score, shields and bases.
+logic [7:0] ov_row = 8'd0;
+logic [7:0] ov_r = 8'hFF, ov_g = 8'hFF, ov_b = 8'hFF;
+wire  [7:0] row_now = (hx == 9'd0) ? vpos - 8'd32 : ov_row;
+wire  [8:0] ox = flip ? 9'd259 - hx : hx;                    // the pixel shown after this edge is x = hx
+wire  [7:0] oy = flip ? 8'd223 - row_now : row_now;
+
+function [7:0] ovb(input int i);
+    ovb = ov_tab[i*8 +: 8];
+endfunction
+
+always_ff @(posedge clk) begin
+    if (pix) begin : ov_lookup
+        logic [7:0] r, g, b, hi;
+        logic [8:0] x0, x1;
+        if (hx == 9'd0) ov_row <= vpos - 8'd32;
+        {r, g, b} = 24'hFFFFFF;
+        for (int k = 0; k < 16; k++) begin
+            hi = ovb(1 + k*8 + 1);
+            x0 = {hi[0], ovb(1 + k*8)};
+            x1 = {hi[1], ovb(1 + k*8 + 2)};
+            if (k < ovb(0) && ov_en && ox >= x0 && ox < x1 && oy >= ovb(1 + k*8 + 3) && oy < ovb(1 + k*8 + 4))
+                {r, g, b} = {ovb(1 + k*8 + 5), ovb(1 + k*8 + 6), ovb(1 + k*8 + 7)};
+        end
+        ov_r <= r; ov_g <= g; ov_b <= b;
+    end
+end
+
+assign video_r = vid ? ov_r : 8'd0;
+assign video_g = vid ? ov_g : 8'd0;
+assign video_b = vid ? ov_b : 8'd0;
 
 // ---------------------------------------------------------------- sound board (port 3 / port 5, 16V = "480 Hz")
 

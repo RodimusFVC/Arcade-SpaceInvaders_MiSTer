@@ -47,12 +47,19 @@
         <part crc="98db0e7d" name="gm2_9-10_tms2516.d"/>
     </rom>
 
-    <!-- Index 1: board variant, flags, sound board, input map (see Arcade-SpaceInvaders.sv) -->
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
     <rom index="1">
         <part>
             00 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00
             00 28 29 00 05 03 04 2A 11 14 13 00 05 03 04 00
             00 00 00 00 05 03 04 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            0A E8 02 04 00 E0 FF FF 20 D0 00 E8 00 E0 80 FF
+            00 B9 00 D0 00 E0 00 FF 80 8B 00 B9 00 E0 20 FF
+            FF 74 00 8B 00 E0 00 FF 80 5D 00 74 00 E0 20 FF
+            20 46 00 5D 00 E0 80 FF 00 2F 00 46 00 E0 FF FF
+            20 18 00 2F 00 E0 FF 80 00 00 00 18 00 E0 FF 20
+            20
         </part>
     </rom>
 

@@ -14,6 +14,7 @@ Usage:
 import copy
 import re
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 MAME_VERSION = "0289"
@@ -118,7 +119,8 @@ def parse_games(src):
         year, name, parent, machine, inputs, init, rot, manuf, desc, flags = m.groups()
         games[name] = dict(year=year, name=name, parent=None if parent == "0" else parent,
                            machine=machine, inputs=inputs, init=init, rot=rot, manuf=manuf, desc=desc,
-                           working="MACHINE_NOT_WORKING" not in flags)
+                           working="MACHINE_NOT_WORKING" not in flags,
+                           layout=(re.search(r'\blayout_(\w+)', flags) or [None, None])[1])
     return games
 
 
@@ -413,6 +415,79 @@ def board_cfg(g):
     return SUPPORTED.get((g["drv"], g["machine"], g["init"]))
 
 
+# ---------------------------------------------------------------- colour overlays (MAME layouts)
+
+LAYOUT_DIR = Path("/Work/Build/mame/src/mame/layout")
+RAW_W, RAW_H = 260, 224                                 # the core's picture: hx 1-260 -> x 0-259, rows 0-223
+OV_BASE, OV_MAX = 64, 16                                # index 1: byte 64 = count, then 8 bytes per rectangle
+
+
+def _bounds(e):
+    b = e.find("bounds")
+    if b is None:
+        return None
+    if "x" in b.attrib:
+        x, y = float(b.get("x")), float(b.get("y"))
+        return x, y, x + float(b.get("width")), y + float(b.get("height"))
+    return float(b.get("left")), float(b.get("top")), float(b.get("right")), float(b.get("bottom"))
+
+
+def overlay_rects(g):
+    """MAME layout colour overlay -> [(x0, x1, y0, y1, r, g, b)] in raw scan coordinates (half-open), later wins."""
+    if not g.get("layout"):
+        return []
+    path = LAYOUT_DIR / f'{g["layout"]}.lay'
+    if not path.exists():
+        raise SystemExit(f'{g["name"]}: layout {path.name} not found')
+    root = ET.parse(path).getroot()
+    elements = {e.get("name"): e for e in root.findall("element")}
+    for view in root.findall("view"):
+        scr = view.find("screen")
+        ovs = [e for e in view.findall("element") if e.get("blend") == "multiply"]
+        if scr is None or not ovs:
+            continue
+        sx0, sy0, sx1, sy1 = _bounds(scr)
+        rw, rh = (RAW_H, RAW_W) if g["rot"] in ("ROT90", "ROT270") else (RAW_W, RAW_H)
+        out = []
+        for ov in ovs:
+            el = elements[ov.get("ref")]
+            rects = el.findall("rect")
+            ib = [_bounds(r) for r in rects]
+            ix0, iy0 = min(b[0] for b in ib), min(b[1] for b in ib)
+            ix1, iy1 = max(b[2] for b in ib), max(b[3] for b in ib)
+            ex0, ey0, ex1, ey1 = _bounds(ov)
+            for r, b in zip(rects, ib):
+                col = r.find("color")
+                rgb = [round(255 * float(col.get(k, "1"))) if col is not None else 255 for k in ("red", "green", "blue")]
+                # element space -> view -> rotated-screen pixels
+                vx = [ex0 + (b[i] - ix0) * (ex1 - ex0) / (ix1 - ix0) for i in (0, 2)]
+                vy = [ey0 + (b[i] - iy0) * (ey1 - ey0) / (iy1 - iy0) for i in (1, 3)]
+                X = [round((v - sx0) / (sx1 - sx0) * rw) for v in vx]
+                Y = [round((v - sy0) / (sy1 - sy0) * rh) for v in vy]
+                X = [min(max(v, 0), rw) for v in X]
+                Y = [min(max(v, 0), rh) for v in Y]
+                # rotated screen -> raw scan (half-open)
+                if g["rot"] == "ROT270":        # rotated (X, Y) = (raw_y, RAW_W - 1 - raw_x)
+                    x0, x1, y0, y1 = RAW_W - Y[1], RAW_W - Y[0], X[0], X[1]
+                elif g["rot"] == "ROT90":       # rotated (X, Y) = (RAW_H - 1 - raw_y, raw_x)
+                    x0, x1, y0, y1 = Y[0], Y[1], RAW_H - X[1], RAW_H - X[0]
+                else:
+                    x0, x1, y0, y1 = X[0], X[1], Y[0], Y[1]
+                if x1 > x0 and y1 > y0:
+                    out.append((x0, x1, y0, y1, *rgb))
+        if len(out) > OV_MAX:
+            raise SystemExit(f'{g["name"]}: {len(out)} overlay rectangles (max {OV_MAX})')
+        return out
+    return []
+
+
+def overlay_bytes(rects):
+    out = [len(rects)]
+    for x0, x1, y0, y1, r, gr, b in rects:
+        out += [x0 & 0xFF, (x0 >> 8) | (x1 >> 8) << 1, x1 & 0xFF, y0, y1, r, gr, b]
+    return out
+
+
 def mra(g, games, segs, build_inputs):
     variant = board_cfg(g)
     ports = build_inputs(g["inputs"])
@@ -446,6 +521,8 @@ def mra(g, games, segs, build_inputs):
                           for n, b, i, v in dips)
     sflags = S_TAITO if g["drv"] in TAITO_SOUND_DRIVERS else 0
     cfg = [variant, flags, sflags] + [0] * 13 + imap
+    ovr = overlay_rects(g)
+    cfg += [0] * (OV_BASE - len(cfg)) + overlay_bytes(ovr)
     cfg_rows = "\n".join("            " + " ".join(f"{b:02X}" for b in cfg[i:i + 16]) for i in range(0, len(cfg), 16))
     return f"""<misterromdescription>
     <name>{display_name(g)}</name>
@@ -485,7 +562,7 @@ def mra(g, games, segs, build_inputs):
 {chr(10).join(lines)}
     </rom>
 
-    <!-- Index 1: board variant, flags, sound board, input map (see Arcade-SpaceInvaders.sv) -->
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
     <rom index="1">
         <part>
 {cfg_rows}

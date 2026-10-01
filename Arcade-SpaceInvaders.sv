@@ -85,12 +85,14 @@ assign BUTTONS = 0;
 //   byte 0      board variant (see rtl/mw8080_board.sv)
 //   byte 1      flags: [4] vertical, [7] vertical is ROT90
 //   byte 2      sound board: [0] Taito L-shaped (else Midway)
+//   bytes 64+   colour overlay: count, then 8 bytes per rectangle (rtl/mw8080_board.sv)
 //   bytes 16-47 input map, one byte per port bit (IN0, IN1, IN2, IN3; bit 0 first): control id, 0 = none
 // DIP switch bytes 0-3 hold the idle level of every bit of IN0-IN3; a pressed control inverts its bit
 reg [7:0] game_var   = 8'd0;
 reg [7:0] game_flags = 8'h10;
 reg [7:0] snd_flags  = 8'd0;
 reg [5:0] in_map[32];
+reg [1031:0] ov_tab = 1032'd0;
 
 always @(posedge CLK_40M) begin
     if (ioctl_wr && ioctl_index == 8'd1) begin
@@ -99,6 +101,8 @@ always @(posedge CLK_40M) begin
         if (ioctl_addr == 25'd2) snd_flags  <= ioctl_dout;
         if (ioctl_addr[24:5] == 20'd0 && ioctl_addr[4]) in_map[{1'b0, ioctl_addr[3:0]}] <= ioctl_dout[5:0];
         if (ioctl_addr[24:5] == 20'd1 && ioctl_addr[4] == 1'b0) in_map[{1'b1, ioctl_addr[3:0]}] <= ioctl_dout[5:0];
+        if (ioctl_addr == 25'd0) ov_tab[7:0] <= 8'd0;                                   // an MRA without overlay data
+        if (ioctl_addr >= 25'd64 && ioctl_addr < 25'd193) ov_tab[(ioctl_addr - 25'd64) * 8 +: 8] <= ioctl_dout;
     end
 end
 
@@ -120,6 +124,9 @@ localparam CONF_STR = {
 	"P1OB,HDMI Flip,Off,On;",
 	"P1OM,CRT Flip,Off,On;",
 	"P1OGI,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
+	"-;",
+	"P2,Game Options;",
+	"P2ON,Overlay,On,Off;",
 	"-;",
 	"P3,Pause Options;",
 	"P3OJ,Pause when OSD is open,On,Off;",
@@ -342,6 +349,8 @@ mw8080_board board
 	.ioctl_wr0(ioctl_wr & (ioctl_index == 8'd0)),
 
 	.crt_flip(status[22]),
+	.ov_en(~status[23]),
+	.ov_tab(ov_tab),
 
 	.ce_pix(ce_pix),
 	.video_r(r),
