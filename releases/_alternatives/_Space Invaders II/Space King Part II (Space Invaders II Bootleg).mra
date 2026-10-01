@@ -47,7 +47,7 @@
         <part crc="98db0e7d" name="gm2_9-10_tms2516.d"/>
     </rom>
 
-    <!-- Index 1: board variant, flags, input map (see Arcade-SpaceInvaders.sv) -->
+    <!-- Index 1: board variant, flags, sound board, input map (see Arcade-SpaceInvaders.sv) -->
     <rom index="1">
         <part>
             00 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00

@@ -2,6 +2,8 @@ set_global_assignment -name VHDL_INPUT_VERSION VHDL_2008
 
 set_global_assignment -name SYSTEMVERILOG_FILE Arcade-SpaceInvaders.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/mw8080_board.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/invaders_sound.sv
+set_global_assignment -name SEARCH_PATH rtl
 
 set_global_assignment -name QIP_FILE rtl/cpu/T80/T80.qip
 

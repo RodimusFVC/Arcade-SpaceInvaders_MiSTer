@@ -40,6 +40,7 @@ module mw8080_board
     input  logic  [7:0] in1,
     input  logic  [7:0] in2,
     input  logic        cocktail,
+    input  logic        taito_snd,      // Taito L-shaped sound board (else Midway)
 
     input  logic [24:0] ioctl_addr,
     input  logic  [7:0] ioctl_dout,
@@ -374,6 +375,18 @@ assign video_r = {8{vid}};
 assign video_g = {8{vid}};
 assign video_b = {8{vid}};
 
-assign audio = 16'sd0;
+// ---------------------------------------------------------------- sound board (port 3 / port 5, 16V = "480 Hz")
+
+invaders_sound u_sound
+(
+    .clk(clk),
+    .reset(~rst_n),
+    .pause(pause),
+    .p1(snd1),
+    .p2(snd2),
+    .v16(cnt_e7[0]),
+    .taito(taito_snd),
+    .out(audio)
+);
 
 endmodule

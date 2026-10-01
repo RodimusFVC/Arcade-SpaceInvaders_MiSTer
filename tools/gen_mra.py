@@ -37,6 +37,8 @@ RAM_WINDOWS = [(0x2000, 0x4000), (0x6000, 0x8000)]      # CPU reads RAM here; RO
 NAME_OVERRIDE = {"invaders": "Space Invaders"}
 
 F_VERT, F_ROT90 = 0x10, 0x80
+S_TAITO = 0x01                                          # index 1 byte 2: Taito L-shaped sound board
+TAITO_SOUND_DRIVERS = {"8080bw.cpp"}                   # Taito SV/TV sets and their bootlegs; mw8080bw.cpp = Midway
 
 # port order on the board: DIP bytes 0-3 and input map bytes 16-47
 PORTS = ["IN0", "IN1", "IN2", "IN3"]
@@ -442,7 +444,8 @@ def mra(g, games, segs, build_inputs):
 
     dip_lines = "\n".join(f'        <dip name="{n}" bits="{b}" ids="{i}"' + (f' values="{v}"' if v else "") + "/>"
                           for n, b, i, v in dips)
-    cfg = [variant, flags] + [0] * 14 + imap
+    sflags = S_TAITO if g["drv"] in TAITO_SOUND_DRIVERS else 0
+    cfg = [variant, flags, sflags] + [0] * 13 + imap
     cfg_rows = "\n".join("            " + " ".join(f"{b:02X}" for b in cfg[i:i + 16]) for i in range(0, len(cfg), 16))
     return f"""<misterromdescription>
     <name>{display_name(g)}</name>
@@ -482,7 +485,7 @@ def mra(g, games, segs, build_inputs):
 {chr(10).join(lines)}
     </rom>
 
-    <!-- Index 1: board variant, flags, input map (see Arcade-SpaceInvaders.sv) -->
+    <!-- Index 1: board variant, flags, sound board, input map (see Arcade-SpaceInvaders.sv) -->
     <rom index="1">
         <part>
 {cfg_rows}

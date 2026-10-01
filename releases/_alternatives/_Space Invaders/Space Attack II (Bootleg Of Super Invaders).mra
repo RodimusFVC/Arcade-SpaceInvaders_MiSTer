@@ -42,10 +42,10 @@
         <part crc="7cf6f604" name="spaceatt.e"/>
     </rom>
 
-    <!-- Index 1: board variant, flags, input map (see Arcade-SpaceInvaders.sv) -->
+    <!-- Index 1: board variant, flags, sound board, input map (see Arcade-SpaceInvaders.sv) -->
     <rom index="1">
         <part>
-            00 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 10 01 00 00 00 00 00 00 00 00 00 00 00 00 00
             00 00 00 00 00 00 00 00 11 14 13 00 05 03 04 00
             00 00 15 00 00 00 00 00 00 00 00 00 00 00 00 00
         </part>

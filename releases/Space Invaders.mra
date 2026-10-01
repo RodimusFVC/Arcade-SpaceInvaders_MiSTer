@@ -45,7 +45,7 @@
         <part crc="14e538b0" name="9316b-0854_m739e.e1"/>
     </rom>
 
-    <!-- Index 1: board variant, flags, input map (see Arcade-SpaceInvaders.sv) -->
+    <!-- Index 1: board variant, flags, sound board, input map (see Arcade-SpaceInvaders.sv) -->
     <rom index="1">
         <part>
             00 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00
