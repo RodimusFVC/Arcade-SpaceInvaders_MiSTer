@@ -40,14 +40,84 @@ SUPPORTED = {
     ("8080bw.cpp", "vortex", "init_vortex"): 7,        # I/O A1 inverted, ROM A0/A3/A9 scrambled, colour per column
     ("8080bw.cpp", "spacecom", "init_spacecom"): 8,    # ports 41 / 42 / 44, 256-pixel picture
     ("8080bw.cpp", "invmulti", "init_invmulti"): 9,    # 128K scrambled ROM in 8 banks, 93C46 EEPROM at 6000
+    ("8080bw.cpp", "shuttlei", "empty_init"): 10,      # 256 x 192 MSB-first video at 2000, ports FD-FF
+    ("8080bw.cpp", "claybust", "empty_init"): 11,      # light gun: position latch on ports 2 / 6, no sound
 }
 
+# Family 3 (Taito colour boards and relatives): machine config -> (board variant, colour mode, colour flags,
+# sound map, board flags) = MRA index 1 bytes 0 / 12 / 13 / 14 / 15 (rtl/mw8080_board.sv)
+#   colour mode: 0 none, 1 colour PROM, 2 colour RAM (C000, per 4 rows), 3 schaser, 4 polaris, 5 rollingc, 6 cosmo
+#   colour flags: [2:0] background pen, [3] inverted colour RAM, [4] RGB palette (else RBG), [5] port 3 bit 2 =
+#     screen red, [7:6] PROM half: 0 first, 1 port 5 bit 5, 2 inverted port 5 bit 5, 3 port 5 bit 6
+#   sound map: 0 invaders board bits, 1 silent, 2 ballbomb, 3 indianbt, 4 indianbtbr, 5 schasercv, 6 rollingc,
+#     7 lrescue (tune speaker only), 8 spcewarla
+#   board flags: [0] no watchdog
+FAMILY3 = {
+    "invadpt2":   (0, 1, 0x60, 0, 0),
+    "spacerng":   (0, 1, 0x20, 0, 0),
+    "starw1":     (12, 1, 0x60, 0, 0),
+    "spcewarla":  (13, 1, 0x40, 8, 0),
+    "astropal":   (2, 0, 0x00, 0, 0),
+    "lrescue":    (0, 1, 0x20, 7, 1),
+    "lrescuem2":  (1, 1, 0x20, 7, 1),
+    "escmars":    (0, 0, 0x00, 7, 1),
+    "ozmawars":   (1, 1, 0x60, 1, 0),
+    "ballbomb":   (0, 1, 0x22, 2, 1),
+    "polaris":    (14, 4, 0x00, 1, 0),
+    "schaser":    (0, 3, 0x00, 1, 0),
+    "schasercv":  (16, 2, 0x02, 5, 1),
+    "crashrd":    (0, 3, 0x00, 1, 0),
+    "steelwkr":   (0, 1, 0x60, 0, 1),
+    "indianbt":   (15, 1, 0x10, 3, 0),
+    "indianbtbr": (0, 1, 0x10, 4, 0),
+    "lupin3":     (0, 1, 0xD0, 1, 0),
+    "lupin3a":    (0, 2, 0x08, 1, 0),
+    "cosmo":      (1, 6, 0x00, 0, 0),
+    "rollingc":   (2, 5, 0x00, 6, 1),
+    "mraker":     (2, 5, 0x00, 1, 1),
+    "cane":       (18, 0, 0x00, 1, 0),
+    "orbite":     (19, 2, 0x10, 1, 0),
+}
+for _m, _c in FAMILY3.items():
+    SUPPORTED[("8080bw.cpp", _m, "empty_init")] = _c[0]
+
+
+def family3(g):
+    return FAMILY3.get(g["machine"]) if g["drv"] == "8080bw.cpp" else None
+
+
+# Family 4 (Midway one-offs, mw8080bw.cpp): board variant 20 = table-driven I/O (rtl/mw8080_board.sv).
+#   rd: source per port A2-A0 (index 1 bytes 48-55): 0 open (0), 1-4 IN0-IN3, 5 shifter, 6 shifter bit-reversed,
+#       7 shifter inverted, 8 reversible shifter (count bit 3 selects reversed)
+#   wr: target bits per port A2-A0 (bytes 56-63): [0] shift count, [1] shift data, [2] watchdog, [3]-[6] sound latch
+#       1-4, [7] reversible shift count
+#   wd: 0 255 frames, 1 555 2.97 s, 2 555 1.1 s, 3 none; a3: ports 8-15 ignored (A3 decoded); col: colour mode
+#   (7 = phantom2 clouds); snd: sound map (1 silent, 9 two invaders boards, stereo)
+WC, WD, WW, S1, S2, S3, S4, RC = 1, 2, 4, 8, 16, 32, 64, 128
+def _and3(a0):                                   # gunfight / tornbase: A0 sound, A1 count, A2 data (AND gates)
+    return [(a0 if p & 1 else 0) | (WC if p & 2 else 0) | (WD if p & 4 else 0) for p in range(8)]
+FAMILY4 = {
+    "invad2ct": dict(rd=[1, 2, 3, 5] * 2, wr=[0, S3, WC, S1, WD, S2, WW, S4], wd=0, snd=9),
+    "maze":     dict(rd=[1, 2, 0, 0] * 2, wr=[0, 0, WW, WW] * 2, wd=1, snd=1),
+    "checkmat": dict(rd=[1, 2, 3, 4] * 2, wr=[0, S1, WW, S1 | WW] * 2, wd=1, snd=1),
+    "tornbase": dict(rd=[1, 2, 3, 5] * 2, wr=_and3(S1), wd=3, snd=1),
+    "dplay":    dict(rd=[1, 2, 3, 5] * 2, wr=[0, WC, WD, S1, WW, S2, S3, 0], wd=0, snd=1),
+    "phantom2": dict(rd=[6, 1, 2, 5] * 2, wr=[0, WC, WD, 0, WW, S1, S2, 0], wd=0, snd=1, col=7),
+}
+for _m in FAMILY4:
+    SUPPORTED[("mw8080bw.cpp", _m, "empty_init")] = 20
+
+
+def family4(g):
+    return FAMILY4.get(g["machine"]) if g["drv"] == "mw8080bw.cpp" else None
+
 # ioctl index 0: maincpu 0x0000-0x7FFF (the board keeps 0000-1FFF and 4000-5FFF); invmulti: the raw 128K user1 dump
-REGIONS = {"maincpu": (0x0000, 0x8000)}
+REGIONS = {"maincpu": (0x0000, 0x8000),
+           "maincpu_nibhi": (0x10000, 0x8000)}                  # ROM_SHIFT_NIBBLE_HI chips (spaceattbp)
 VARIANT_REGIONS = {9: {"user1": (0x0000, 0x20000)}}
 INDEX0_TEXT = {9: "raw 128K user1 dump (banked and unscrambled on the read path)"}
 IGNORED_REGIONS = {"plds", "unknown", "unk"}
-BOARD_IGNORED = {0: {"proms"}, 1: {"user1"}}            # dumps the MAME config never reads (invadernc, spacmiss)
+BOARD_IGNORED = {0: {"proms"}, 1: {"user1"}, 10: {"proms"}}   # dumps the MAME config never reads (invadernc, spacmiss, shuttlei)
 RAM_WINDOWS = [(0x2000, 0x4000), (0x6000, 0x8000)]      # CPU reads RAM here; ROM bytes loaded into it are dead (jspecter)
 NAME_OVERRIDE = {"invaders": "Space Invaders"}
 
@@ -61,11 +131,17 @@ PORT_TAGS = {"yosakdon": [None, "IN0", "IN1", None],   # input port tags at boar
              "darthvdr": ["P1", "P2", None, None],
              "attackfc": ["IN0", None, None, None],
              "attackfcu": [None, "IN0", None, None],
-             "spacecom": [None, "IN0", "IN1", "IN2"]}   # ports 41 / 42 / 44: board slots 1-3
+             "spacecom": [None, "IN0", "IN1", "IN2"],
+             "shuttlei": [None, "P2", "DSW", "INPUTS"],
+             "claybust": [None, "IN1", None, None],       # IN1 bits 0-1 (gun on, trigger) come from the board
+             "mraker": [None, "IN0", "IN1", "IN2"],
+             "cane": [None, "IN1", None, None],
+             "starw1": [None, "IN1", "IN2", None]}   # ports FC-FF: P2 (read on the cocktail flip), FE DSW, FF   # ports 41 / 42 / 44: board slots 1-3
 LINE_BASE = 40      # control ids 40-47 = DIP byte 3 bits: MAME fake-port DIPs read through a custom handler
 CTL_VBLANK = 36     # control id 36 = VBLANK (spacecom IN2 bit 0)
 ROM_DECODE = {"init_attackfc": 0x01,                   # index 1 byte 3: [0] A8/A9 swapped, [1] vortex A0/A3/A9 XOR
               "init_vortex": 0x02}
+NIBBLE_SETS = {"spaceattbp"}                            # byte 3 [2]: program = 4-bit bproms, high chip at +0x10000
 ROM_PATCH = {"init_spacecom": [(0x10, 0xF5)]}           # MAME: bad dump, "should be push a at RST 10h"
 
 # control ids (Arcade-SpaceInvaders.sv)
@@ -76,9 +152,14 @@ CTL = {("JOYSTICK_UP", 1): 1, ("JOYSTICK_DOWN", 1): 2, ("JOYSTICK_LEFT", 1): 3, 
        ("BUTTON5", 1): 32, ("BUTTON6", 1): 33, ("BUTTON5", 2): 34, ("BUTTON6", 2): 35,
        ("COIN1", 0): 17, ("COIN2", 0): 18, ("START1", 0): 19, ("START2", 0): 20,
        ("TILT", 0): 21, ("SERVICE1", 0): 22, ("SERVICE", 0): 22, ("COIN3", 0): 23,
-       ("MEMORY_RESET", 0): 22}                          # operator "Name Reset" (invaddlx): service key
+       ("MEMORY_RESET", 0): 22,                          # operator "Name Reset" (invaddlx): service key
+       ("JOYSTICK_UP", 3): 64, ("JOYSTICK_DOWN", 3): 65, ("JOYSTICK_LEFT", 3): 66, ("JOYSTICK_RIGHT", 3): 67,
+       ("BUTTON1", 3): 68,
+       ("JOYSTICK_UP", 4): 69, ("JOYSTICK_DOWN", 4): 70, ("JOYSTICK_LEFT", 4): 71, ("JOYSTICK_RIGHT", 4): 72,
+       ("BUTTON1", 4): 73, ("START3", 0): 74, ("START4", 0): 75}
 IGNORED_TYPES = {"UNUSED", "UNKNOWN"}
-READ_LINE_FIXED = {"cosmicmo_cab_r": 0}                # cabinet type: upright
+READ_LINE_FIXED = {"cosmicmo_cab_r": 0,                # cabinet type: upright
+                   "gun_on_r": 0}                     # claybust: driven by the board
 
 # PORT_CUSTOM_MEMBER handlers, upright cabinet: the fake port whose bits the handler returns
 CUSTOM = {
@@ -90,7 +171,14 @@ CUSTOM = {
     "invadpt2_in2_control_r": "CONTP1",
     "invaders_sw6_sw7_r": "SW6SW7",
     "invaders_sw5_r": "SW5",
+    "tornbase_hit_left_input_r": "LHIT",
+    "tornbase_hit_right_input_r": "RHIT",
+    "tornbase_pitch_left_input_r": "LPITCH",     # upright: both sides read the left pitch port (MAME)
+    "tornbase_pitch_right_input_r": "LPITCH",
+    "dplay_pitch_left_input_r": "LPITCH",
+    "dplay_pitch_right_input_r": "LPITCH",
 }
+CUSTOM_FIXED = {"tornbase_score_input_r": 0}     # SCORE switch (not used by the software) & its DIP
 
 REGION_WORDS = [("US", "US"), ("Japan", "Japan"), ("Spanish", "Spain"), ("Italian", "Italy"), ("French", "France"),
                 ("Brazil", "Brazil"), ("Argentina", "Argentina"), ("Greek", "Greece"), ("Hungarian", "Hungary")]
@@ -100,6 +188,7 @@ REGION_WORDS = [("US", "US"), ("Japan", "Japan"), ("Spanish", "Spain"), ("Italia
 GAME_RE = re.compile(r'^\s*(?:/\*[^*]*\*/)?\s*GAMEL?\(\s*([\w?]+),\s*(\w+),\s*(\w+),\s*(\w+),\s*(\w+),\s*\w+,\s*(\w+),'
                      r'\s*(ROT\d+),\s*"([^"]*)",\s*"([^"]*)",\s*([^)]*)\)', re.M)
 LOAD_RE = re.compile(r'ROM_LOAD\(\s*"([^"]+)"\s*,\s*(0x[0-9a-fA-F]+),\s*(0x[0-9a-fA-F]+),\s*(?:BAD_DUMP\s+)?CRC\(([0-9a-fA-F]+)\)')
+LOADX_RE = re.compile(r'ROMX_LOAD\(\s*"([^"]+)"\s*,\s*(0x[0-9a-fA-F]+),\s*(0x[0-9a-fA-F]+),\s*CRC\(([0-9a-fA-F]+)\).*\)\s*,\s*([^)]*)\)')
 CONT_RE = re.compile(r'ROM_CONTINUE\(\s*(0x[0-9a-fA-F]+),\s*(0x[0-9a-fA-F]+)\s*\)')
 RELOAD_RE = re.compile(r'ROM_RELOAD\(\s*(0x[0-9a-fA-F]+),\s*(0x[0-9a-fA-F]+)\s*\)')
 FILL_RE = re.compile(r'ROM_FILL\(\s*(0x[0-9a-fA-F]+),\s*(0x[0-9a-fA-F]+),\s*(0x[0-9a-fA-F]+)\s*\)')
@@ -114,6 +203,10 @@ def header_macros():
     for h in ("mw8080bw.h", "8080bw.h"):
         for m in DEFINE_RE.finditer((MAME_DIR / h).read_text()):
             out[m.group(1)] = (m.group(3), m.group(4).replace("\\\n", "\n"))
+    for c in ("mw8080bw.cpp", "8080bw.cpp"):         # port tags / cabinet values the drivers define locally
+        for m in DEFINE_RE.finditer((MAME_DIR / c).read_text()):
+            if m.group(1).endswith("_TAG") or "_CAB_TYPE_" in m.group(1):
+                out.setdefault(m.group(1), (m.group(3), m.group(4).replace("\\\n", "\n")))
     return out
 
 
@@ -163,6 +256,14 @@ def parse_roms(src, setname):
             name, off, length, crc = l.group(1), int(l.group(2), 16), int(l.group(3), 16), l.group(4).lower()
             last = dict(name=name, crc=crc, src=0, dst=off, len=length, flen=length, region=region, rsize=rsize)
             segs.append(last)
+        elif (x := LOADX_RE.search(line)):
+            name, off, length, crc, fl = x.group(1), int(x.group(2), 16), int(x.group(3), 16), x.group(4).lower(), x.group(5)
+            nib = {"ROM_NIBBLE | ROM_SHIFT_NIBBLE_HI": "_nibhi", "ROM_NIBBLE | ROM_SHIFT_NIBBLE_LO": ""}
+            if fl.strip() not in nib or setname not in NIBBLE_SETS or region != "maincpu":
+                raise SystemExit(f"{setname}: unhandled ROMX_LOAD: {line.strip()}")
+            last = dict(name=name, crc=crc, src=0, dst=off, len=length, flen=length, region=region + nib[fl.strip()],
+                        rsize=rsize)
+            segs.append(last)
         elif (c := CONT_RE.search(line)):
             off, length = int(c.group(1), 16), int(c.group(2), 16)
             nxt = dict(last, src=last["src"] + last["len"], dst=off, len=length)
@@ -176,9 +277,14 @@ def parse_roms(src, setname):
             off, length, val = int(f.group(1), 16), int(f.group(2), 16), int(f.group(3), 16)
             segs.append(dict(name=None, crc=None, fill=val, src=0, dst=off, len=length, region=region, rsize=rsize))
             last = None
-        elif "ROM_" in line and any(k in line for k in ("ROM_LOAD", "ROM_COPY", "ROM_FILL", "ROM_RELOAD")):
+        elif any(k in line for k in ("ROM_LOAD", "ROMX_LOAD", "ROM_COPY", "ROM_FILL", "ROM_RELOAD", "ROM_CONTINUE")):
             raise SystemExit(f"{setname}: unhandled ROM statement: {line.strip()}")
     return segs
+
+
+def num(x):
+    """MAME numeric argument, possibly a parenthesised macro value: '(1)' -> 1."""
+    return int(x.strip().strip("()").strip(), 0)
 
 
 def def_str(s):
@@ -241,17 +347,20 @@ def parse_inputs(src):
                 if mac == "PORT_START":
                     ports[cur] = []
                 fld = None
-            elif mac in ("PORT_BIT", "PORT_DIPNAME", "PORT_CONFNAME", "PORT_SERVICE", "PORT_SERVICE_NO_TOGGLE",
+            elif mac == "PORT_ADJUSTER":
+                fld = dict(mask=0, kind="unused", default=0)   # analogue trimmer (volume), not an input
+            elif mac in ("PORT_BIT", "PORT_DIPNAME", "PORT_CONFNAME", "PORT_SERVICE", "PORT_SERVICE_DIPLOC",
+                         "PORT_SERVICE_NO_TOGGLE",
                          "PORT_DIPUNUSED", "PORT_DIPUNUSED_DIPLOC", "PORT_DIPUNKNOWN", "PORT_DIPUNKNOWN_DIPLOC"):
-                mask = int(args[0], 0)
+                mask = num(args[0])
                 ports[cur] = [f for f in ports[cur] if not (f["mask"] & mask)]
                 if mac == "PORT_BIT":
                     t = args[2].replace("IPT_", "")
                     fld = dict(mask=mask, kind="unused" if t in IGNORED_TYPES else "input",
                                default=idle_level(args[1], mask), type=t, player=1, name=None, settings=[])
                 elif mac in ("PORT_DIPNAME", "PORT_CONFNAME"):
-                    fld = dict(mask=mask, kind="dip", default=int(args[1], 0), name=def_str(args[2]), settings=[])
-                elif mac == "PORT_SERVICE":
+                    fld = dict(mask=mask, kind="dip", default=num(args[1]), name=def_str(args[2]), settings=[])
+                elif mac in ("PORT_SERVICE", "PORT_SERVICE_DIPLOC"):
                     off = idle_level(args[1], mask)
                     fld = dict(mask=mask, kind="dip", default=off, name="Service Mode",
                                settings=[(off, "Off", None), (off ^ mask, "On", None)])
@@ -260,12 +369,12 @@ def parse_inputs(src):
                                name=None, settings=[])
                 else:
                     d = {"IP_ACTIVE_LOW": mask, "IP_ACTIVE_HIGH": 0}.get(args[1])
-                    fld = dict(mask=mask, kind="unused", default=int(args[1], 0) if d is None else d)
+                    fld = dict(mask=mask, kind="unused", default=num(args[1]) if d is None else d)
                 ports[cur].append(fld)
             elif mac in ("PORT_DIPSETTING", "PORT_CONFSETTING"):
-                fld["settings"].append((int(args[0], 0), def_str(args[1]), None))
+                fld["settings"].append((num(args[0]), def_str(args[1]), None))
             elif mac == "PORT_CONDITION":
-                cond = (args[0].strip('"'), int(args[1], 0), args[2], int(args[3], 0))
+                cond = (args[0].strip('"'), num(args[1]), args[2], num(args[3]))
                 if fld.get("settings"):
                     v, n, _ = fld["settings"][-1]
                     fld["settings"][-1] = (v, n, cond)    # this setting only exists under the condition
@@ -294,7 +403,7 @@ def parse_inputs(src):
                 fld["custom"] = fn.group(1)
             elif mac in ("PORT_DIPLOCATION", "PORT_CODE", "PORT_TOGGLE", "PORT_2WAY", "PORT_4WAY", "PORT_8WAY",
                          "PORT_SENSITIVITY", "PORT_KEYDELTA", "PORT_CHANGED_MEMBER",
-                         "PORT_IMPULSE"):
+                         "PORT_IMPULSE", "PORT_MINMAX", "PORT_CROSSHAIR"):   # gun axes: the core's crosshair
                 pass
             else:
                 raise SystemExit(f"INPUT_PORTS({name}): unhandled {mac}")
@@ -428,6 +537,11 @@ def input_config(g, ports):
                 if "reset" in (f["name"] or "").lower():
                     control(dict(f, type="MEMORY_RESET", player=0), p * 8 + lo)   # operator name-reset button
                 continue                               # spare switches: idle level
+            elif f["kind"] == "input" and f["type"] == "CUSTOM" and f.get("custom") in CUSTOM_FIXED:
+                level = (level & ~f["mask"]) | (CUSTOM_FIXED[f["custom"]] & f["mask"])
+            elif f["kind"] == "input" and f["type"] == "CUSTOM" and f.get("custom") == "game_select_r":
+                imap[p * 8 + lo] = CTL[("JOYSTICK_RIGHT", 1)]   # rollingc: bitswap<2>(P1 controls, 1, 2)
+                imap[p * 8 + lo + 1] = CTL[("JOYSTICK_LEFT", 1)]
             elif f["kind"] == "input" and f["type"] == "CUSTOM" and f.get("custom") == "vblank":
                 imap[p * 8 + lo] = CTL_VBLANK              # the board's VBLANK
             elif f["kind"] == "input" and f["type"] == "CUSTOM":
@@ -484,6 +598,7 @@ def board_cfg(g):
 
 LAYOUT_DIR = Path("/Work/Build/mame/src/mame/layout")
 RAW_W, RAW_H = 260, 224                                 # the core's picture: hx 1-260 -> x 0-259, rows 0-223
+RAW_DIMS = {8: (256, 224, 4), 10: (256, 192, 4)}         # MAME screen (w, h) and its x offset in the core's picture
 OV_BASE, OV_MAX = 64, 16                                # index 1: byte 64 = count, then 8 bytes per rectangle
 
 
@@ -512,12 +627,13 @@ def overlay_rects(g):
         if scr is None or not ovs:
             continue
         sx0, sy0, sx1, sy1 = _bounds(scr)
-        rw, rh = (RAW_H, RAW_W) if g["rot"] in ("ROT90", "ROT270") else (RAW_W, RAW_H)
+        sw, sh, xo = RAW_DIMS.get(board_cfg(g), (RAW_W, RAW_H, 0))
+        rw, rh = (sh, sw) if g["rot"] in ("ROT90", "ROT270") else (sw, sh)
         out = []
         for ov in ovs:
             el = elements[ov.get("ref")]
             rects = el.findall("rect")
-            ib = [_bounds(r) for r in rects]
+            ib = [_bounds(r) or (0.0, 0.0, 1.0, 1.0) for r in rects]   # MAME default: the unit square
             ix0, iy0 = min(b[0] for b in ib), min(b[1] for b in ib)
             ix1, iy1 = max(b[2] for b in ib), max(b[3] for b in ib)
             ex0, ey0, ex1, ey1 = _bounds(ov)
@@ -532,12 +648,13 @@ def overlay_rects(g):
                 X = [min(max(v, 0), rw) for v in X]
                 Y = [min(max(v, 0), rh) for v in Y]
                 # rotated screen -> raw scan (half-open)
-                if g["rot"] == "ROT270":        # rotated (X, Y) = (raw_y, RAW_W - 1 - raw_x)
-                    x0, x1, y0, y1 = RAW_W - Y[1], RAW_W - Y[0], X[0], X[1]
-                elif g["rot"] == "ROT90":       # rotated (X, Y) = (RAW_H - 1 - raw_y, raw_x)
-                    x0, x1, y0, y1 = Y[0], Y[1], RAW_H - X[1], RAW_H - X[0]
+                if g["rot"] == "ROT270":        # rotated (X, Y) = (raw_y, sw - 1 - raw_x)
+                    x0, x1, y0, y1 = sw - Y[1], sw - Y[0], X[0], X[1]
+                elif g["rot"] == "ROT90":       # rotated (X, Y) = (sh - 1 - raw_y, raw_x)
+                    x0, x1, y0, y1 = Y[0], Y[1], sh - X[1], sh - X[0]
                 else:
                     x0, x1, y0, y1 = X[0], X[1], Y[0], Y[1]
+                x0, x1 = x0 + xo, x1 + xo
                 if x1 > x0 and y1 > y0:
                     out.append((x0, x1, y0, y1, *rgb))
         if len(out) > OV_MAX:
@@ -559,7 +676,13 @@ def config_bytes(g, idle, imap):
     sflags = S_TAITO if g["drv"] in TAITO_SOUND_DRIVERS else 0
     assert len(idle) <= 8, g["name"]
     # the idle levels repeat <switches default>: MiSTer sends DIP bytes (index 254) only when an MRA has a <dip>
-    cfg = [board_cfg(g), flags, sflags, ROM_DECODE.get(g["init"], 0)] + idle + [0] * (12 - len(idle)) + imap
+    dec = ROM_DECODE.get(g["init"], 0) | (0x04 if g["name"] in NIBBLE_SETS else 0)
+    f3, f4 = family3(g), family4(g)
+    if f4:
+        f3 = (20, f4.get("col", 0), 0, f4["snd"], (f4["wd"] << 1) | (8 if f4.get("a3") else 0))
+    cfg = [board_cfg(g), flags, sflags, dec] + idle + [0] * (8 - len(idle)) + (list(f3[1:]) if f3 else [0] * 4) + imap
+    if f4:
+        cfg += f4["rd"] + f4["wr"]
     return cfg + [0] * (OV_BASE - len(cfg)) + overlay_bytes(overlay_rects(g))
 
 
@@ -692,7 +815,20 @@ def out_path(root, g, games):
 def rom_segments(g, src):
     """ioctl index 0 layout for a set (shared with verilator/build_rom.py)."""
     v = board_cfg(g)
-    return place(parse_roms(src, g["name"]), g["name"], BOARD_IGNORED.get(v, frozenset()), VARIANT_REGIONS.get(v, REGIONS))
+    regions, ignored = VARIANT_REGIONS.get(v, REGIONS), set(BOARD_IGNORED.get(v, frozenset()))
+    f3 = family3(g)
+    if family4(g) and family4(g).get("col") == 7:   # phantom2 cloud PROM
+        f3 = (20, 1)
+    if f3:                                     # colour boards: PROM (and polaris clouds) at 0x20000 when the mode reads it
+        ignored |= {"proms", "user1", "stars"}
+        regions = dict(regions)
+        if f3[1] in (1, 3, 4):
+            ignored.discard("proms")
+            regions["proms"] = (0x20000, 0x800)
+        if f3[1] == 4:
+            ignored.discard("user1")
+            regions["user1"] = (0x20800, 0x100)
+    return place(parse_roms(src, g["name"]), g["name"], frozenset(ignored), regions)
 
 
 def main():

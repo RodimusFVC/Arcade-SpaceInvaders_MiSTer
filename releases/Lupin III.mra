@@ -1,0 +1,64 @@
+<misterromdescription>
+    <name>Lupin III</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Lupin III</series>
+    <year>1980</year>
+    <manufacturer>Taito</manufacturer>
+    <category>Shooter</category>
+
+    <setname>lupin3</setname>
+    <parent>lupin3</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (ccw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="03,00,00,FF">
+        <dip name="Lives" bits="16,17" ids="3,4,5,6"/>
+        <dip name="Cabinet" bits="18" ids="Upright,Cocktail"/>
+        <dip name="Bags To Collect" bits="19" ids="2,8" values="1,0"/>
+        <dip name="Invulnerability (Cheat)" bits="23" ids="Off,On"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="lupin3.zip">
+        <part crc="fd506ee8" name="lp01.36"/>
+        <part crc="ec4225f8" name="lp02.35"/>
+        <part crc="9307d377" name="lp03.34"/>
+        <part crc="e41e8b2b" name="lp04.33"/>
+        <part repeat="0x2000">00</part>
+        <part crc="f5c2faf4" name="lp05.32"/>
+        <part crc="66289ab2" name="lp06.31"/>
+        <part repeat="0x1B000">00</part>
+        <part crc="33dbd03a" name="lp08.1"/>
+        <part crc="9eaee652" name="lp09.2"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            00 10 01 00 03 00 00 FF 00 00 00 00 01 D0 01 00
+            00 00 15 0D 0C 0A 0B 09 11 14 13 05 04 02 03 01
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00
+        </part>
+    </rom>
+
+    <remark>Lupin III (Set 1) (Taito)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

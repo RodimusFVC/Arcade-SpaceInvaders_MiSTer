@@ -1,0 +1,66 @@
+<misterromdescription>
+    <name>Polaris (First Revision)</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Polaris</series>
+    <year>1980</year>
+    <manufacturer>Taito</manufacturer>
+    <category>Shooter</category>
+
+    <setname>polarisb</setname>
+    <parent>polaris</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (ccw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="00,01,10,FF">
+        <dip name="Lives" bits="16,17" ids="3,4,5,6"/>
+        <dip name="Cabinet" bits="18" ids="Upright,Cocktail"/>
+        <dip name="Invincible Test" bits="19" ids="Off,On"/>
+        <dip name="Demo Sounds" bits="20" ids="Off,On"/>
+        <dip name="High Score Preset Mode" bits="23" ids="Off,On"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="polarisb.zip|polaris.zip">
+        <part crc="c04ce5a9" name="ps01.ic71"/>
+        <part crc="9a5c8cb2" name="ps02-9.ic70"/>
+        <part crc="8680d7ea" name="ps03.ic69"/>
+        <part crc="65694948" name="ps04.ic62"/>
+        <part repeat="0x2000">00</part>
+        <part crc="772e31f3" name="ps05.ic61"/>
+        <part crc="3df77bac" name="ps06-10.ic60"/>
+        <part repeat="0x1B000">00</part>
+        <part crc="164aa05d" name="ps08.1b"/>
+        <part repeat="0x400">00</part>
+        <part crc="2953253b" name="ps07.2c"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            0E 10 01 00 00 01 10 FF 00 00 00 00 04 00 01 00
+            00 00 15 0D 0C 0A 0B 09 11 14 13 05 04 02 03 01
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00
+        </part>
+    </rom>
+
+    <remark>Polaris (First Revision) (Taito)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

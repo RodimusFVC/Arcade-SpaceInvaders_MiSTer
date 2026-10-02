@@ -1,17 +1,17 @@
 <misterromdescription>
-    <name>Space Attack (Bootleg Of Space Invaders, Bproms)</name>
+    <name>Space Invaders (CV Version, Larger Roms)</name>
     <region>World</region>
     <homebrew>no</homebrew>
-    <bootleg>yes</bootleg>
+    <bootleg>no</bootleg>
     <version></version>
     <alternative></alternative>
     <platform></platform>
     <series>Space Invaders / Space Invaders M</series>
-    <year>1978</year>
-    <manufacturer>bootleg (Video Games GmbH)</manufacturer>
+    <year>1979</year>
+    <manufacturer>Taito</manufacturer>
     <category>Shooter</category>
 
-    <setname>spaceattbp</setname>
+    <setname>sicv</setname>
     <parent>invaders</parent>
     <mameversion>0289</mameversion>
     <rbf>SpaceInvaders</rbf>
@@ -35,37 +35,27 @@
     </switches>
 
     <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
-    <rom index="0" md5="none" zip="spaceattbp.zip|invaders.zip">
-        <part crc="c5a5228f" name="12l.bin"/>
-        <part crc="d5d3811a" name="11hl.bin"/>
-        <part crc="9d5ef6f1" name="10h.bin"/>
-        <part repeat="0x800">00</part>
-        <part crc="c16f5503" name="09g.bin"/>
-        <part crc="b5fa1a2b" name="08f.bin"/>
-        <part crc="9560880d" name="07ef.bin"/>
-        <part repeat="0xE000">00</part>
-        <part crc="68301d05" name="06e.bin"/>
-        <part crc="42032c14" name="05de.bin"/>
-        <part crc="5f5e540c" name="04d.bin"/>
-        <part repeat="0x800">00</part>
-        <part crc="89e13008" name="03b.bin"/>
-        <part crc="ffa166c2" name="02ab.bin"/>
-        <part crc="44f8e99c" name="01a.bin"/>
+    <rom index="0" md5="none" zip="sicv.zip|invaders.zip">
+        <part crc="3dfbe9e6" name="cv17.36"/>
+        <part crc="bc3c82bf" name="cv18.35"/>
+        <part crc="d202b41c" name="cv19.34"/>
+        <part crc="c74ee7b6" name="cv20.33"/>
+        <part repeat="0x1E000">00</part>
+        <part crc="037e16ac" name="cv01.1"/>
+        <part crc="8263da38" name="cv02.2"/>
     </rom>
 
     <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
     <rom index="1">
         <part>
-            00 10 01 04 FE 89 00 FF 00 00 00 00 00 00 00 00
+            00 10 01 00 FE 89 00 FF 00 00 00 00 01 60 00 00
             00 00 00 00 00 00 00 00 11 14 13 00 05 03 04 00
             00 00 15 00 05 03 04 00 00 00 00 00 00 00 00 00
             00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-            04 00 02 04 00 E0 FF FF FF 14 00 4C 00 E0 20 FF
-            20 00 00 14 10 86 20 FF 20 C6 00 E4 00 E0 FF 20
-            20
+            00
         </part>
     </rom>
 
-    <remark>Space Attack (Bootleg Of Space Invaders, Bproms) (Video Games GmbH Bootleg)</remark>
+    <remark>Space Invaders (CV Version, Larger Roms) (Taito)</remark>
     <mratimestamp>20260930000000</mratimestamp>
 </misterromdescription>

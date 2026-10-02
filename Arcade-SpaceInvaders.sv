@@ -46,8 +46,9 @@ wire        ioctl_wr;
 wire  [7:0] ioctl_index;
 wire [24:0] ioctl_addr;
 wire  [7:0] ioctl_dout;
-wire [15:0] joystick_0, joystick_1;
+wire [15:0] joystick_0, joystick_1, joystick_2, joystick_3;
 wire [15:0] joy_la0, joy_la1;   // analog sticks {Y, X}, signed, -Y = up
+wire [24:0] ps2_mouse;
 wire [21:0] gamma_bus;
 wire        direct_video;
 wire        video_rotated;
@@ -68,9 +69,9 @@ assign HDMI_FREEZE = 0;
 assign HDMI_BLACKOUT = 0;
 assign HDMI_BOB_DEINT = 0;
 
-wire signed [15:0] audio;
+wire signed [15:0] audio, audio_r;     // audio_r: second sound board (invad2ct), else the same as audio
 assign AUDIO_L = pause_cpu ? 16'd0 : audio;
-assign AUDIO_R = pause_cpu ? 16'd0 : audio;
+assign AUDIO_R = pause_cpu ? 16'd0 : audio_r;
 assign AUDIO_S = 1;   // signed
 assign AUDIO_MIX = 0;
 
@@ -85,8 +86,10 @@ assign BUTTONS = 0;
 //   byte 0      board variant (see rtl/mw8080_board.sv)
 //   byte 1      flags: [4] vertical, [7] vertical is ROT90
 //   byte 2      sound board: [0] Taito L-shaped (else Midway)
-//   byte 3      ROM decode: [0] A8/A9 swapped, [1] A0/A3/A9 inverted (rtl/mw8080_board.sv)
+//   byte 3      ROM decode: [0] A8/A9 swapped, [1] A0/A3/A9 inverted, [2] nibble bproms (rtl/mw8080_board.sv)
 //   bytes 4-11  DIP switch bytes 0-7 at their MRA defaults (MiSTer sends index 254 only for MRAs with a <dip>)
+//   bytes 12-15 colour mode, colour flags, sound map, board flags (rtl/mw8080_board.sv)
+//   bytes 48-63 family 4 port tables: read source / write targets per port A2-A0 (rtl/mw8080_board.sv)
 //   bytes 64+   colour overlay: count, then 8 bytes per rectangle (rtl/mw8080_board.sv)
 //   bytes 16-47 input map, one byte per port bit (IN0, IN1, IN2, IN3; bit 0 first): control id, 0 = none
 // DIP switch bytes 0-3 hold the idle level of every bit of IN0-IN3; a pressed control inverts its bit
@@ -94,7 +97,9 @@ reg [7:0] game_var   = 8'd0;
 reg [7:0] game_flags = 8'h10;
 reg [7:0] snd_flags  = 8'd0;
 reg [7:0] rom_dec    = 8'd0;
-reg [5:0] in_map[32];
+reg [31:0] f3_cfg    = 32'd0;
+reg [6:0] in_map[32];
+reg [127:0] io_tab = 128'd0;
 reg [1031:0] ov_tab = 1032'd0;
 
 always @(posedge CLK_40M) begin
@@ -103,8 +108,10 @@ always @(posedge CLK_40M) begin
         if (ioctl_addr == 25'd1) game_flags <= ioctl_dout;
         if (ioctl_addr == 25'd2) snd_flags  <= ioctl_dout;
         if (ioctl_addr == 25'd3) rom_dec    <= ioctl_dout;
-        if (ioctl_addr[24:5] == 20'd0 && ioctl_addr[4]) in_map[{1'b0, ioctl_addr[3:0]}] <= ioctl_dout[5:0];
-        if (ioctl_addr[24:5] == 20'd1 && ioctl_addr[4] == 1'b0) in_map[{1'b1, ioctl_addr[3:0]}] <= ioctl_dout[5:0];
+        if (ioctl_addr >= 25'd12 && ioctl_addr < 25'd16) f3_cfg[ioctl_addr[1:0]*8 +: 8] <= ioctl_dout;
+        if (ioctl_addr[24:5] == 20'd0 && ioctl_addr[4]) in_map[{1'b0, ioctl_addr[3:0]}] <= ioctl_dout[6:0];
+        if (ioctl_addr[24:5] == 20'd1 && ioctl_addr[4] == 1'b0) in_map[{1'b1, ioctl_addr[3:0]}] <= ioctl_dout[6:0];
+        if (ioctl_addr >= 25'd48 && ioctl_addr < 25'd64) io_tab[ioctl_addr[3:0]*8 +: 8] <= ioctl_dout;
         if (ioctl_addr == 25'd0) ov_tab[7:0] <= 8'd0;                                   // an MRA without overlay data
         if (ioctl_addr >= 25'd64 && ioctl_addr < 25'd193) ov_tab[(ioctl_addr - 25'd64) * 8 +: 8] <= ioctl_dout;
     end
@@ -131,6 +138,7 @@ localparam CONF_STR = {
 	"-;",
 	"P2,Game Options;",
 	"P2ON,Overlay,On,Off;",
+	"P2OO,Crosshair,On,Off;",
 	"-;",
 	"P3,Pause Options;",
 	"P3OJ,Pause when OSD is open,On,Off;",
@@ -173,8 +181,11 @@ hps_io #(.CONF_STR(CONF_STR)) hps_io
 
 	.joystick_0(joystick_0),
 	.joystick_1(joystick_1),
+	.joystick_2(joystick_2),
+	.joystick_3(joystick_3),
 	.joystick_l_analog_0(joy_la0),
 	.joystick_l_analog_1(joy_la1),
+	.ps2_mouse(ps2_mouse),
 	.ps2_key(ps2_key)
 );
 
@@ -268,9 +279,16 @@ always @(posedge CLK_40M) begin
 end
 
 // control ids used by the MRA input map
-wire [63:0] ctl =
+wire [127:0] ctl =
 {
-	8'd0,
+	52'd0,
+	joystick_3[9] | joystick_3[10],                 // 75 start 4: player 4's start button
+	joystick_2[9] | joystick_2[10],                 // 74 start 3: player 3's start button
+	joystick_3[4],                                  // 73 P4 Btn 1
+	joystick_3[0], joystick_3[1], joystick_3[2], joystick_3[3],   // 72 R, 71 L, 70 D, 69 U
+	joystick_2[4],                                  // 68 P3 Btn 1
+	joystick_2[0], joystick_2[1], joystick_2[2], joystick_2[3],   // 67 R, 66 L, 65 D, 64 U
+	8'd0,                                           // 63-56 unused
 	dip_sw[4],                                      // 55-48 DIP byte 4 (MAME fake port lines)
 	dip_sw[3],                                      // 47-40 DIP byte 3 (MAME fake port lines)
 	3'd0,
@@ -298,6 +316,33 @@ always @(posedge CLK_40M) begin
 		for (int b = 0; b < 8; b++)
 			in_port[p][b] <= dip_sw[p][b] ^ ctl[in_map[p*8 + b]];
 end
+
+// Light gun (claybust / gunchamp): crosshair moved by the mouse, the left stick or the D-pad; fire or the left
+// mouse button pulls the trigger. Bitmap x 0-255, picture row 0-223; CRT Flip turns the controls with the picture.
+reg  [7:0] gun_x = 8'd128, gun_y = 8'd112;
+reg        mouse_tog = 1'b0, gun_vbl = 1'b0;
+wire signed [9:0] mouse_dx = {ps2_mouse[4], ps2_mouse[4], ps2_mouse[15:8]};
+wire signed [9:0] mouse_dy = -{ps2_mouse[5], ps2_mouse[5], ps2_mouse[23:16]};          // PS/2 Y is positive upward
+wire signed [7:0] ana_x = joy_la0[7:0], ana_y = joy_la0[15:8];
+wire signed [9:0] stick_dx = (ana_x > 8'sd12 || ana_x < -8'sd12) ? (10'(ana_x) >>> 4) :
+                             dir1[0] ? 10'sd3 : dir1[1] ? -10'sd3 : 10'sd0;
+wire signed [9:0] stick_dy = (ana_y > 8'sd12 || ana_y < -8'sd12) ? (10'(ana_y) >>> 4) :
+                             dir1[2] ? 10'sd3 : dir1[3] ? -10'sd3 : 10'sd0;
+wire signed [9:0] gun_dx = status[22] ? -(mouse_tog != ps2_mouse[24] ? mouse_dx : stick_dx) :
+                                         (mouse_tog != ps2_mouse[24] ? mouse_dx : stick_dx);
+wire signed [9:0] gun_dy = status[22] ? -(mouse_tog != ps2_mouse[24] ? mouse_dy : stick_dy) :
+                                         (mouse_tog != ps2_mouse[24] ? mouse_dy : stick_dy);
+wire signed [10:0] gun_nx = $signed({3'b000, gun_x}) + gun_dx;
+wire signed [10:0] gun_ny = $signed({3'b000, gun_y}) + gun_dy;
+always @(posedge CLK_40M) begin
+	mouse_tog <= ps2_mouse[24];
+	gun_vbl   <= vblank;
+	if (mouse_tog != ps2_mouse[24] || (vblank && !gun_vbl)) begin
+		gun_x <= gun_nx < 0 ? 8'd0 : gun_nx > 255 ? 8'd255 : gun_nx[7:0];
+		gun_y <= gun_ny < 0 ? 8'd0 : gun_ny > 223 ? 8'd223 : gun_ny[7:0];
+	end
+end
+wire gun_trig = joystick_0[4] | kb_b1 | ps2_mouse[0];
 
 // PAUSE SYSTEM
 wire [23:0] rgb_out;
@@ -351,7 +396,12 @@ mw8080_board board
 	.in3(in_port[3]),
 	.cocktail(1'b0),
 	.taito_snd(snd_flags[0]),
-	.rom_dec(rom_dec[1:0]),
+	.rom_dec(rom_dec[2:0]),
+	.gun_x(gun_x),
+	.gun_y(gun_y),
+	.gun_trig(gun_trig),
+	.xhair_en(~status[24]),
+	.f3(f3_cfg),
 
 	.ioctl_addr(ioctl_addr),
 	.ioctl_dout(ioctl_dout),
@@ -373,6 +423,8 @@ mw8080_board board
 	.snd1(),
 	.snd2(),
 	.audio(audio),
+	.audio_r(audio_r),
+	.io_tab(io_tab),
 
 	.hs_address(hs_address),
 	.hs_data_in(hs_data_in),

@@ -1,0 +1,58 @@
+<misterromdescription>
+    <name>Claybuster</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Claybuster</series>
+    <year>1978</year>
+    <manufacturer>Model Racing</manufacturer>
+    <category>Shooter</category>
+
+    <setname>claybust</setname>
+    <parent>claybust</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>horizontal</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="FF,BC,FF,FF">
+        <dip name="Shots" bits="12" ids="4,2" values="1,0"/>
+        <dip name="Number of Flings" bits="14" ids="8,10" values="1,0"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="claybust.zip">
+        <part crc="90810582" name="0.a1"/>
+        <part crc="5ce6fb0e" name="1.a2"/>
+        <part crc="d4c1d523" name="2.a4"/>
+        <part crc="1ca00825" name="3.a5"/>
+        <part crc="09a21120" name="4.a6"/>
+        <part crc="92cd4da8" name="5.a8"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            0B 00 01 00 FF BC FF FF 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 05 11 13 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00
+        </part>
+    </rom>
+
+    <remark>Claybuster (Model Racing)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

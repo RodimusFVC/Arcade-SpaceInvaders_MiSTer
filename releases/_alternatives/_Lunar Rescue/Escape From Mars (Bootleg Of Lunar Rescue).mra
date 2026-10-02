@@ -1,0 +1,60 @@
+<misterromdescription>
+    <name>Escape From Mars (Bootleg Of Lunar Rescue)</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>yes</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Lunar Rescue</series>
+    <year>1980</year>
+    <manufacturer>bootleg</manufacturer>
+    <category>Shooter</category>
+
+    <setname>escmars</setname>
+    <parent>lrescue</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (ccw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="FF,89,00,FF">
+        <dip name="Lives" bits="16,17" ids="3,4,5,6"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="escmars.zip|lrescue.zip">
+        <part crc="6580f1c3" name="2516_em.m5"/>
+        <part crc="49e79706" name="2716_em.n5"/>
+        <part crc="1ac969be" name="2516_em.p5"/>
+        <part crc="c1bd5949" name="2516_em.r5"/>
+        <part repeat="0x2000">00</part>
+        <part crc="1ec21a31" name="2716_em.s5"/>
+        <part crc="bfb0f65d" name="2716_em.t5"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            00 10 01 00 FF 89 00 FF 00 00 00 00 00 00 07 01
+            00 00 00 00 00 00 00 00 11 14 13 00 05 03 04 00
+            00 00 15 00 05 03 04 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            04 DC 02 04 00 E0 20 FF 20 50 00 DC 00 E0 FF 80
+            10 14 00 50 00 E0 FF 20 20 00 00 14 00 E0 20 FF
+            20
+        </part>
+    </rom>
+
+    <remark>Escape From Mars (Bootleg Of Lunar Rescue)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

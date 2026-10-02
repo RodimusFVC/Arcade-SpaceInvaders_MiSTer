@@ -1,0 +1,56 @@
+<misterromdescription>
+    <name>Tornado Baseball / Ball Park</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Tornado Baseball / Ball Park</series>
+    <year>1976</year>
+    <manufacturer>Dave Nutting Associates / Midway / Taito</manufacturer>
+    <category>Shooter</category>
+
+    <setname>tornbase</setname>
+    <parent>tornbase</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>horizontal</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>3</num_buttons>
+    <buttons names="P1 Hit,P1 Move Outfield Left,P1 Move Outfield Right,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="00,00,40,FF">
+        <dip name="Unused" bits="7" ids="Off,On"/>
+        <dip name="Coinage" bits="19,22" ids="4 Coins/1 Inning,3 Coins/1 Inning,4 Coins/2 Innings,2 Coins/1 Inning,3 Coins/2 Innings,2 Coins/2 Innings,1 Coin/1 Inning,4 Coins/4 Innings,3 Coins/4 Innings,2 Coins/4 Innings,1 Coin/2 Innings,1 Coin/4 Innings,4 Coins/9 Innings,3 Coins/9 Innings,2 Coins/9 Innings,1 Coin/9 Innings" values="3,2,7,1,6,5,0,11,10,9,4,8,15,14,13,12"/>
+        <dip name="Service Mode" bits="23" ids="Off,On"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="tornbase.zip">
+        <part crc="653f4797" name="tb.h"/>
+        <part crc="b63dcdb3" name="tb.g"/>
+        <part crc="215e070c" name="tb.f"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            14 00 00 00 00 00 40 FF 00 00 00 00 00 00 01 06
+            05 06 07 03 04 01 02 00 0D 06 07 03 04 01 02 00
+            11 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            01 02 03 05 01 02 03 05 00 08 01 09 02 0A 03 0B
+            00
+        </part>
+    </rom>
+
+    <remark>Tornado Baseball / Ball Park (Dave Nutting Associates / Midway / Taito)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

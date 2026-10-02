@@ -1,0 +1,60 @@
+<misterromdescription>
+    <name>Balloon Bomber</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Balloon Bomber</series>
+    <year>1980</year>
+    <manufacturer>Taito</manufacturer>
+    <category>Shooter</category>
+
+    <setname>ballbomb</setname>
+    <parent>ballbomb</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (ccw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="FF,88,00,FF">
+        <dip name="Lives" bits="16,17" ids="3,4,5,6"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="ballbomb.zip">
+        <part crc="551585b5" name="tn01"/>
+        <part crc="7e1f734f" name="tn02"/>
+        <part crc="d93e20bc" name="tn03"/>
+        <part crc="d0689a22" name="tn04"/>
+        <part repeat="0x2000">00</part>
+        <part crc="5d5e94f1" name="tn05-1"/>
+        <part repeat="0x1B800">00</part>
+        <part crc="7ec554c4" name="tn06"/>
+        <part crc="deb0ac82" name="tn07"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            00 10 01 00 FF 88 00 FF 00 00 00 00 01 22 02 01
+            00 00 00 00 00 00 00 00 11 14 13 00 05 03 04 00
+            00 00 15 00 05 03 04 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00
+        </part>
+    </rom>
+
+    <remark>Balloon Bomber (Taito)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

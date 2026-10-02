@@ -1,0 +1,61 @@
+<misterromdescription>
+    <name>Lunar Rescue</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Lunar Rescue</series>
+    <year>1979</year>
+    <manufacturer>Taito</manufacturer>
+    <category>Shooter</category>
+
+    <setname>lrescue</setname>
+    <parent>lrescue</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (ccw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="FF,89,00,FF">
+        <dip name="Lives" bits="16,17" ids="3,4,5,6"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="lrescue.zip">
+        <part crc="2bbc4778" name="lrescue.1"/>
+        <part crc="49e79706" name="lrescue.2"/>
+        <part crc="1ac969be" name="lrescue.3"/>
+        <part crc="782fee3c" name="lrescue.4"/>
+        <part repeat="0x2000">00</part>
+        <part crc="58fde8bc" name="lrescue.5"/>
+        <part crc="bfb0f65d" name="lrescue.6"/>
+        <part repeat="0x1B000">00</part>
+        <part crc="8b2e38de" name="7643-1.cpu" offset="0x0" length="0x400"/>
+        <part crc="8b2e38de" name="7643-1.cpu" offset="0x0" length="0x400"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            00 10 01 00 FF 89 00 FF 00 00 00 00 01 20 07 01
+            00 00 00 00 00 00 00 00 11 14 13 00 05 03 04 00
+            00 00 15 00 05 03 04 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00
+        </part>
+    </rom>
+
+    <remark>Lunar Rescue (Taito)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

@@ -1,0 +1,66 @@
+<misterromdescription>
+    <name>Gun Champ</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Gun Champ</series>
+    <year>1980</year>
+    <manufacturer>Model Racing</manufacturer>
+    <category>Shooter</category>
+
+    <setname>gunchamp</setname>
+    <parent>gunchamp</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>horizontal</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="FF,5C,FF,FF">
+        <dip name="Enter Initials" bits="12" ids="Yes,No" values="1,0"/>
+        <dip name="Coinage" bits="13,15" ids="4C/1C,3C/1C,2C/1C,1C/1C,1C/2C,2C/3C,1C/3C,1C/4C" values="5,6,7,2,1,0,3,4"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="gunchamp.zip">
+        <part crc="f27a8c1e" name="251.a1"/>
+        <part crc="d53b8f91" name="252.a2"/>
+        <part crc="9ef35c6c" name="253.a4"/>
+        <part crc="ba5b562d" name="254.a5"/>
+        <part crc="00ea8293" name="255.a6"/>
+        <part crc="e271150c" name="256.a8"/>
+        <part crc="0da5d9ad" name="257.a9"/>
+        <part crc="471d4052" name="258.a10"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            0B 00 01 00 FF 5C FF FF 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 05 11 13 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            0D 00 02 04 00 E0 FF 26 26 00 02 04 1B E0 FF 4A
+            26 00 02 04 1C E0 FF 6E 26 00 02 04 1E E0 FF 91
+            26 00 02 04 1F E0 FF B5 26 00 02 04 21 E0 FF D9
+            26 00 02 04 22 E0 FF FF 26 00 02 04 7B E0 D9 D9
+            4A 00 02 04 7D E0 B5 B5 6E 00 02 04 7E E0 91 91
+            91 00 02 04 80 E0 6E 6E B5 00 02 04 81 E0 4A 4A
+            D9 00 02 04 83 E0 26 26 FF
+        </part>
+    </rom>
+
+    <remark>Gun Champ (Model Racing)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

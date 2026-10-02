@@ -1,0 +1,62 @@
+<misterromdescription>
+    <name>Steel Worker</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Steel Worker</series>
+    <year>1980</year>
+    <manufacturer>Taito</manufacturer>
+    <category>Shooter</category>
+
+    <setname>steelwkr</setname>
+    <parent>steelwkr</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>horizontal</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>2</num_buttons>
+    <buttons names="Fire,Button 2,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="FF,01,02,FF">
+        <dip name="Lives" bits="16,17" ids="1,2,3,4"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="steelwkr.zip">
+        <part crc="5d78873a" name="1.36"/>
+        <part crc="99cd70c6" name="2.35"/>
+        <part crc="18103b67" name="3.34"/>
+        <part crc="c413ae82" name="4.33"/>
+        <part crc="ca7b07b5" name="5.32"/>
+        <part crc="f8181fa0" name="6.31"/>
+        <part crc="a35f113e" name="7.42"/>
+        <part crc="af208370" name="8.41"/>
+        <part repeat="0x1E000">00</part>
+        <part crc="98f31392" name="la05.1"/>
+        <part crc="98f31392" name="la06.2"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            00 00 01 00 FF 01 02 FF 00 00 00 00 01 60 00 01
+            00 00 00 00 00 00 00 00 11 14 13 00 05 03 04 06
+            00 00 15 00 05 03 04 06 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00
+        </part>
+    </rom>
+
+    <remark>Steel Worker (Taito)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

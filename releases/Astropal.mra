@@ -1,0 +1,59 @@
+<misterromdescription>
+    <name>Astropal</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Astropal</series>
+    <year>1980?</year>
+    <manufacturer>Sidam?</manufacturer>
+    <category>Shooter</category>
+
+    <setname>astropal</setname>
+    <parent>astropal</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>horizontal</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>3</num_buttons>
+    <buttons names="Fire,Button 2,Button 3,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="FC,81,FF,80">
+        <dip name="Lives" bits="0,1" ids="2,3,4,5"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="astropal.zip">
+        <part crc="e6883322" name="2708.0a"/>
+        <part crc="4401df1d" name="2708.1a"/>
+        <part crc="5bac1ee4" name="2708.2a"/>
+        <part crc="a870afad" name="2708.3a"/>
+        <part crc="8bd2d985" name="2708.4a"/>
+        <part crc="5e97a86b" name="2708.5a"/>
+        <part crc="22c354d0" name="2708.6a"/>
+        <part crc="aeca51c1" name="2708.7a"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            02 00 01 00 FC 81 FF 80 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 11 14 13 06 05 03 04 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 07
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00
+        </part>
+    </rom>
+
+    <remark>Astropal (Sidam?)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

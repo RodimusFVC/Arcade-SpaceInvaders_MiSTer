@@ -1,0 +1,67 @@
+<misterromdescription>
+    <name>Lunar Rescue (Artic Bootleg)</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>yes</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Lunar Rescue</series>
+    <year>1979</year>
+    <manufacturer>bootleg (Artic)</manufacturer>
+    <category>Shooter</category>
+
+    <setname>lrescueabl</setname>
+    <parent>lrescue</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (ccw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="FF,89,00,FF">
+        <dip name="Lives" bits="16,17" ids="3,4,5,6"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="lrescueabl.zip|lrescue.zip">
+        <part crc="e3796dec" name="2708_1.1"/>
+        <part crc="8067c036" name="2708_2.2"/>
+        <part crc="90179fee" name="2708_3.3"/>
+        <part crc="1d197d87" name="2708_4.4"/>
+        <part crc="4326d338" name="2708_5.5"/>
+        <part crc="3b272372" name="2708_6.6"/>
+        <part crc="06fc1ecc" name="2708_7.7"/>
+        <part crc="b3a3f24e" name="2708_8.8"/>
+        <part repeat="0x2000">00</part>
+        <part crc="3398798f" name="2708_9.9"/>
+        <part crc="37c5bfc6" name="2708_10.10"/>
+        <part crc="1b7a5644" name="2708_11.11"/>
+        <part crc="c342b907" name="2708_12.12"/>
+        <part repeat="0x1B000">00</part>
+        <part crc="aac24f34" name="cv01-7643.2c"/>
+        <part crc="2bdf83a0" name="cv02-7643.1c"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            00 10 01 00 FF 89 00 FF 00 00 00 00 01 20 07 01
+            00 00 00 00 00 00 00 00 11 14 13 00 05 03 04 00
+            00 00 15 00 05 03 04 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00
+        </part>
+    </rom>
+
+    <remark>Lunar Rescue (Artic Bootleg)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

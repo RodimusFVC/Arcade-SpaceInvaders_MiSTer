@@ -1,0 +1,55 @@
+<misterromdescription>
+    <name>Amazing Maze</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Amazing Maze</series>
+    <year>1976</year>
+    <manufacturer>Midway</manufacturer>
+    <category>Shooter</category>
+
+    <setname>maze</setname>
+    <parent>maze</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>horizontal</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>0</num_buttons>
+    <buttons names="Not Used,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="00,40,FF,FF">
+        <dip name="Coinage" bits="12,13" ids="2C/1C,1C/1C,2C/3C,1C/2C" values="1,0,3,2"/>
+        <dip name="2 Player Game Time" bits="14" ids="4 minutes,6 minutes" values="1,0"/>
+        <dip name="Service Mode" bits="15" ids="Off,On"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="maze.zip">
+        <part crc="f2860cff" name="maze.h"/>
+        <part crc="65fad839" name="maze.g"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            14 00 00 00 00 40 FF FF 00 00 00 00 00 00 01 02
+            03 04 02 01 0B 0C 0A 09 13 14 00 11 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            01 02 00 00 01 02 00 00 00 00 04 04 00 00 04 04
+            01 00 02 04 00 E0 33 FF 80
+        </part>
+    </rom>
+
+    <remark>Amazing Maze (Midway)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

@@ -1,0 +1,59 @@
+<misterromdescription>
+    <name>Double Play</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Double Play</series>
+    <year>1977</year>
+    <manufacturer>Midway</manufacturer>
+    <category>Shooter</category>
+
+    <setname>dplay</setname>
+    <parent>dplay</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>horizontal</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>3</num_buttons>
+    <buttons names="P1 Hit,P1 Move Outfield Left,P1 Move Outfield Right,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="81,81,C0,FF">
+        <dip name="Coinage" bits="16,18" ids="2 Coins/1 Inning/1 Player; 4 Coins/1 Inning/2 Players; 8 Coins/3 Innings/2 Players,1 Coin/1 Inning/1 Player; 2 Coins/1 Inning/2 Players; 4 Coins/3 Innings/2 Players,2 Coins per Inning,2 Coins/1 Inning; 4 Coins/3 Innings,1 Coin per Inning,1 Coin/1 Inning; 2 Coins/3 Innings" values="5,4,2,3,0,1"/>
+        <dip name="Unused" bits="19" ids="Off,On"/>
+        <dip name="Unused" bits="20" ids="Off,On"/>
+        <dip name="Unused" bits="21" ids="Off,On"/>
+        <dip name="Service Mode" bits="22" ids="Off,On" values="1,0"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="dplay.zip">
+        <part crc="6680669b" name="dplay619.h"/>
+        <part crc="0eec7e01" name="dplay619.g"/>
+        <part crc="3af4b719" name="dplay619.f"/>
+        <part crc="65cab4fc" name="dplay619.e"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            14 00 00 00 81 81 C0 FF 00 00 00 00 00 00 01 00
+            05 06 07 03 04 01 02 13 0D 06 07 03 04 01 02 14
+            00 00 00 00 00 00 00 11 00 00 00 00 00 00 00 00
+            01 02 03 05 01 02 03 05 00 01 02 08 04 10 20 00
+            00
+        </part>
+    </rom>
+
+    <remark>Double Play (Midway)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

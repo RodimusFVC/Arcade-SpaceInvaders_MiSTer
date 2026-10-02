@@ -1,0 +1,66 @@
+<misterromdescription>
+    <name>Sky Love</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Sky Love</series>
+    <year>1979</year>
+    <manufacturer>Omori Electric Co., Ltd.</manufacturer>
+    <category>Shooter</category>
+
+    <setname>skylove</setname>
+    <parent>skylove</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (ccw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="FF,FF,00,C7">
+        <dip name="Coinage" bits="16" ids="2C/1C,1C/1C" values="1,0"/>
+        <dip name="Lives" bits="17,18" ids="3,4,5,6"/>
+        <dip name="Unknown" bits="19" ids="Off,On" values="1,0"/>
+        <dip name="Unknown" bits="20" ids="Off,On" values="1,0"/>
+        <dip name="Bonus Life" bits="21,22" ids="10k,20k,40k,60k"/>
+        <dip name="Unknown" bits="23" ids="Off,On" values="1,0"/>
+        <dip name="Unknown" bits="24" ids="Off,On" values="1,0"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="skylove.zip">
+        <part crc="391ad7d0" name="01"/>
+        <part crc="365ba070" name="02"/>
+        <part crc="47364dad" name="03"/>
+        <part crc="9d76f33d" name="04"/>
+        <part crc="09084954" name="05"/>
+        <part crc="6d494e82" name="06"/>
+        <part crc="1a9aa4b8" name="07"/>
+        <part crc="ecaacacc" name="08"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            0A 10 01 00 FF FF 00 C7 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 0D 00 00 00 0C 0B
+            00 00 00 00 00 00 00 00 00 24 05 11 13 14 04 03
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            03 4E 02 04 00 C0 20 FF 20 3C 00 4E 00 C0 FF 80
+            10 04 00 3C 00 C0 FF 20 20
+        </part>
+    </rom>
+
+    <remark>Sky Love (Omori Electric Co., Ltd.)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

@@ -1,0 +1,66 @@
+<misterromdescription>
+    <name>Moon Raker</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Moon Raker</series>
+    <year>1980</year>
+    <manufacturer>Nichibutsu</manufacturer>
+    <category>Shooter</category>
+
+    <setname>mraker</setname>
+    <parent>mraker</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (ccw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>2</num_buttons>
+    <buttons names="Fire,Button 2,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="FF,00,00,10">
+        <dip name="Lives" bits="24,25" ids="3,4,5,6"/>
+        <dip name="Bonus Life" bits="26" ids="5000,7000"/>
+        <dip name="Cabinet" bits="28,29" ids="Cocktail,Upright (Normal),Upright (Flip Screen),Deluxe (2 Coins/1 Credit)"/>
+        <dip name="Difficulty" bits="30,31" ids="Easy,Hard,Harder,Hardest"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="mraker.zip">
+        <part crc="0ba47dea" name="mr_1.a4"/>
+        <part crc="fead8849" name="mr_2.c4"/>
+        <part crc="7d65358f" name="mr_3.e4"/>
+        <part crc="22cc55ad" name="mr_4.f4"/>
+        <part crc="e8048768" name="mr_5.h4"/>
+        <part crc="1e717545" name="mr_6.l4"/>
+        <part crc="2f19de73" name="mr_7.a5"/>
+        <part crc="fddaf8d0" name="mr_8.c5"/>
+        <part repeat="0x2000">00</part>
+        <part crc="1ca1be22" name="mr_9.e5"/>
+        <part crc="1901c0d4" name="mr_10.f5"/>
+        <part crc="cb8e34ae" name="mr_11.h5"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            02 10 01 00 FF 00 00 10 00 00 00 00 05 00 01 01
+            00 00 00 00 00 00 00 00 11 14 13 01 05 03 04 02
+            06 0E 00 09 0D 0B 0C 0A 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00
+        </part>
+    </rom>
+
+    <remark>Moon Raker (Nichibutsu)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

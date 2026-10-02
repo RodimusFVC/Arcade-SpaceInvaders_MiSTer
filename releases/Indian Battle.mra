@@ -1,0 +1,65 @@
+<misterromdescription>
+    <name>Indian Battle</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Indian Battle</series>
+    <year>1980</year>
+    <manufacturer>Taito</manufacturer>
+    <category>Shooter</category>
+
+    <setname>indianbt</setname>
+    <parent>indianbt</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (ccw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="FF,81,00,FF">
+        <dip name="Lives" bits="16,17" ids="3,4,5,6"/>
+        <dip name="Number of Catch Animals" bits="19" ids="6,3"/>
+        <dip name="Invulnerability (Cheat)" bits="23" ids="Off,On"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="indianbt.zip">
+        <part crc="ddc2b25d" name="1.36"/>
+        <part crc="6499b062" name="2.35"/>
+        <part crc="5c51675d" name="3.34"/>
+        <part crc="70ebec95" name="4.33"/>
+        <part repeat="0x2000">00</part>
+        <part crc="7b4022f4" name="5.32"/>
+        <part crc="89bd6f73" name="6.31"/>
+        <part crc="7060ba0b" name="7.42"/>
+        <part crc="eaccfc0a" name="8.41"/>
+        <part repeat="0x1A000">00</part>
+        <part crc="4acf4db3" name="mb7054.1"/>
+        <part crc="62cb3419" name="mb7054.2"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            0F 10 01 00 FF 81 00 FF 00 00 00 00 01 10 03 00
+            00 00 00 00 00 00 00 00 11 14 13 00 05 03 04 00
+            00 00 15 00 05 03 04 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00
+        </part>
+    </rom>
+
+    <remark>Indian Battle (Taito)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

@@ -1,0 +1,67 @@
+<misterromdescription>
+    <name>Space Chaser (Set 4)</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Space Chaser</series>
+    <year>1979</year>
+    <manufacturer>Taito</manufacturer>
+    <category>Shooter</category>
+
+    <setname>schaserc</setname>
+    <parent>schaser</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (ccw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="00,00,00,FF">
+        <dip name="Hard Starting Level" bits="5,6" ids="3,4,5,6"/>
+        <dip name="Lives" bits="16,17" ids="3,4,5,6"/>
+        <dip name="Difficulty" bits="19" ids="Easy,Hard"/>
+        <dip name="Cabinet" bits="22" ids="Upright,Cocktail"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="schaserc.zip|schaser.zip">
+        <part crc="ca90619c" name="45.ic30"/>
+        <part crc="6a016895" name="46.ic36"/>
+        <part crc="2ac43a93" name="rt15.bin"/>
+        <part crc="f5583afc" name="rt16.bin"/>
+        <part crc="51cf1155" name="rt17.bin"/>
+        <part crc="3f0fc73a" name="rt18.bin"/>
+        <part crc="b66ea369" name="rt19.bin"/>
+        <part crc="d476e182" name="47.ic39"/>
+        <part repeat="0x2000">00</part>
+        <part crc="b368ac98" name="rt21.bin"/>
+        <part crc="6e060dfb" name="rt22.bin"/>
+        <part repeat="0x1B800">00</part>
+        <part crc="950cf973" name="rt06.ic2"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            00 10 01 00 00 00 00 FF 00 00 00 00 03 00 01 00
+            09 0B 0A 0C 0D 00 00 00 01 03 02 04 05 14 13 11
+            00 00 00 00 16 15 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00
+        </part>
+    </rom>
+
+    <remark>Space Chaser (Set 4) (Taito)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

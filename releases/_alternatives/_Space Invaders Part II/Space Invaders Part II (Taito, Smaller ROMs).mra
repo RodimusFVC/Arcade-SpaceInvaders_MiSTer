@@ -1,0 +1,67 @@
+<misterromdescription>
+    <name>Space Invaders Part II (Taito, Smaller ROMs)</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Space Invaders Part II</series>
+    <year>1979</year>
+    <manufacturer>Taito</manufacturer>
+    <category>Shooter</category>
+
+    <setname>invadpt2a</setname>
+    <parent>invadpt2</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (ccw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="F4,81,00,FF">
+        <dip name="Lives" bits="16" ids="3,4"/>
+        <dip name="Preset Mode" bits="19" ids="Game Mode,Name Entry"/>
+        <dip name="Coin Info" bits="23" ids="Off,On" values="1,0"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="invadpt2a.zip|invadpt2.zip">
+        <part crc="82dbf2c7" name="uv01.36"/>
+        <part crc="c867f5b4" name="uv02.35"/>
+        <part crc="cb23ccc1" name="uv03.34"/>
+        <part crc="9a11abe2" name="uv04.33"/>
+        <part crc="787821dd" name="uv05.32"/>
+        <part crc="f5e8114f" name="uv06.31"/>
+        <part crc="07839f04" name="uv07.42"/>
+        <part crc="a7e1c6ef" name="uv08.41"/>
+        <part repeat="0x2000">00</part>
+        <part crc="261a39ae" name="uv09.40"/>
+        <part crc="b2cbcc8b" name="uv10.39"/>
+        <part repeat="0x1B800">00</part>
+        <part crc="a732810b" name="pv06"/>
+        <part crc="2c5b91cb" name="pv07"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            00 10 01 00 F4 81 00 FF 00 00 00 00 01 60 00 00
+            00 00 00 00 00 00 16 00 11 14 13 00 05 03 04 00
+            00 00 00 00 05 03 04 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00
+        </part>
+    </rom>
+
+    <remark>Space Invaders Part II (Taito, Smaller ROMs)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

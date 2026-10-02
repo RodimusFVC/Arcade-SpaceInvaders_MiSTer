@@ -1,0 +1,63 @@
+<misterromdescription>
+    <name>Ozma Wars</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Ozma Wars</series>
+    <year>1979</year>
+    <manufacturer>SNK</manufacturer>
+    <category>Shooter</category>
+
+    <setname>ozmawars</setname>
+    <parent>ozmawars</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (ccw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="FF,88,00,FF">
+        <dip name="Energy" bits="16,17" ids="15000,20000,25000,35000"/>
+        <dip name="Bonus Energy" bits="19" ids="15000,10000"/>
+        <dip name="Coinage" bits="23" ids="1C/1C,1C/2C"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="ozmawars.zip">
+        <part crc="31f4397d" name="mw01"/>
+        <part crc="d8e77c62" name="mw02"/>
+        <part crc="3bfa418f" name="mw03"/>
+        <part crc="e190ce6c" name="mw04"/>
+        <part repeat="0x2000">00</part>
+        <part crc="3bc7d4c7" name="mw05"/>
+        <part crc="99ca2eae" name="mw06"/>
+        <part repeat="0x1B000">00</part>
+        <part crc="aac24f34" name="01.1"/>
+        <part crc="2bdf83a0" name="02.2"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            01 10 01 00 FF 88 00 FF 00 00 00 00 01 60 01 00
+            00 00 00 00 00 00 00 00 11 14 13 00 05 03 04 00
+            00 00 00 00 05 03 04 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00
+        </part>
+    </rom>
+
+    <remark>Ozma Wars (Set 1) (SNK)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

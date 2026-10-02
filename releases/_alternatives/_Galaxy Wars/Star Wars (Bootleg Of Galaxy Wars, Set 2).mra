@@ -1,0 +1,63 @@
+<misterromdescription>
+    <name>Star Wars (Bootleg Of Galaxy Wars, Set 2)</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>yes</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Galaxy Wars</series>
+    <year>1979</year>
+    <manufacturer>bootleg (Yamashita)</manufacturer>
+    <category>Shooter</category>
+
+    <setname>starw1</setname>
+    <parent>galxwars</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (ccw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="FF,89,01,FF">
+        <dip name="Lives" bits="16,17" ids="2,3,4,5"/>
+        <dip name="Bonus Life" bits="19" ids="3000,5000"/>
+        <dip name="Coinage" bits="23" ids="1C/1C,1C/2C"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="starw1.zip|galxwars.zip">
+        <part crc="ad10c128" name="gc.75"/>
+        <part crc="ab77c474" name="gc.77"/>
+        <part crc="3638aed4" name="gc.76"/>
+        <part repeat="0x800">00</part>
+        <part crc="4c67957b" name="gc.80"/>
+        <part crc="246621ef" name="gc.81"/>
+        <part crc="19bd32ee" name="gc.82"/>
+        <part repeat="0x1E000">00</part>
+        <part crc="8d892ef3" name="cv01"/>
+        <part crc="b44ddde8" name="cv02"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            0C 10 01 00 FF 89 01 FF 00 00 00 00 01 60 00 00
+            00 00 00 00 00 00 00 00 11 14 13 00 05 03 04 00
+            00 00 00 00 05 03 04 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00
+        </part>
+    </rom>
+
+    <remark>Star Wars (Bootleg Of Galaxy Wars, Set 2) (Yamashita Bootleg)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

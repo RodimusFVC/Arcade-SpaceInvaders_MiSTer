@@ -1,0 +1,66 @@
+<misterromdescription>
+    <name>Space War (Leisure And Allied)</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>yes</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Space Invaders / Space Invaders M</series>
+    <year>1979</year>
+    <manufacturer>bootleg (Leisure and Allied)</manufacturer>
+    <category>Shooter</category>
+
+    <setname>spcewarla</setname>
+    <parent>invaders</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (ccw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="FF,89,00,FF">
+        <dip name="Coin Info" bits="23" ids="Off,On" values="1,0"/>
+        <dip name="Lives" bits="16" ids="3,4"/>
+        <dip name="Bonus Life" bits="19" ids="1500,2000"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="spcewarla.zip|invaders.zip">
+        <part crc="222f6913" name="ps1.bin"/>
+        <part crc="48dc791c" name="ps2.bin"/>
+        <part crc="58ddc18c" name="ps3.bin"/>
+        <part crc="1da5e383" name="ps4.bin"/>
+        <part crc="3b6d9f23" name="ps5.bin"/>
+        <part crc="50be9b7a" name="ps6.bin"/>
+        <part crc="7b8efd7c" name="ps7.bin"/>
+        <part crc="64fdc3e1" name="ps8.bin"/>
+        <part repeat="0x2000">00</part>
+        <part crc="b2f29601" name="ps9.bin"/>
+        <part repeat="0x1BC00">00</part>
+        <part crc="aac24f34" name="cv01_1.bin"/>
+        <part crc="2bdf83a0" name="cv02_2.bin"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            0D 10 01 00 FF 89 00 FF 00 00 00 00 01 40 08 00
+            00 00 00 00 00 00 00 00 11 14 13 00 05 03 04 00
+            00 00 15 00 05 03 04 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00
+        </part>
+    </rom>
+
+    <remark>Space War (Leisure And Allied) (Leisure And Allied Bootleg)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

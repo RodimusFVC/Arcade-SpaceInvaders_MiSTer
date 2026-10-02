@@ -1,0 +1,62 @@
+<misterromdescription>
+    <name>Space War</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Space War</series>
+    <year>1979</year>
+    <manufacturer>Konami (Leijac Corporation license)</manufacturer>
+    <category>Shooter</category>
+
+    <setname>spcewarl</setname>
+    <parent>spcewarl</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (ccw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>0</num_buttons>
+    <buttons names="Not Used,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="00,8E,00,FF">
+        <dip name="Lives" bits="8,9" ids="3,4,5,6"/>
+        <dip name="Service Mode" bits="10" ids="Off,On" values="1,0"/>
+        <dip name="Bonus Life" bits="11" ids="1000,1500" values="1,0"/>
+        <dip name="Display Coinage" bits="15" ids="Off,On" values="1,0"/>
+        <dip name="Coinage" bits="23" ids="1 Coin/1 Or 2 Players,1 Coin/1 Player  2 Coins/2 Players"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="spcewarl.zip">
+        <part crc="1fcd34d2" name="spcewarl.1"/>
+        <part crc="43bc65c5" name="spcewarl.2"/>
+        <part crc="7820df3a" name="spcewarl.3"/>
+        <part crc="adc05b8d" name="spcewarl.4"/>
+        <part repeat="0x1E000">00</part>
+        <part crc="aac24f34" name="01.1"/>
+        <part crc="2bdf83a0" name="02.2"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            00 10 01 00 00 8E 00 FF 00 00 00 00 01 60 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 0D 0B 0C 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00
+        </part>
+    </rom>
+
+    <remark>Space War (Leijac Corporation) (Konami (Leijac Corporation License))</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

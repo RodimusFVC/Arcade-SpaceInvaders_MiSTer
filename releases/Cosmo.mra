@@ -1,0 +1,59 @@
+<misterromdescription>
+    <name>Cosmo</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Cosmo</series>
+    <year>1979</year>
+    <manufacturer>TDS & MINTS</manufacturer>
+    <category>Shooter</category>
+
+    <setname>cosmo</setname>
+    <parent>cosmo</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (cw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="FF,89,80,FF">
+        <dip name="Lives" bits="16" ids="3,5"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="cosmo.zip">
+        <part crc="445c9a98" name="1.36"/>
+        <part crc="df3eb731" name="2.35"/>
+        <part crc="772c813f" name="3.34"/>
+        <part crc="279f66e6" name="4.33"/>
+        <part repeat="0x2000">00</part>
+        <part crc="cefb18df" name="5.32"/>
+        <part crc="b037f6c4" name="6.31"/>
+        <part crc="c3831ea2" name="7.42"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            01 90 01 00 FF 89 80 FF 00 00 00 00 06 00 00 00
+            00 00 00 00 00 00 00 00 11 14 13 00 05 03 04 00
+            00 00 00 00 05 03 04 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00
+        </part>
+    </rom>
+
+    <remark>Cosmo (TDS & MINTS)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

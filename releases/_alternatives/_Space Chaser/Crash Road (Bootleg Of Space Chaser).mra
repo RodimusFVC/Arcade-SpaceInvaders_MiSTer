@@ -1,0 +1,62 @@
+<misterromdescription>
+    <name>Crash Road (Bootleg Of Space Chaser)</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>yes</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Space Chaser</series>
+    <year>1979</year>
+    <manufacturer>bootleg (Centromatic)</manufacturer>
+    <category>Shooter</category>
+
+    <setname>crashrd</setname>
+    <parent>schaser</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (ccw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="00,00,00,FF">
+        <dip name="Hard Starting Level" bits="5,6" ids="3,4,5,6"/>
+        <dip name="Difficulty" bits="19" ids="Easy,Hard"/>
+        <dip name="Cabinet" bits="22" ids="Upright,Cocktail"/>
+        <dip name="Lives" bits="16,17" ids="1,2,3,4"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="crashrd.zip|schaser.zip">
+        <part crc="53749427" name="2716-5m.bin"/>
+        <part crc="e391d768" name="2716-5n.bin"/>
+        <part crc="fededc5d" name="2716-5p.bin"/>
+        <part crc="30830779" name="2716-5r.bin"/>
+        <part repeat="0x2000">00</part>
+        <part crc="6a974917" name="2716-5s.bin"/>
+        <part repeat="0x1B800">00</part>
+        <part crc="950cf973" name="rt06.ic2"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            00 10 01 00 00 00 00 FF 00 00 00 00 03 00 01 00
+            09 0B 0A 0C 0D 00 00 00 01 03 02 04 05 14 13 11
+            00 00 00 00 16 15 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00
+        </part>
+    </rom>
+
+    <remark>Crash Road (Bootleg Of Space Chaser) (Centromatic Bootleg)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>
