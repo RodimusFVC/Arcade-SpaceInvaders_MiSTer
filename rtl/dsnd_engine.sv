@@ -22,7 +22,7 @@
 //
 //============================================================================
 
-// Instruction (64 bits, little endian in the MRA): [63:56] op, [55:48] a, [47:40] b, [31:0] imm. Values are Q24
+// Instruction (64 bits, little endian in the MRA; up to 1024): [63:56] op, [55:48] a, [47:40] b, [31:0] imm. Values are Q24
 // (1.0 = 1 << 24), the accumulator and the 256-word state memory M are 32 bits and wrap. 2 clocks per instruction,
 // at most 400 instructions per sample; the sample ends at END. Output = mix >> 9, saturated (1.0 = full scale). Bit-exact with verilator/snd/dsnd_model.h.
 //   0 END              1 LD a: acc = M[a]          2 LDI: acc = imm            3 ADD a: acc += M[a]
@@ -42,7 +42,7 @@ module dsnd_engine
     input  logic        reset,
     input  logic        pause,
     input  logic        prog_wr,        // MRA index 5 byte
-    input  logic [11:0] prog_addr,
+    input  logic [12:0] prog_addr,
     input  logic  [7:0] prog_data,
     input  logic [63:0] src,            // sources 7..0, one byte each
     output logic signed [15:0] out
@@ -54,19 +54,19 @@ module dsnd_engine
 typedef enum logic [2:0] { S_IDLE, S_LOAD, S_E1, S_E2, S_PUB, S_CLR } state_t;
 state_t st = S_CLR;
 
-logic  [8:0] pc = 9'd0, pa;
+logic  [9:0] pc = 10'd0, pa;
 logic [63:0] pq;
-dpram_dc #(.widthad_a(9), .width_a(64)) u_prog
+dpram_dc #(.widthad_a(10), .width_a(64)) u_prog
 (
     .clock_a(clk),
-    .address_a(prog_wr ? prog_addr[11:3] : pa),
+    .address_a(prog_wr ? prog_addr[12:3] : pa),
     .data_a({8{prog_data}}),
     .wren_a(prog_wr),
     .byteena_a(8'd1 << prog_addr[2:0]),
     .q_a(pq),
 
     .clock_b(clk),
-    .address_b(9'd0),
+    .address_b(10'd0),
     .data_b(64'd0),
     .wren_b(1'b0),
     .byteena_b(8'hFF),
@@ -153,7 +153,7 @@ always_comb begin
 end
 
 // program address: the next instruction is fetched in E1 (skips decided by F, which is settled by then)
-wire [8:0] pc_next = pc + 9'd1 + (((op == 8'd22 && f) || (op == 8'd23 && !f)) ? 9'(imm) : 9'd0);
+wire [9:0] pc_next = pc + 10'd1 + (((op == 8'd22 && f) || (op == 8'd23 && !f)) ? 10'(imm) : 10'd0);
 assign pa = (st == S_E1) ? pc_next : pc;
 
 // writes: E2 results, or clearing after reset
@@ -172,7 +172,7 @@ always_ff @(posedge clk) begin
             if (clr == 8'd255) st <= S_IDLE;
         end
         S_IDLE: if (go) begin
-            pc   <= 9'd0;
+            pc   <= 10'd0;
             mix  <= 32'sd0;
             icnt <= 9'd0;
             st   <= S_LOAD;

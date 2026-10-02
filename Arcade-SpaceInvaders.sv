@@ -532,7 +532,8 @@ always @(posedge CLK_40M) if (ioctl_wr) begin
 end
 assign ds_on = ds_on_r;
 
-wire [63:0] ds_src = {status[48:46], status[45:44], status[43:41], 2'd0, status[40:35], 7'd0, vblank, 8'd0, b8_lat};   // Game Audio, misc, latch 0, latches 4-1
+// sources: 7-6 Game Audio, 5 misc {coin (IN1 D3 inverted, maze), VBLANK}, 4 = IN0 as the CPU reads it (maze), 3-0 latches
+wire [63:0] ds_src = {status[48:46], status[45:44], status[43:41], 2'd0, status[40:35], 6'd0, ~in_port[1][3], vblank, in_port[0], b8_lat};
 
 dsnd_engine dsnd
 (
@@ -540,7 +541,7 @@ dsnd_engine dsnd
 	.reset(reset),
 	.pause(pause_cpu),
 	.prog_wr(ioctl_wr && ioctl_index == 8'd5),
-	.prog_addr(ioctl_addr[11:0]),
+	.prog_addr(ioctl_addr[12:0]),
 	.prog_data(ioctl_dout),
 	.src(ds_src),
 	.out(ds_audio)
@@ -639,7 +640,7 @@ zac1b1120_board zboard
 
 	.h_adj(status[30:27]),
 	.v_adj(status[34:31]),
-	.snd_tweak({status[45:44], status[43:41], status[40:38], status[37:35]}),
+	.snd_tweak({status[48:46], status[45:44], status[43:41], status[40:38], status[37:35]}),
 	.ov_en(~status[23]),
 	.ov_tab(ov_tab),
 

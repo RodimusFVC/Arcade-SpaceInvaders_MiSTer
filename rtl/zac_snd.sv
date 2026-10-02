@@ -35,7 +35,7 @@ module zac_snd
     input  logic        pause,
     input  logic  [7:0] latch,
     input  logic        pvi,            // S2636 sound output (square wave)
-    input  logic [10:0] tweak,          // Game Audio: {aged caps, oscillator, filter, timing} settings
+    input  logic [13:0] tweak,          // Game Audio: {music, aged caps, oscillator, filter, timing} settings
     output logic signed [15:0] out
 );
 
@@ -108,7 +108,7 @@ localparam int KB40 = ZS_K_PVI2;
 localparam int KB41 = ZS_K_PVI_HP;
 logic signed [31:0] kr [NK];
 logic  [6:0] ks = 7'd0;
-logic [10:0] tw_d = 11'h7FF;
+logic [13:0] tw_d = 14'h3FFF;
 logic        krun = 1'b1;
 
 function automatic signed [31:0] kb(input [6:0] i);
@@ -302,7 +302,11 @@ end
 
 // mix: SN76477 output + filtered PVI tone (P1 balance: ZS_PVI_GAIN per volt)
 wire signed [31:0] pdiff = p2 - php;
-wire signed [33:0] mix   = 34'(sn_out) + 34'(mulq(pdiff, ZS_PVI_GAIN));
+// P1 = the march / saucer tone level: Game Audio Music Volume x 1 / 0.7 / 0.5 / 1.4 / 2
+wire        [2:0] mus   = tweak[13:11];
+wire signed [31:0] pvi_g = mus == 3'd1 ? 32'(ZS_PVI_GAIN * 7 / 10) : mus == 3'd2 ? 32'(ZS_PVI_GAIN / 2) :
+                           mus == 3'd3 ? 32'(ZS_PVI_GAIN * 14 / 10) : mus == 3'd4 ? 32'(ZS_PVI_GAIN * 2) : 32'(ZS_PVI_GAIN);
+wire signed [33:0] mix   = 34'(sn_out) + 34'(mulq(pdiff, pvi_g));
 assign out = mix > 34'sd32767 ? 16'sd32767 : mix < -34'sd32768 ? -16'sd32768 : 16'(mix);
 
 endmodule

@@ -48,7 +48,7 @@ module zac1b1120_board
 
     input  logic signed [3:0] h_adj,   // CRT position: HSYNC moved 4 counts per step
     input  logic signed [3:0] v_adj,   //               VSYNC moved 1 line per step
-    input  logic [10:0] snd_tweak,      // Game Audio {aged caps, oscillator, filter, timing} settings
+    input  logic [13:0] snd_tweak,      // Game Audio {music, aged caps, oscillator, filter, timing} settings
     input  logic        ov_en,          // colour overlay (MAME layout rectangles, raw x 0-719 / line 0-255)
     input  logic [1031:0] ov_tab,
 

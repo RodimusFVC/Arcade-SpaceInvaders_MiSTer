@@ -116,7 +116,7 @@ K_PVI1_LO = kf(par(100, 150), 4.7 * U)
 K_PVI1_HI = kf(150, 4.7 * U)
 K_PVI2 = kf(100, 10 * U)
 K_PVI_HP = kf(20 * K, 1 * U)
-PVI_GAIN = 4000                          # 16-bit units per volt of filtered PVI swing
+PVI_GAIN = 5650                          # 16-bit units per volt of filtered PVI swing (HW: 4000 a little low, +3 dB)
 
 
 def emit():

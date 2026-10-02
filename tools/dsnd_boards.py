@@ -4,7 +4,7 @@ Circuit descriptions follow MAME src/mame/midw8080/mw8080bw_a.cpp (Derrick Renau
 board, and the board schematics where it does not. program(machine) -> MRA index 5 bytes, or None.
 Engine sources: LATCH1-4 = the board's sound latches 1-4 (FAMILY4 S1-S4 in tools/gen_mra.py), MISC bit 0 = VBLANK.
 """
-from dsnd import (Board, LATCH1, LATCH2, LATCH3, LATCH4, FN_NONE, FN_TRG0, FN_TRG1, FN_TRG2)
+from dsnd import (Board, LATCH1, LATCH2, LATCH3, LATCH4, FN_NONE, FN_TRG0, FN_TRG1, FN_TRG2, q, ONE, FS)
 
 K, M_, U = 1e3, 1e6, 1e-6
 OUT_SCALE = 11000 * 0.25 / 32768          # MAME: DISCRETE_OUTPUT gain x the 0.25 route, 16-bit full scale
@@ -183,8 +183,190 @@ def bowler():
     return b.finish()
 
 
+def shuffle():
+    """Shuffleboard: S1 = port 5 (D0 click, D1 rollover, D2 sound enable, D3 / D4 / D5 rolling 3 / 2 / 1),
+    S2 = port 6 (D0 foul, D1 coin). Noise clock 1210 Hz."""
+    b = Board("shuffle")
+    b.lfsr_noise("noise", 1210, 12.0, 6.0)
+    # rolling: three-trigger VCA with an output cap (C505), Norton amp mixing the noise, 800 Hz low pass, x 0.2
+    b.tvca("roll_v", dict(r1=5.6 * M_, r4=2 * M_, r5=10 * K, r7=510 * K, r8=10 * K, r9=1 * M_, r10=10 * K,
+                          r11=1.5 * M_, c1=1 * U, c2=1 * U, c3=1 * U, c4=0.33 * U, v1=12, v2=12, v3=12, vP=12,
+                          f2=FN_TRG0, f4=FN_TRG1, f5=FN_TRG2),
+           trig=(("bit", LATCH1, 5), ("bit", LATCH1, 4), ("bit", LATCH1, 3)), inp=(0.0, 0.0))
+    b.op_amp_norton("roll_a", "noise", "roll_v", 680 * K, 680 * K, 2.7 * M_, 680 * K, 12)
+    b.filter1_lp("roll_f", "roll_a", 800)
+    b.gain("roll", "roll_f", 0.2)
+    # foul: 120 Hz TTL square through a VCA
+    b.squarewfix("sq", 120)
+    b.op("LD", "sq")
+    b.op("CMPI", imm=1 << 23)
+    b.op("LDI", imm=0)
+    b.op("LDIF", imm=int(round(3.4 * (1 << 24))))
+    b.op("ST", "sqv")
+    b.tvca("foul", dict(r1=2.7 * M_, r2=680 * K, r4=680 * K, r5=1 * K, r7=300 * K, c1=0.1 * U, v1=5, vP=12,
+                        f2=FN_TRG0), trig=(("bit", LATCH2, 0), 0, 0), inp=("sqv", 0.0))
+    # rollover: noise VCA, two RC filters
+    b.tvca("ro_v", dict(r1=1 * M_, r2=680 * K, r4=680 * K, r5=10 * K, r7=680 * K, c1=0.1 * U, v1=12, vP=12,
+                        f2=FN_TRG0), trig=(("bit", LATCH1, 1), 0, 0), inp=("noise", 0.0))
+    b.rcfilter("ro_f", "ro_v", 5.6 * K, 1 * U)
+    b.rcfilter("ro", "ro_f", 11.2 * K, 1 * U)
+    # click: 11.5 V logic, 300 Hz low pass, x 0.3
+    b.op("BIT", 0, b.src(LATCH1, 0))
+    b.op("LDI", imm=0)
+    b.op("LDIF", imm=int(round(11.5 * (1 << 24))))
+    b.op("ST", "click_in")
+    b.filter1_lp("click_f", "click_in", 300)
+    b.gain("click", "click_f", 0.3)
+    b.mixer_resistor("mix", [("roll", 300 * K, 0.1 * U), ("foul", 200 * K, 0.1 * U), ("ro", 14.2 * K, 1 * U),
+                             ("click", 33 * K, 0.1 * U)])
+    b.op("BIT", 0, b.src(LATCH1, 2))
+    b.op("NOT")
+    b.op("LD", "mix")
+    b.op("LDIF", imm=0)
+    b.op("MULI", imm=int(round(59200 / 32768 * (1 << 24))))
+    b.op("OUT")
+    return b.finish()
+
+
+def dplay():
+    """Double Play / Extra Inning: S1 = port 3 (D0 tone on, D1 cheer, D2 siren, D3 whistle, D4 game on, D5 coin),
+    S2 / S3 = tone generator. MAME route 0.8, mixer gain 2000, music pot 60 % of 1M..1k log."""
+    b = Board("dplay")
+    b.midway_tone("tone_sq", LATCH2, LATCH3)
+    b.tvca("music", MIDWAY_MUSIC_TVCA, trig=("tone_sq", ("bit", LATCH2, 0), 0), inp=(12.0, 0.0))
+    b.tvca("tone", MIDWAY_MUSIC_TVCA, trig=("tone_sq", ("bit", LATCH1, 0), 0), inp=(12.0, 0.0))
+    b.integrate_norton1("siren_i", (LATCH1, 2), 5.0, 1 * M_, 100 * K, 3.3 * U, 12, 12)
+    b.op_amp_vco2_norton("siren", "siren_i", 390 * K, 5.6 * M_, 1 * M_, 1.5 * M_, 3.3 * M_, 56 * K, 0.0022 * U, 12)
+    b.integrate_norton1("wh_i", (LATCH1, 3), 12.0, 1 * M_, 230 * K, 3.3 * U, 12, 12)
+    b.op_amp_vco2_norton("whistle", "wh_i", 510 * K, 5.6 * M_, 1 * M_, 1.5 * M_, 3.3 * M_, 300 * K, 220e-12, 12)
+    b.lfsr_noise("noise", 7700, 12.0, 6.0)
+    b.integrate_norton1("ch_i", (LATCH1, 1), 5.0, 1.5 * M_, 100 * K, 4.7 * U, 12, 12)
+    b.op("LD", "noise")                               # DISCRETE_SWITCH: the noise bit gates the cheer envelope
+    b.op("CMPI", imm=1 << 24)
+    b.op("LDI", imm=0)
+    b.op("LDF", "ch_i")
+    b.op("ST", "ch_sw")
+    b.op_amp_filt_bp1m("cheer", "ch_sw", 100 * K, 150 * K, 0.0047 * U, 0.0047 * U, r3=100 * K)
+    music = 68 * K + logadj(1e6, 1000, 60)
+    b.mixer_op_amp("mix", [("tone", 68 * K, 0.1 * U), ("siren", 68 * K, 0.1 * U), ("whistle", 68 * K, 0.1 * U),
+                           ("cheer", 18 * K, 0.1 * U), ("music", music, 0.1 * U, True)], rf=100 * K, c_amp=0.1 * U)
+    b.op("BIT", 0, b.src(LATCH1, 4))
+    b.op("NOT")
+    b.op("LD", "mix")
+    b.op("LDIF", imm=0)
+    b.op("MULI", imm=int(round(2000 * 0.8 / 32768 * (1 << 24))))
+    b.op("OUT")
+    return b.finish()
+
+
+def checkmat():
+    """Checkmate: S1 = ports 1 / 3 (D0 tone enable, D1 boom, D2 coin, D3 sound enable, D4-D5 / D6-D7 tone data ->
+    comparator resistor networks). MAME route 0.4, output 300000. Pots R309 / R411 at their 50 % defaults."""
+    b = Board("checkmat")
+    # boom: uniform noise 1500 Hz -> TVCA -> 35 Hz band pass (d 1/8) x 15, clamped
+    b.uniform_noise("noise", 1500, 2.0)
+    b.tvca("boom_v", dict(r1=1.2 * M_, r2=1 * M_, r4=1.2 * M_, r5=1 * K, r7=1 * M_, c1=1 * U, v1=5, vP=5,
+                          f2=FN_TRG0), trig=(("bit", LATCH1, 1), 0, 0), inp=("noise", 0.0))
+    b.filter2("boom_f", "boom_v", 35, 1.0 / 8, "bp")
+    b.gain("boom_g", "boom_f", 15)
+    b.op("LD", "boom_g"); b.op("MAXI", imm=int(-6 * (1 << 24))); b.op("MINI", imm=int(5.5 * (1 << 24))); b.op("ST", "boom")
+    # tone: Norton oscillator, R3 = 100k || (1.5M, 820k by D4 / D5), R4 = 330k || (1M, 510k by D6 / D7)
+    i1 = 4.5 / 330e3 * 1e6                            # uA
+    r3 = [1e-6 / (1 / 100e3 + (k & 1) / 1.5e6 + (k >> 1) / 820e3) for k in range(4)]          # MOhm
+    g4 = [1e6 * 0 + (1 / 330e3 + (k & 1) / 1e6 + (k >> 1) / 510e3) * 1e6 for k in range(4)]   # 1 / MOhm
+    b.chain("r3", 0, 0x30, 12, r3)
+    b.chain("g4", 0, 0xC0, 10, g4)
+    b.op("LD", "g4"); b.op("MULI", imm=-(1 << 23)); b.op("ADDI", imm=int(round(i1 * (1 << 24))))
+    b.op("MUL", "r3"); b.op("ADDI", imm=1 << 23); b.op("ST", "tl")                # (i1 - VBE / r4) r3 + VBE
+    b.op("LD", "g4"); b.op("MULI", imm=int(4.0 * (1 << 24))); b.op("ADDI", imm=int(round(i1 * (1 << 24))))
+    b.op("MUL", "r3"); b.op("ADDI", imm=1 << 23); b.op("ST", "th")                # (i1 + (vh - VBE) / r4) r3 + VBE
+    b.osc_norton1_dyn("osc", 1 * M_, 430 * K, 3300e-12, 5, "tl", "th")
+    b.op("LD", "osc"); b.op("ADDI", imm=-int(2.5 * (1 << 24))); b.op("ST", "osc_c")   # CRFILTER_VREF 2.5: HP of (in - 2.5)
+    b.crfilter("hp1", "osc_c", 250 * K, 0.1 * U)
+    b.op("BIT", 0, b.src(LATCH1, 0))                  # DISCRETE_SWITCH: tone enable -> filtered osc, else 2.5 V
+    b.op("LDI", imm=int(2.5 * (1 << 24)))
+    b.op("ST", "sw")
+    b.op("LD", "hp1"); b.op("ADDI", imm=int(2.5 * (1 << 24))); b.op("STF", "sw")
+    b.crfilter("hp2", "sw", 303 * K, 0.01e-12)       # MAME: CAP_P(0.01) (as written there)
+    b.rcfilter("tone", "hp2", 56 * K, 4700e-12)
+    b.mixer_op_amp("mix", [("boom", 100 * K + logadj(100e3, 1000, 50), 10 * U),
+                           ("tone", 103 * K + logadj(1e6, 1000, 50), 0.01 * U, True)], rf=100 * K, c_amp=1 * U)
+    b.op("BIT", 0, b.src(LATCH1, 3))
+    b.op("NOT")
+    b.op("LD", "mix")
+    b.op("LDIF", imm=0)
+    b.op("MULI", imm=int(round(300000 * 0.4 / 32768 * (1 << 24))))
+    b.op("OUT")
+    return b.finish()
+
+
+def maze():
+    """Amazing Maze: no sound latch. Inputs: IN0 joysticks (engine source 4, P1 D0-D3 / P2 D4-D7, active low), coin
+    (misc bit 1). Tone timing = free 555 B1 (33k, 68k, 1 uF) toggling the timing FF; the player-select FF toggles on
+    its falling edge; the 74147 encodes the selected player's stick into R305 / R306 / R308; R303 / R309 by player.
+    Sound runs from a coin until the sticks sit idle for the 555 F2 monostable (1.1 x 270k x 100 uF)."""
+    b = Board("maze")
+    half = 0.693 * (33e3 + 2 * 68e3) * 1e-6         # PERIOD_OF_555_ASTABLE: the timing FF toggles each period
+    b.op("LD", "tt_ph"); b.op("ADDI", imm=q(1.0 / (half * FS))); b.op("ST", "tt_ph")
+    b.op("CMPI", imm=ONE)
+    at = b.skip_if(False)
+    b.op("ADDI", imm=-ONE); b.op("ST", "tt_ph")
+    b.op("LD", "tt"); b.op("CMPI", imm=q(0.5))       # falling edge of the timing FF toggles the player select
+    b.op("LDI", imm=ONE); b.op("SUB", "psel"); b.op("STF", "psel")
+    b.op("LDI", imm=ONE); b.op("SUB", "tt"); b.op("ST", "tt")
+    b.land(at)
+    # joystick in use: MAME controls = ~IN0 != FF, i.e. raw IN0 (active high) != 0
+    b.op("LDL", 0, b.src(4, 0)); b.op("CMPI", imm=1 << 16)
+    b.op("LDI", imm=0); b.op("LDIF", imm=ONE); b.op("ST", "use")
+    # 555 F2 monostable: held discharged while a stick is used, else times out -> falling edge mutes (JK, coin clears)
+    t_out = 1.1 * 270e3 * 100e-6
+    b.op("LD", "use"); b.op("CMPI", imm=q(0.5))
+    b.op("LD", "mono"); b.op("ADDI", imm=q(1.0 / FS)); b.op("MINI", imm=q(t_out + 1)); b.op("LDIF", imm=0)
+    b.op("ST", "mono")
+    b.op("CMPI", imm=q(t_out)); b.op("LDI", imm=ONE); b.op("LDIF", imm=0); b.op("ST", "go")   # 555 output high = timing
+    b.op("LD", "go_d"); b.op("SUB", "go")             # 1 -> 0 edge: go_d - go = 1
+    b.op("CMPI", imm=q(0.5)); b.op("LDI", imm=ONE); b.op("STF", "mute")
+    b.op("LD", "go"); b.op("ST", "go_d")
+    b.op("BIT", 1, b.src(5, 1)); b.op("LDI", imm=0); b.op("STF", "mute")       # coin (line low) clears the mute FF
+    # selected player's stick through the 74147 -> R3 network; R4 by the player select
+    b.op("LDLM", 0, b.src(4, 0), imm=0x0F | (16 << 8)); b.op("ST", "_t")          # controls = ~IN0: 15 - nibble
+    b.op("LDI", imm=15 << 16); b.op("SUB", "_t"); b.op("ST", "sel")
+    b.op("LDLM", 0, b.src(4, 0), imm=0xF0 | (12 << 8)); b.op("ST", "_t")
+    b.op("LD", "psel"); b.op("CMPI", imm=q(0.5))
+    b.op("LDI", imm=15 << 16); b.op("SUB", "_t"); b.op("STF", "sel")
+    b.op("LDI", imm=3 << 16); b.op("ST", "enc")
+    for th, v in ((8, 0), (12, 1), (14, 2), (15, 3)):
+        b.op("LD", "sel"); b.op("CMPI", imm=th << 16); b.op("LDI", imm=v << 16); b.op("STF", "enc")
+    r3 = [1e-6 / (1 / 100e3 + (k & 1) / 1.5e6 + (k >> 1) / 820e3) for k in range(4)]
+    b.op("LDI", imm=q(r3[0])); b.op("ST", "r3")
+    for k in (1, 2, 3):
+        b.op("LD", "enc"); b.op("CMPI", imm=k << 16); b.op("LDI", imm=q(r3[k])); b.op("STF", "r3")
+    i1 = 4.5 / 330e3 * 1e6
+    g4 = [(1 / 330e3) * 1e6, (1 / 330e3 + 1 / 1e6) * 1e6]
+    b.op("LD", "psel"); b.op("CMPI", imm=q(0.5)); b.op("LDI", imm=q(g4[0])); b.op("LDIF", imm=q(g4[1])); b.op("ST", "g4")
+    b.op("LD", "g4"); b.op("MULI", imm=-(1 << 23)); b.op("ADDI", imm=int(round(i1 * (1 << 24))))
+    b.op("MUL", "r3"); b.op("ADDI", imm=1 << 23); b.op("ST", "tl")
+    b.op("LD", "g4"); b.op("MULI", imm=int(4.0 * (1 << 24))); b.op("ADDI", imm=int(round(i1 * (1 << 24))))
+    b.op("MUL", "r3"); b.op("ADDI", imm=1 << 23); b.op("ST", "th")
+    b.osc_norton1_dyn("osc", 1 * M_, 430 * K, 3300e-12, 5, "tl", "th")
+    b.op("LD", "osc"); b.op("ADDI", imm=-int(2.5 * (1 << 24))); b.op("ST", "osc_c")
+    b.crfilter("hp1", "osc_c", 250 * K, 0.1 * U)
+    # switch: stick in use AND tone enabled (not muted) AND tone timing -> filtered osc, else 2.5 V
+    b.op("LDI", imm=int(2.5 * (1 << 24))); b.op("ST", "sw")
+    b.op("LD", "use"); b.op("MUL", "tt"); b.op("ST", "_u")
+    b.op("LDI", imm=ONE); b.op("SUB", "mute"); b.op("MUL", "_u"); b.op("CMPI", imm=q(0.5))
+    b.op("LD", "hp1"); b.op("ADDI", imm=int(2.5 * (1 << 24))); b.op("STF", "sw")
+    b.crfilter("hp2", "sw", 446 * K, 0.01e-12)       # MAME: CAP_P(0.01) as written
+    b.rcfilter("snd", "hp2", 56 * K, 4700e-12)
+    b.op("LD", "mute"); b.op("CMPI", imm=q(0.5))
+    b.op("LD", "snd"); b.op("LDIF", imm=0)
+    b.op("MULI", imm=int(round(96200 / 32768 * (1 << 24))))
+    b.op("OUT")
+    return b.finish()
+
+
 BOARDS = {"clowns": clowns, "dogpatch": dogpatch, "boothill": boothill, "tornbase": tornbase, "desertgu": desertgu,
-          "bowler": bowler}
+          "bowler": bowler, "shuffle": shuffle, "dplay": dplay, "checkmat": checkmat, "maze": maze}
 
 
 def program(machine):
