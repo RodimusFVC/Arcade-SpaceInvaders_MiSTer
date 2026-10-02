@@ -1,0 +1,67 @@
+<misterromdescription>
+    <name>Space Combat (Bootleg Of Space Invaders)</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>yes</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Space Invaders / Space Invaders M</series>
+    <year>1979</year>
+    <manufacturer>bootleg</manufacturer>
+    <category>Shooter</category>
+
+    <setname>spacecom</setname>
+    <parent>invaders</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (ccw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="FF,1B,00,00">
+        <dip name="Unknown" bits="8" ids="Off,On" values="1,0"/>
+        <dip name="Unknown" bits="9" ids="Off,On" values="1,0"/>
+        <dip name="Lives" bits="10" ids="3,5"/>
+        <dip name="Bonus Life" bits="11" ids="2500,1500"/>
+        <dip name="Unknown" bits="12" ids="Off,On" values="1,0"/>
+        <dip name="Service Mode" bits="19" ids="Off,On"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="spacecom.zip|invaders.zip">
+        <part crc="703f2cbe" name="1f.ic67"/>
+        <part crc="7269b719" name="2g.ic82"/>
+        <part crc="6badac4f" name="3f.ic68"/>
+        <part crc="75b59ea7" name="4g.ic83"/>
+        <part crc="84b61117" name="5f.ic69"/>
+        <part crc="de383625" name="6g.ic84"/>
+        <part crc="5a23dbc8" name="7f.ic70"/>
+        <part crc="a5a467e3" name="8g.ic85"/>
+        <patch offset="0x10">F5</patch>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            08 10 01 00 FF 1B 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 0D 0B 0C
+            11 14 13 00 00 05 03 04 24 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            04 00 02 04 00 E0 1A FF 33 2D 00 CD 00 E0 FF 1A
+            1A 4B 00 AB 00 E0 FF FF 1A 6A 00 8A 00 E0 1A 33
+            FF
+        </part>
+    </rom>
+
+    <remark>Space Combat (Bootleg Of Space Invaders)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

@@ -1,0 +1,67 @@
+<misterromdescription>
+    <name>Yosaku To Donbei</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Yosaku To Donbei</series>
+    <year>1979</year>
+    <manufacturer>Wing</manufacturer>
+    <category>Shooter</category>
+
+    <setname>yosakdon</setname>
+    <parent>yosakdon</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (ccw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="FF,00,00,FF">
+        <dip name="Lives" bits="16,17" ids="3,4,5,6"/>
+        <dip name="Unknown" bits="18" ids="Off,On" values="1,0"/>
+        <dip name="Unknown" bits="19" ids="Off,On" values="1,0"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="yosakdon.zip">
+        <part crc="607899c9" name="yd1.bin"/>
+        <part crc="78336df4" name="yd2.bin"/>
+        <part crc="c5af6d52" name="yd3.bin"/>
+        <part crc="dca8064f" name="yd4.bin"/>
+        <part repeat="0x400">00</part>
+        <part crc="38804ff1" name="yd5.bin"/>
+        <part crc="988d2362" name="yd6.bin"/>
+        <part crc="2744e68b" name="yd7.bin"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            04 10 01 00 FF 00 00 FF 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 11 14 13 00 05 03 04 00
+            00 00 00 00 05 03 04 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            0C F3 02 04 00 50 20 FF FF F3 02 04 64 E0 FF 33
+            FF DC 02 04 4B 92 40 FF 33 C8 00 E3 00 E0 40 FF
+            33 A4 00 CC 00 E0 4C 66 FF 81 00 A4 00 E0 20 FF
+            FF 63 00 84 00 E0 FF FF 1A 43 00 64 00 E0 FF 33
+            FF 2B 00 44 00 E0 FF 40 40 00 00 2C 00 E0 20 FF
+            FF 00 00 15 83 BA FF FF 20 14 00 1B 00 E0 FF 40
+            40
+        </part>
+    </rom>
+
+    <remark>Yosaku To Donbei (Set 1) (Wing)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

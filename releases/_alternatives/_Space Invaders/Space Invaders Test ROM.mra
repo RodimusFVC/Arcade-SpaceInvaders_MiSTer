@@ -1,0 +1,60 @@
+<misterromdescription>
+    <name>Space Invaders Test ROM</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Space Invaders / Space Invaders M</series>
+    <year>19??</year>
+    <manufacturer><unknown></manufacturer>
+    <category>Shooter</category>
+
+    <setname>tst_invd</setname>
+    <parent>invaders</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>horizontal</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="FE,89,00,FF">
+        <dip name="Unknown" bits="0" ids="Off,On" values="1,0"/>
+        <dip name="Lives" bits="16,17" ids="3,4,5,6"/>
+        <dip name="Bonus Life" bits="19" ids="1000,1500" values="1,0"/>
+        <dip name="Coin Info" bits="23" ids="Off,On" values="1,0"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="tst_invd.zip|invaders.zip">
+        <part crc="f86a2eea" name="test.h"/>
+        <part crc="6bfaca4a" name="invaders.g"/>
+        <part crc="0ccead96" name="invaders.f"/>
+        <part crc="14e538b0" name="invaders.e"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            01 00 01 00 FE 89 00 FF 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 11 14 13 00 05 03 04 00
+            00 00 15 00 05 03 04 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            04 00 02 04 00 E0 FF FF FF 00 02 04 9F CF 20 FF
+            20 13 00 9C CF E0 20 FF 20 00 02 04 1C 35 FF 20
+            20
+        </part>
+    </rom>
+
+    <remark>Space Invaders Test ROM (<unknown>)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

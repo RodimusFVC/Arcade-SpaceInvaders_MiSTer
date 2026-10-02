@@ -1,0 +1,59 @@
+<misterromdescription>
+    <name>Attack Force (Unencrypted)</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>yes</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Attack Force</series>
+    <year>1979?</year>
+    <manufacturer>bootleg?</manufacturer>
+    <category>Shooter</category>
+
+    <setname>attackfcu</setname>
+    <parent>attackfc</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>horizontal</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="FF,01,FF,FF">
+
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="attackfcu.zip|attackfc.zip">
+        <part crc="653bbb40" name="egs0.bin"/>
+        <part crc="56024445" name="egs1.bin"/>
+        <part crc="0a5fbe34" name="egs2.bin"/>
+        <part crc="50f7cd22" name="egs3.bin"/>
+        <part crc="f59bac9e" name="egs4.bin"/>
+        <part repeat="0x400">00</part>
+        <part crc="a9eb4699" name="egs6.bin"/>
+        <part crc="7e705388" name="egs7.bin"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            06 00 01 00 FF 01 FF FF 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 11 00 00 00 05 03 04 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            01 00 02 04 00 E0 FF E6 1A
+        </part>
+    </rom>
+
+    <remark>Attack Force (Unencrypted) (Bootleg?)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

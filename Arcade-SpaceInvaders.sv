@@ -85,12 +85,15 @@ assign BUTTONS = 0;
 //   byte 0      board variant (see rtl/mw8080_board.sv)
 //   byte 1      flags: [4] vertical, [7] vertical is ROT90
 //   byte 2      sound board: [0] Taito L-shaped (else Midway)
+//   byte 3      ROM decode: [0] A8/A9 swapped, [1] A0/A3/A9 inverted (rtl/mw8080_board.sv)
+//   bytes 4-11  DIP switch bytes 0-7 at their MRA defaults (MiSTer sends index 254 only for MRAs with a <dip>)
 //   bytes 64+   colour overlay: count, then 8 bytes per rectangle (rtl/mw8080_board.sv)
 //   bytes 16-47 input map, one byte per port bit (IN0, IN1, IN2, IN3; bit 0 first): control id, 0 = none
 // DIP switch bytes 0-3 hold the idle level of every bit of IN0-IN3; a pressed control inverts its bit
 reg [7:0] game_var   = 8'd0;
 reg [7:0] game_flags = 8'h10;
 reg [7:0] snd_flags  = 8'd0;
+reg [7:0] rom_dec    = 8'd0;
 reg [5:0] in_map[32];
 reg [1031:0] ov_tab = 1032'd0;
 
@@ -99,6 +102,7 @@ always @(posedge CLK_40M) begin
         if (ioctl_addr == 25'd0) game_var   <= ioctl_dout;
         if (ioctl_addr == 25'd1) game_flags <= ioctl_dout;
         if (ioctl_addr == 25'd2) snd_flags  <= ioctl_dout;
+        if (ioctl_addr == 25'd3) rom_dec    <= ioctl_dout;
         if (ioctl_addr[24:5] == 20'd0 && ioctl_addr[4]) in_map[{1'b0, ioctl_addr[3:0]}] <= ioctl_dout[5:0];
         if (ioctl_addr[24:5] == 20'd1 && ioctl_addr[4] == 1'b0) in_map[{1'b1, ioctl_addr[3:0]}] <= ioctl_dout[5:0];
         if (ioctl_addr == 25'd0) ov_tab[7:0] <= 8'd0;                                   // an MRA without overlay data
@@ -259,6 +263,8 @@ reg [7:0] dip_sw[8] = '{8'hFF,8'hFF,8'hFF,8'hFF,8'h00,8'h00,8'h00,8'h00};
 always @(posedge CLK_40M) begin
 	if (ioctl_wr && (ioctl_index == 8'd254) && !ioctl_addr[24:3])
 		dip_sw[ioctl_addr[2:0]] <= ioctl_dout;
+	if (ioctl_wr && (ioctl_index == 8'd1) && ioctl_addr >= 25'd4 && ioctl_addr < 25'd12)
+		dip_sw[ioctl_addr[2:0] - 3'd4] <= ioctl_dout;
 end
 
 // control ids used by the MRA input map
@@ -267,7 +273,8 @@ wire [63:0] ctl =
 	8'd0,
 	dip_sw[4],                                      // 55-48 DIP byte 4 (MAME fake port lines)
 	dip_sw[3],                                      // 47-40 DIP byte 3 (MAME fake port lines)
-	4'd0,
+	3'd0,
+	vblank,                                         // 36 VBLANK
 	joystick_1[13:12],                              // 35-34 P2 Btn 6-5
 	joystick_0[13:12],                              // 33-32 P1 Btn 6-5
 	8'd0,                                           // 31-24 unused
@@ -341,8 +348,10 @@ mw8080_board board
 	.in0(in_port[0]),
 	.in1(in_port[1]),
 	.in2(in_port[2]),
+	.in3(in_port[3]),
 	.cocktail(1'b0),
 	.taito_snd(snd_flags[0]),
+	.rom_dec(rom_dec[1:0]),
 
 	.ioctl_addr(ioctl_addr),
 	.ioctl_dout(ioctl_dout),

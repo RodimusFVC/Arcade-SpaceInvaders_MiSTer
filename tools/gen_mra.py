@@ -28,12 +28,26 @@ HISCORE_DAT = Path("/CybertronMD/Mame/plugins/hiscore/hiscore.dat")   # current 
 SUPPORTED = {
     ("mw8080bw.cpp", "invaders", "empty_init"): 0,     # Midway Space Invaders board
     ("8080bw.cpp", "invaders", "empty_init"): 0,       # Taito / bootleg sets on the same board
+    ("8080bw.cpp", "cosmicmo", "empty_init"): 0,       # invaders board (cocktail flip gated by a DIP)
+    ("8080bw.cpp", "cosmicbat", "empty_init"): 0,      # invaders board, 20 MHz / 10 CPU
+    ("8080bw.cpp", "invnomb", "empty_init"): 1,        # no shifter: port 3 reads open (MAME unmapped = 0)
+    ("8080bw.cpp", "invasion", "empty_init"): 2,       # no shifter: port 3 reads IN3
+    ("8080bw.cpp", "spcewars", "empty_init"): 3,       # Sanritsu: port 3 bit 4 = 1-bit tune speaker, no watchdog
+    ("8080bw.cpp", "yosakdon", "empty_init"): 4,       # no shifter, inputs on ports 1-2, own sound bits
+    ("8080bw.cpp", "darthvdr", "empty_init"): 5,       # ROM 0-17FF, work RAM 1800, VRAM 4000, vblank RST 7
+    ("8080bw.cpp", "attackfc", "init_attackfc"): 6,    # shifter on ports 3 / 7, no sound in MAME, no watchdog
+    ("8080bw.cpp", "attackfcu", "empty_init"): 6,
+    ("8080bw.cpp", "vortex", "init_vortex"): 7,        # I/O A1 inverted, ROM A0/A3/A9 scrambled, colour per column
+    ("8080bw.cpp", "spacecom", "init_spacecom"): 8,    # ports 41 / 42 / 44, 256-pixel picture
+    ("8080bw.cpp", "invmulti", "init_invmulti"): 9,    # 128K scrambled ROM in 8 banks, 93C46 EEPROM at 6000
 }
 
-# ioctl index 0: maincpu 0x0000-0x7FFF (the board keeps 0000-1FFF and 4000-5FFF)
+# ioctl index 0: maincpu 0x0000-0x7FFF (the board keeps 0000-1FFF and 4000-5FFF); invmulti: the raw 128K user1 dump
 REGIONS = {"maincpu": (0x0000, 0x8000)}
+VARIANT_REGIONS = {9: {"user1": (0x0000, 0x20000)}}
+INDEX0_TEXT = {9: "raw 128K user1 dump (banked and unscrambled on the read path)"}
 IGNORED_REGIONS = {"plds", "unknown", "unk"}
-BOARD_IGNORED = {0: {"proms"}}                          # dumps the MAME config never reads (invadernc)
+BOARD_IGNORED = {0: {"proms"}, 1: {"user1"}}            # dumps the MAME config never reads (invadernc, spacmiss)
 RAM_WINDOWS = [(0x2000, 0x4000), (0x6000, 0x8000)]      # CPU reads RAM here; ROM bytes loaded into it are dead (jspecter)
 NAME_OVERRIDE = {"invaders": "Space Invaders"}
 
@@ -43,7 +57,16 @@ TAITO_SOUND_DRIVERS = {"8080bw.cpp"}                   # Taito SV/TV sets and th
 
 # port order on the board: DIP bytes 0-3 and input map bytes 16-47
 PORTS = ["IN0", "IN1", "IN2", "IN3"]
+PORT_TAGS = {"yosakdon": [None, "IN0", "IN1", None],   # input port tags at board ports 0-3, per machine config
+             "darthvdr": ["P1", "P2", None, None],
+             "attackfc": ["IN0", None, None, None],
+             "attackfcu": [None, "IN0", None, None],
+             "spacecom": [None, "IN0", "IN1", "IN2"]}   # ports 41 / 42 / 44: board slots 1-3
 LINE_BASE = 40      # control ids 40-47 = DIP byte 3 bits: MAME fake-port DIPs read through a custom handler
+CTL_VBLANK = 36     # control id 36 = VBLANK (spacecom IN2 bit 0)
+ROM_DECODE = {"init_attackfc": 0x01,                   # index 1 byte 3: [0] A8/A9 swapped, [1] vortex A0/A3/A9 XOR
+              "init_vortex": 0x02}
+ROM_PATCH = {"init_spacecom": [(0x10, 0xF5)]}           # MAME: bad dump, "should be push a at RST 10h"
 
 # control ids (Arcade-SpaceInvaders.sv)
 CTL = {("JOYSTICK_UP", 1): 1, ("JOYSTICK_DOWN", 1): 2, ("JOYSTICK_LEFT", 1): 3, ("JOYSTICK_RIGHT", 1): 4,
@@ -55,6 +78,7 @@ CTL = {("JOYSTICK_UP", 1): 1, ("JOYSTICK_DOWN", 1): 2, ("JOYSTICK_LEFT", 1): 3, 
        ("TILT", 0): 21, ("SERVICE1", 0): 22, ("SERVICE", 0): 22, ("COIN3", 0): 23,
        ("MEMORY_RESET", 0): 22}                          # operator "Name Reset" (invaddlx): service key
 IGNORED_TYPES = {"UNUSED", "UNKNOWN"}
+READ_LINE_FIXED = {"cosmicmo_cab_r": 0}                # cabinet type: upright
 
 # PORT_CUSTOM_MEMBER handlers, upright cabinet: the fake port whose bits the handler returns
 CUSTOM = {
@@ -222,16 +246,15 @@ def parse_inputs(src):
                 mask = int(args[0], 0)
                 ports[cur] = [f for f in ports[cur] if not (f["mask"] & mask)]
                 if mac == "PORT_BIT":
-                    low = args[1] == "IP_ACTIVE_LOW"
                     t = args[2].replace("IPT_", "")
                     fld = dict(mask=mask, kind="unused" if t in IGNORED_TYPES else "input",
-                               default=mask if low else 0, type=t, player=1, name=None, settings=[])
+                               default=idle_level(args[1], mask), type=t, player=1, name=None, settings=[])
                 elif mac in ("PORT_DIPNAME", "PORT_CONFNAME"):
                     fld = dict(mask=mask, kind="dip", default=int(args[1], 0), name=def_str(args[2]), settings=[])
                 elif mac == "PORT_SERVICE":
                     off = idle_level(args[1], mask)
                     fld = dict(mask=mask, kind="dip", default=off, name="Service Mode",
-                               settings=[(off, "Off"), (off ^ mask, "On")])
+                               settings=[(off, "Off", None), (off ^ mask, "On", None)])
                 elif mac == "PORT_SERVICE_NO_TOGGLE":
                     fld = dict(mask=mask, kind="input", default=idle_level(args[1], mask), type="SERVICE", player=0,
                                name=None, settings=[])
@@ -240,20 +263,37 @@ def parse_inputs(src):
                     fld = dict(mask=mask, kind="unused", default=int(args[1], 0) if d is None else d)
                 ports[cur].append(fld)
             elif mac in ("PORT_DIPSETTING", "PORT_CONFSETTING"):
-                fld["settings"].append((int(args[0], 0), def_str(args[1])))
+                fld["settings"].append((int(args[0], 0), def_str(args[1]), None))
+            elif mac == "PORT_CONDITION":
+                cond = (args[0].strip('"'), int(args[1], 0), args[2], int(args[3], 0))
+                if fld.get("settings"):
+                    v, n, _ = fld["settings"][-1]
+                    fld["settings"][-1] = (v, n, cond)    # this setting only exists under the condition
+                else:
+                    fld["cond"] = cond
             elif mac == "PORT_PLAYER":
                 fld["player"] = int(args[0])
             elif mac == "PORT_COCKTAIL":
                 fld["player"] = 2
             elif mac == "PORT_NAME":
                 fld["name"] = args[0].strip('"')
+            elif mac == "PORT_READ_LINE_MEMBER":
+                fn = re.fullmatch(r'FUNC\(\w+::(\w+)\)', args[0])
+                if not fn or fn.group(1) not in READ_LINE_FIXED:
+                    raise SystemExit(f"INPUT_PORTS({name}): unhandled read line {args[0]}")
+                fld["default"] = READ_LINE_FIXED[fn.group(1)] * fld["mask"]
+                fld["custom"] = "fixed"
+            elif mac == "PORT_READ_LINE_DEVICE_MEMBER":
+                if not (args[0].strip('"') == "screen" and "vblank" in args[1]):
+                    raise SystemExit(f"INPUT_PORTS({name}): unhandled device read line {args}")
+                fld["custom"] = "vblank"
             elif mac == "PORT_CUSTOM_MEMBER":
                 fn = re.fullmatch(r'FUNC\(\w+::(\w+)\)', args[0])
                 if not fn:
                     raise SystemExit(f"INPUT_PORTS({name}): unhandled custom {args[0]}")
                 fld["custom"] = fn.group(1)
             elif mac in ("PORT_DIPLOCATION", "PORT_CODE", "PORT_TOGGLE", "PORT_2WAY", "PORT_4WAY", "PORT_8WAY",
-                         "PORT_CONDITION", "PORT_SENSITIVITY", "PORT_KEYDELTA", "PORT_CHANGED_MEMBER",
+                         "PORT_SENSITIVITY", "PORT_KEYDELTA", "PORT_CHANGED_MEMBER",
                          "PORT_IMPULSE"):
                 pass
             else:
@@ -264,14 +304,14 @@ def parse_inputs(src):
     return build
 
 
-def place(segs, setname, ignored=frozenset()):
+def place(segs, setname, ignored=frozenset(), regions=REGIONS):
     out = []
     for s in clip_ram(segs):
         if s["region"] in IGNORED_REGIONS or s["region"] in ignored:
             continue
-        if s["region"] not in REGIONS:
+        if s["region"] not in regions:
             raise SystemExit(f"{setname}: unmapped region {s['region']}")
-        base, size = REGIONS[s["region"]]
+        base, size = regions[s["region"]]
         if s["dst"] + s["len"] > size:
             raise SystemExit(f"{setname}: {s['name']} overruns {s['region']}")
         a, e = base + s["dst"], base + s["dst"] + s["len"]
@@ -328,14 +368,32 @@ def contiguous(mask):
     return lo, hi, mask == ((1 << (hi + 1)) - (1 << lo))
 
 
+def port_default(fields):
+    level = 0xFF
+    for f in fields:
+        level = (level & ~f["mask"]) | (f["default"] & f["mask"])
+    return level
+
+
 def input_config(g, ports):
     """-> (idle bytes, dip list, input map, P1 button names)."""
     idle, dips, imap, buttons = [], [], [0] * 32, {}
     lines = []                                         # fake-port DIP bits routed through DIP byte 3
 
+    def holds(cond):
+        """PORT_CONDITION under every other DIP at its default (the MRA has no conditional settings)."""
+        if cond is None:
+            return True
+        tag, mask, op, val = cond
+        v = port_default(ports[tag]) & mask
+        return {"EQUALS": v == val, "NOTEQUALS": v != val}[op]
+
     def dip(f, byte, lo, hi):
-        vals = [v >> f["lo_src"] for v, _ in f["settings"]]
-        ids = ",".join(n.replace(",", ";") for _, n in f["settings"])
+        if not holds(f.get("cond")):
+            return
+        sets = [(v, n) for v, n, c in f["settings"] if holds(c)]
+        vals = [v >> f["lo_src"] for v, _ in sets]
+        ids = ",".join(n.replace(",", ";") for _, n in sets)
         bits = f"{byte * 8 + lo}" if lo == hi else f"{byte * 8 + lo},{byte * 8 + hi}"
         seq = vals == list(range(len(vals))) and len(vals) == 1 << (hi - lo + 1)
         dips.append((f["name"], bits, ids, None if seq else ",".join(str(v) for v in vals)))
@@ -349,8 +407,8 @@ def input_config(g, ports):
         if t.startswith("BUTTON") and pl == 1:
             buttons[int(t[6:])] = f["name"] or ("Fire" if t == "BUTTON1" else f"Button {t[6:]}")
 
-    for p, tag in enumerate(PORTS):
-        fields = ports.get(tag)
+    for p, tag in enumerate(PORT_TAGS.get(g["machine"], PORTS)):
+        fields = ports.get(tag) if tag else None
         if fields is None:
             idle.append(None)
             continue
@@ -364,12 +422,19 @@ def input_config(g, ports):
                 if not ok:
                     raise SystemExit(f'{g["name"]}: non-contiguous DIP {f["name"]} mask {f["mask"]:#x}')
                 dip(dict(f, lo_src=lo), p, lo, hi)
+            elif f["kind"] == "input" and f["type"] == "CUSTOM" and f.get("custom") in (None, "fixed"):
+                continue                               # a fixed level (galxwars protection value, cabinet line)
+            elif f["kind"] == "input" and f["type"] == "OTHER":
+                if "reset" in (f["name"] or "").lower():
+                    control(dict(f, type="MEMORY_RESET", player=0), p * 8 + lo)   # operator name-reset button
+                continue                               # spare switches: idle level
+            elif f["kind"] == "input" and f["type"] == "CUSTOM" and f.get("custom") == "vblank":
+                imap[p * 8 + lo] = CTL_VBLANK              # the board's VBLANK
             elif f["kind"] == "input" and f["type"] == "CUSTOM":
                 src_tag = CUSTOM.get(f.get("custom"))
                 if src_tag is None:
                     raise SystemExit(f'{g["name"]}: unhandled custom handler {f.get("custom")} in {tag}')
-                level &= ~f["mask"]
-                for sf in ports[src_tag]:
+                for sf in ports[src_tag]:                # an active-low custom field reads its source inverted
                     slo, shi, sok = contiguous(sf["mask"])
                     if sf["kind"] == "input":
                         control(sf, p * 8 + lo + slo)
@@ -488,6 +553,16 @@ def overlay_bytes(rects):
     return out
 
 
+def config_bytes(g, idle, imap):
+    """MRA index 1: variant, flags, sound board, ROM decode, idle levels (bytes 4-11), input map, overlay."""
+    flags = (F_VERT if g["rot"] in ("ROT90", "ROT270") else 0) | (F_ROT90 if g["rot"] == "ROT90" else 0)
+    sflags = S_TAITO if g["drv"] in TAITO_SOUND_DRIVERS else 0
+    assert len(idle) <= 8, g["name"]
+    # the idle levels repeat <switches default>: MiSTer sends DIP bytes (index 254) only when an MRA has a <dip>
+    cfg = [board_cfg(g), flags, sflags, ROM_DECODE.get(g["init"], 0)] + idle + [0] * (12 - len(idle)) + imap
+    return cfg + [0] * (OV_BASE - len(cfg)) + overlay_bytes(overlay_rects(g))
+
+
 def mra(g, games, segs, build_inputs):
     variant = board_cfg(g)
     ports = build_inputs(g["inputs"])
@@ -516,13 +591,11 @@ def mra(g, games, segs, build_inputs):
         else:
             lines.append(f'        <part crc="{s["crc"]}" name="{s["name"]}" offset="0x{s["src"]:X}" length="0x{s["len"]:X}"/>')
         pos = s["addr"] + s["len"]
+    lines += [f'        <patch offset="0x{a:X}">{v:02X}</patch>' for a, v in ROM_PATCH.get(g["init"], [])]
 
     dip_lines = "\n".join(f'        <dip name="{n}" bits="{b}" ids="{i}"' + (f' values="{v}"' if v else "") + "/>"
                           for n, b, i, v in dips)
-    sflags = S_TAITO if g["drv"] in TAITO_SOUND_DRIVERS else 0
-    cfg = [variant, flags, sflags] + [0] * 13 + imap
-    ovr = overlay_rects(g)
-    cfg += [0] * (OV_BASE - len(cfg)) + overlay_bytes(ovr)
+    cfg = config_bytes(g, idle, imap)
     cfg_rows = "\n".join("            " + " ".join(f"{b:02X}" for b in cfg[i:i + 16]) for i in range(0, len(cfg), 16))
     return f"""<misterromdescription>
     <name>{display_name(g)}</name>
@@ -557,7 +630,7 @@ def mra(g, games, segs, build_inputs):
 {dip_lines}
     </switches>
 
-    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <!-- Index 0: {INDEX0_TEXT.get(variant, "CPU 0x0000-0x7FFF (MAME maincpu)")} -->
     <rom index="0" md5="none" zip="{zipname}">
 {chr(10).join(lines)}
     </rom>
@@ -618,7 +691,8 @@ def out_path(root, g, games):
 
 def rom_segments(g, src):
     """ioctl index 0 layout for a set (shared with verilator/build_rom.py)."""
-    return place(parse_roms(src, g["name"]), g["name"], BOARD_IGNORED.get(board_cfg(g), frozenset()))
+    v = board_cfg(g)
+    return place(parse_roms(src, g["name"]), g["name"], BOARD_IGNORED.get(v, frozenset()), VARIANT_REGIONS.get(v, REGIONS))
 
 
 def main():

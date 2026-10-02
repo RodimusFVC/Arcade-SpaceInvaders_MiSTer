@@ -1,0 +1,52 @@
+<misterromdescription>
+    <name>Space Invaders Multigame</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Space Invaders Multigame</series>
+    <year>2002</year>
+    <manufacturer>hack (Braze Technologies)</manufacturer>
+    <category>Shooter</category>
+
+    <setname>invmulti</setname>
+    <parent>invmulti</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (ccw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="08,08,00,FF">
+
+    </switches>
+
+    <!-- Index 0: raw 128K user1 dump (banked and unscrambled on the read path) -->
+    <rom index="0" md5="none" zip="invmulti.zip">
+        <part crc="6a62cb3c" name="m803d.bin"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            09 10 01 00 08 08 00 FF 00 00 00 00 00 00 00 00
+            00 00 00 00 05 03 04 00 11 14 13 00 05 03 04 00
+            00 00 00 00 05 03 04 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00
+        </part>
+    </rom>
+
+    <remark>Space Invaders Multigame (M8.03D) (Hack (Braze Technologies))</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

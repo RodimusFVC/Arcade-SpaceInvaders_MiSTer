@@ -1,0 +1,63 @@
+<misterromdescription>
+    <name>Galactica - Batalha Espacial</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Galactica - Batalha Espacial</series>
+    <year>1980?</year>
+    <manufacturer>Taito do Brasil</manufacturer>
+    <category>Shooter</category>
+
+    <setname>galactic</setname>
+    <parent>galactic</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (ccw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="00,01,02,FF">
+        <dip name="Bonus Life" bits="16,17" ids="Off,4000,5000,7000"/>
+        <dip name="Unknown" bits="18" ids="Off,On"/>
+        <dip name="Lives" bits="19" ids="3,6"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="galactic.zip">
+        <part crc="b5098f1e" name="1"/>
+        <part crc="f97410ee" name="2"/>
+        <part crc="c1175feb" name="3"/>
+        <part crc="b4451d7c" name="4"/>
+        <part repeat="0x2000">00</part>
+        <part crc="74c9da61" name="5"/>
+        <part crc="5e7c6c44" name="6"/>
+        <part crc="02619e18" name="7"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            01 10 01 00 00 01 02 FF 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 11 14 13 00 05 03 04 00
+            00 00 00 00 05 03 04 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            04 00 02 04 00 E0 00 FF 66 BE 00 D5 00 E0 FF 33
+            26 44 00 BE 00 E0 FF FF 33 2E 00 44 00 E0 33 99
+            FF
+        </part>
+    </rom>
+
+    <remark>Galactica - Batalha Espacial (Taito Do Brasil)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

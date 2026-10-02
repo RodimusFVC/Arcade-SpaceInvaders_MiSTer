@@ -1,0 +1,63 @@
+<misterromdescription>
+    <name>Galaxy Monsters (Laguna S.A. Spanish Bootleg Of Space Invaders)</name>
+    <region>Spain</region>
+    <homebrew>no</homebrew>
+    <bootleg>yes</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Space Invaders / Space Invaders M</series>
+    <year>1978</year>
+    <manufacturer>bootleg (Laguna S.A.)</manufacturer>
+    <category>Shooter</category>
+
+    <setname>galmonst</setname>
+    <parent>invaders</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (ccw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="FE,89,00,FF">
+        <dip name="Unknown" bits="0" ids="Off,On" values="1,0"/>
+        <dip name="Lives" bits="16,17" ids="3,4,5,6"/>
+        <dip name="Bonus Life" bits="19" ids="1000,1500" values="1,0"/>
+        <dip name="Coin Info" bits="23" ids="Off,On" values="1,0"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="galmonst.zip|invaders.zip">
+        <part crc="8a0395e9" name="h.5m"/>
+        <part crc="6183ed16" name="g.5n"/>
+        <part crc="b6047fdd" name="f.5p"/>
+        <part repeat="0x800">00</part>
+        <part crc="e88e8c96" name="c.5t"/>
+        <part crc="34678b80" name="b.5u"/>
+        <part crc="05a6806b" name="a.5v"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            01 10 01 00 FE 89 00 FF 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 11 14 13 00 05 03 04 00
+            00 00 15 00 05 03 04 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            04 00 02 04 00 E0 FF FF FF 14 00 4C 00 E0 20 FF
+            20 00 00 14 10 86 20 FF 20 C6 00 E4 00 E0 FF 20
+            20
+        </part>
+    </rom>
+
+    <remark>Galaxy Monsters (Laguna S.A. Spanish Bootleg Of Space Invaders) (Laguna S.A. Bootleg)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

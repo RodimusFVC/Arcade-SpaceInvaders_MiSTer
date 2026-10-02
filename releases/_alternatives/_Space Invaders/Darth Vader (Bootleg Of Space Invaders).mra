@@ -1,0 +1,63 @@
+<misterromdescription>
+    <name>Darth Vader (Bootleg Of Space Invaders)</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>yes</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Space Invaders / Space Invaders M</series>
+    <year>1978</year>
+    <manufacturer>bootleg</manufacturer>
+    <category>Shooter</category>
+
+    <setname>darthvdr</setname>
+    <parent>invaders</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (ccw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="7F,FF,FF,FF">
+        <dip name="Bonus Life" bits="5" ids="1000,3000"/>
+        <dip name="Unknown" bits="6" ids="Off,On" values="1,0"/>
+        <dip name="Lives" bits="7" ids="4,6"/>
+        <dip name="One less life" bits="12" ids="Off,On" values="1,0"/>
+        <dip name="Unknown" bits="13" ids="Off,On" values="1,0"/>
+        <dip name="Unknown" bits="14" ids="Off,On" values="1,0"/>
+        <dip name="Unknown" bits="15" ids="Off,On" values="1,0"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="darthvdr.zip|invaders.zip">
+        <part crc="b15785b6" name="rom0"/>
+        <part crc="95947743" name="rom1"/>
+        <part crc="19b1731f" name="rom2"/>
+        <part crc="ca1b5e3c" name="rom3"/>
+        <part crc="eede5f41" name="rom4"/>
+        <part crc="cc52a4bb" name="rom5"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            05 10 01 00 7F FF FF FF 00 00 00 00 00 00 00 00
+            13 05 03 04 11 00 00 00 14 05 03 04 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00
+        </part>
+    </rom>
+
+    <remark>Darth Vader (Bootleg Of Space Invaders)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

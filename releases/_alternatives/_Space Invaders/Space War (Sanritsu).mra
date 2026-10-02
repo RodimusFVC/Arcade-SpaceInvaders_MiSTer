@@ -1,0 +1,65 @@
+<misterromdescription>
+    <name>Space War (Sanritsu)</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Space Invaders / Space Invaders M</series>
+    <year>1978</year>
+    <manufacturer>Taito / Sanritsu</manufacturer>
+    <category>Shooter</category>
+
+    <setname>spcewars</setname>
+    <parent>invaders</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (ccw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="FF,89,00,FF">
+        <dip name="Coin Info" bits="23" ids="Off,On" values="1,0"/>
+        <dip name="Lives" bits="16" ids="3,4"/>
+        <dip name="Bonus Life" bits="19" ids="1500,2000"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="spcewars.zip|invaders.zip">
+        <part crc="ca331679" name="sanritsu.1"/>
+        <part crc="48dc791c" name="sanritsu.2"/>
+        <part crc="c34842cb" name="sanritsu.3"/>
+        <part crc="a7fdfd0e" name="sanritsu.4"/>
+        <part crc="77475431" name="sanritsu.5"/>
+        <part crc="392ef82c" name="sanritsu.6"/>
+        <part crc="b3a93df8" name="sanritsu.7"/>
+        <part crc="64fdc3e1" name="sanritsu.8"/>
+        <part repeat="0x2000">00</part>
+        <part crc="b2f29601" name="sanritsu.9"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            03 10 01 00 FF 89 00 FF 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 11 14 13 00 05 03 04 00
+            00 00 15 00 05 03 04 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            04 00 02 04 00 E0 FF FF FF 14 00 4C 00 E0 20 FF
+            20 00 00 14 10 86 20 FF 20 C6 00 E4 00 E0 FF 20
+            20
+        </part>
+    </rom>
+
+    <remark>Space War (Sanritsu) (Taito / Sanritsu)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>
