@@ -608,7 +608,8 @@ def board_cfg(g):
 
 LAYOUT_DIR = Path("/Work/Build/mame/src/mame/layout")
 RAW_W, RAW_H = 260, 224                                 # the core's picture: hx 1-260 -> x 0-259, rows 0-223
-RAW_DIMS = {8: (256, 224, 4), 10: (256, 192, 4)}         # MAME screen (w, h) and its x offset in the core's picture
+RAW_DIMS = {8: (256, 224, 4), 10: (256, 192, 4),         # MAME screen (w, h) and its x offset in the core's picture
+            32: (720, 256, 0), 33: (720, 256, 0)}           # zac1b1120: master-clock pixels
 OV_BASE, OV_MAX = 64, 16                                # index 1: byte 64 = count, then 8 bytes per rectangle
 
 
@@ -624,7 +625,7 @@ def _bounds(e):
 
 def overlay_rects(g):
     """MAME layout colour overlay -> [(x0, x1, y0, y1, r, g, b)] in raw scan coordinates (half-open), later wins."""
-    if not g.get("layout") or (board_cfg(g) or 0) >= 32:   # zac1b1120: 720-wide picture, no overlay support yet
+    if not g.get("layout"):
         return []
     path = LAYOUT_DIR / f'{g["layout"]}.lay'
     if not path.exists():
@@ -676,7 +677,8 @@ def overlay_rects(g):
 def overlay_bytes(rects):
     out = [len(rects)]
     for x0, x1, y0, y1, r, gr, b in rects:
-        out += [x0 & 0xFF, (x0 >> 8) | (x1 >> 8) << 1, x1 & 0xFF, y0, y1, r, gr, b]
+        hi = (x0 >> 8 & 1) | (x1 >> 8 & 1) << 1 | (x0 >> 9 & 1) << 2 | (x1 >> 9 & 1) << 3   # x bits 8 / 9
+        out += [x0 & 0xFF, hi, x1 & 0xFF, y0, y1 & 0xFF, r, gr, b]   # y1 = 256 -> 0: no bottom edge
     return out
 
 

@@ -72,9 +72,8 @@ assign HDMI_BOB_DEINT = 0;
 wire signed [15:0] audio, audio_r;     // audio_r: second sound board (invad2ct), else the same as audio
 wire signed [15:0] b8_audio, b8_audio_r;
 wire zac;                                   // board select (MRA variant 32 / 33): Zaccaria 1B1120
-wire z_tone;
-wire signed [16:0] z_mix = b8_audio + (z_tone ? 17'sd5000 : 17'sd0);    // Zaccaria: S2636 tone on top of the voices
-assign audio   = zac ? (z_mix > 17'sd32767 ? 16'sd32767 : 16'(z_mix)) : b8_audio;
+wire signed [15:0] z_audio;
+assign audio   = zac ? z_audio : b8_audio;
 assign audio_r = zac ? audio : b8_audio_r;
 assign AUDIO_L = pause_cpu ? 16'd0 : audio;
 assign AUDIO_R = pause_cpu ? 16'd0 : audio_r;
@@ -370,9 +369,9 @@ wire ce_pix;
 wire b8_hs, b8_vs, b8_hb, b8_vb, b8_ce;
 wire [7:0] b8_r, b8_g, b8_b;
 wire z_hs, z_vs, z_hb, z_vb, z_ce, z_on;
-wire [7:0] z_p1, z_p2;
 assign {hs, vs, hblank, vblank, ce_pix} = zac ? {z_hs, z_vs, z_hb, z_vb, z_ce} : {b8_hs, b8_vs, b8_hb, b8_vb, b8_ce};
-assign {r, g, b} = zac ? {24{z_on}} : {b8_r, b8_g, b8_b};
+wire [7:0] z_r, z_g, z_b;
+assign {r, g, b} = zac ? {z_r, z_g, z_b} : {b8_r, b8_g, b8_b};
 
 wire rotate_ccw = ~game_flags[7];  // ROT270 sets rotate CCW, ROT90 sets CW
 wire no_rotate  = ~game_vert | status[12] | direct_video;
@@ -437,10 +436,6 @@ mw8080_board board
 	.snd2(),
 	.audio(b8_audio),
 	.audio_r(b8_audio_r),
-	.ext_snd(zac),
-	.snd_reset(reset),
-	.ext_p1(z_p1),
-	.ext_p2(z_p2),
 	.io_tab(io_tab),
 
 	.hs_address(hs_address),
@@ -465,16 +460,20 @@ zac1b1120_board zboard
 	.ioctl_dout(ioctl_dout),
 	.ioctl_wr0(ioctl_wr & (ioctl_index == 8'd0)),
 
+	.ov_en(~status[23]),
+	.ov_tab(ov_tab),
+
 	.ce_pix(z_ce),
 	.video_on(z_on),
+	.video_r(z_r),
+	.video_g(z_g),
+	.video_b(z_b),
 	.video_hs(z_hs),
 	.video_vs(z_vs),
 	.video_hblank(z_hb),
 	.video_vblank(z_vb),
 
-	.snd_p1(z_p1),
-	.snd_p2(z_p2),
-	.pvi_tone(z_tone)
+	.audio(z_audio)
 );
 
 // Hiscore: config = MRA index 3, dump = index 4; RAM via the board's second port while the CPU is paused

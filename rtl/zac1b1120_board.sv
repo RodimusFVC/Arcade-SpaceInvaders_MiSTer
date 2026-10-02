@@ -46,16 +46,20 @@ module zac1b1120_board
     input  logic  [7:0] ioctl_dout,
     input  logic        ioctl_wr0,
 
+    input  logic        ov_en,          // colour overlay (MAME layout rectangles, raw x 0-719 / line 0-255)
+    input  logic [1031:0] ov_tab,
+
     output logic        ce_pix,
-    output logic        video_on,       // lit pixel (white)
+    output logic        video_on,       // lit pixel
+    output logic  [7:0] video_r,        // its colour (white, or the overlay's)
+    output logic  [7:0] video_g,
+    output logic  [7:0] video_b,
     output logic        video_hs,
     output logic        video_vs,
     output logic        video_hblank,
     output logic        video_vblank,
 
-    output logic  [7:0] snd_p1,         // sound-board writes mapped onto the invaders board voices
-    output logic  [7:0] snd_p2,
-    output logic        pvi_tone        // S2636 square wave
+    output logic signed [15:0] audio
 );
 
 // ---------------------------------------------------------------- master clock enable
@@ -231,25 +235,26 @@ always_comb begin
     else                             cpu_dr = 8'hFF;
 end
 
-// sound board latch at 1E80: plain levels (measured in sim: 40 while the saucer flies, 00 when it leaves, 90 / 91 on
-// a death, 01 idle). MAME's code list (08 invader hit, 20 bonus, 40 saucer, 84 fire, 90 die, C4 saucer hit) read as
-// bits: bit 7 clear = 3 invader hit / 5 bonus / 6 saucer; bit 7 set = 2 fire, 4 die, 6 + 2 saucer hit.
-// No schematic: mapped onto the invaders board voices.
+// sound board (rtl/zac_snd.sv): 74174 latch at 1E80 (bit 6 not on the board), S2636 tone into its filter.
+// Dodgem's board is different and not documented: its SN76477 side stays disabled, the tone still plays.
 logic [7:0] snd_l = 8'd0;
+logic       pvi_tone = 1'b0;        // S2636 square wave (generated below)
 always_ff @(posedge clk) begin
     if (reset)
         snd_l <= 8'd0;
     else if (bwr && is_io && ba[7:0] == 8'h80 && !dodgem)
         snd_l <= dw_r;
 end
-wire sv_inv  = ~snd_l[7] & snd_l[3];
-wire sv_bon  = ~snd_l[7] & snd_l[5];
-wire sv_sau  = ~snd_l[7] & snd_l[6];
-wire sv_fire =  snd_l[7] & snd_l[2] & ~snd_l[6];
-wire sv_die  =  snd_l[7] & snd_l[4];
-wire sv_sh   =  snd_l[7] & snd_l[6] & snd_l[2];
-assign snd_p1 = {2'b00, ~dodgem, sv_bon, sv_inv, sv_die, sv_fire, sv_sau};
-assign snd_p2 = {3'b000, sv_sh, 4'b0000};
+
+zac_snd u_snd
+(
+    .clk(clk),
+    .reset(reset),
+    .pause(pause),
+    .latch(snd_l),
+    .pvi(pvi_tone),
+    .out(audio)
+);
 
 // ---------------------------------------------------------------- character background (master / 3)
 
@@ -367,6 +372,29 @@ always_ff @(posedge clk) if (mce) begin
 end
 
 always_ff @(posedge clk) if (mce) video_on <= vis_h && vis_v && (bg_pix || |opix);
+
+// colour overlay: rectangles as the 8080 board's table (x bits 8 / 9 in the flag byte, y1 0 = no bottom edge), later
+// ones win; lit pixels take the colour
+function automatic logic [7:0] ovb(input int i);
+    ovb = ov_tab[i*8 +: 8];
+endfunction
+
+always_ff @(posedge clk) if (mce) begin : zov
+    logic [7:0] r, g, b, hi;
+    logic [9:0] x0, x1;
+    {r, g, b} = 24'hFFFFFF;
+    for (int k = 0; k < 16; k++) begin
+        hi = ovb(1 + k*8 + 1);
+        x0 = {hi[2], hi[0], ovb(1 + k*8)};
+        x1 = {hi[3], hi[1], ovb(1 + k*8 + 2)};
+        if (k < ovb(0) && ov_en && h >= x0 && h < x1 && v[7:0] >= ovb(1 + k*8 + 3) &&
+            (v[7:0] < ovb(1 + k*8 + 4) || ovb(1 + k*8 + 4) == 8'd0))
+            {r, g, b} = {ovb(1 + k*8 + 5), ovb(1 + k*8 + 6), ovb(1 + k*8 + 7)};
+    end
+    video_r <= (vis_h && vis_v && (bg_pix || |opix)) ? r : 8'd0;
+    video_g <= (vis_h && vis_v && (bg_pix || |opix)) ? g : 8'd0;
+    video_b <= (vis_h && vis_v && (bg_pix || |opix)) ? b : 8'd0;
+end
 
 // ---------------------------------------------------------------- S2636 tone: toggles every C7 + 1 lines
 
