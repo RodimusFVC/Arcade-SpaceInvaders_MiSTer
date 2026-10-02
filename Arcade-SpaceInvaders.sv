@@ -79,8 +79,16 @@ wire signed [15:0] ds_audio;
 wire               ds_on;
 assign audio   = zac ? z_audio : ds_on ? ds_audio : b8_audio;
 assign audio_r = zac ? audio : ds_on ? ds_audio : b8_audio_r;
-assign AUDIO_L = pause_cpu ? 16'd0 : audio;
-assign AUDIO_R = pause_cpu ? 16'd0 : audio_r;
+// Master Volume (Game Audio): the board's master pot, x 1 / 0.71 / 0.5 / 0.25 / 1.41 / 2, saturated
+wire [9:0] mvol = status[51:49] == 3'd1 ? 10'd181 : status[51:49] == 3'd2 ? 10'd128 : status[51:49] == 3'd3 ? 10'd64 :
+                  status[51:49] == 3'd4 ? 10'd362 : status[51:49] == 3'd5 ? 10'd512 : 10'd256;
+function automatic signed [15:0] mvol_apply(input signed [15:0] a, input [9:0] g);
+	reg signed [26:0] p;
+	p = a * $signed({1'b0, g});
+	mvol_apply = (p >>> 8) > 27'sd32767 ? 16'sd32767 : (p >>> 8) < -27'sd32768 ? -16'sd32768 : 16'(p >>> 8);
+endfunction
+assign AUDIO_L = pause_cpu ? 16'd0 : mvol_apply(audio, mvol);
+assign AUDIO_R = pause_cpu ? 16'd0 : mvol_apply(audio_r, mvol);
 assign AUDIO_S = 1;   // signed
 assign AUDIO_MIX = 0;
 
@@ -152,11 +160,21 @@ localparam CONF_STR = {
 	"P1OB,HDMI Flip,Off,On;",
 	"P1OM,CRT Flip,Off,On;",
 	"P1OGI,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
+	"P1O[30:27],H Position (CRT),0,+1,+2,+3,+4,+5,+6,+7,-8,-7,-6,-5,-4,-3,-2,-1;",
+	"P1O[34:31],V Position (CRT),0,+1,+2,+3,+4,+5,+6,+7,-8,-7,-6,-5,-4,-3,-2,-1;",
 	"-;",
 	"P2,Game Options;",
 	"P2ON,Overlay,On,Off;",
 	"P2OO,Crosshair,On,Off;",
 	"P2OPQ,Trackball Speed,Normal,Fast,Slow;",
+	"-;",
+	"P5,Game Audio;",
+	"P5O[37:35],Timing Caps,Factory,-10%,-20%,-30%,+10%,+20%,+30%;",
+	"P5O[40:38],Filter Caps,Factory,-10%,-20%,-30%,+10%,+20%,+30%;",
+	"P5O[43:41],Oscillator Caps,Factory,-10%,-20%,-30%,+10%,+20%,+30%;",
+	"P5O[45:44],Aged Caps,Off,Light,Heavy;",
+	"P5O[48:46],Music Volume,Factory,Low,Lowest,High,Highest;",
+	"P5O[51:49],Master Volume,Factory,-3dB,-6dB,-12dB,+3dB,+6dB;",
 	"-;",
 	"P3,Pause Options;",
 	"P3OJ,Pause when OSD is open,On,Off;",
@@ -514,7 +532,7 @@ always @(posedge CLK_40M) if (ioctl_wr) begin
 end
 assign ds_on = ds_on_r;
 
-wire [47:0] ds_src = {7'd0, vblank, 8'd0, b8_lat};     // misc, latch 0, latches 4-1
+wire [63:0] ds_src = {status[48:46], status[45:44], status[43:41], 2'd0, status[40:35], 7'd0, vblank, 8'd0, b8_lat};   // Game Audio, misc, latch 0, latches 4-1
 
 dsnd_engine dsnd
 (
@@ -575,6 +593,9 @@ mw8080_board board
 	.ioctl_wr0(ioctl_wr & (ioctl_index == 8'd0)),
 
 	.crt_flip(status[22]),
+	.h_adj(status[30:27]),
+	.v_adj(status[34:31]),
+	.snd_tweak({status[45:44], status[43:41], status[40:38], status[37:35]}),
 	.ov_en(~status[23]),
 	.ov_tab(ov_tab),
 
@@ -616,6 +637,9 @@ zac1b1120_board zboard
 	.ioctl_dout(ioctl_dout),
 	.ioctl_wr0(ioctl_wr & (ioctl_index == 8'd0)),
 
+	.h_adj(status[30:27]),
+	.v_adj(status[34:31]),
+	.snd_tweak({status[45:44], status[43:41], status[40:38], status[37:35]}),
 	.ov_en(~status[23]),
 	.ov_tab(ov_tab),
 

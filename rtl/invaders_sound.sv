@@ -23,10 +23,168 @@ module invaders_sound
     input              [7:0] p2,             // port 5
     input                    v16,            // 16V: the bonus base's "480 Hz"
     input                    taito,          // Taito L-shaped sound board values (else Midway)
+    input             [10:0] tweak,          // Game Audio: {aged caps, oscillator, filter, timing} settings
     output reg signed [15:0] out = 16'sd0
 );
 
 `include "invaders_snd_consts.svh"
+
+
+// Game Audio (OSD, per game): capacitor groups scale the rate constants that depend on them. tweak = {oscillator,
+// filter, timing} index: 0 Factory, 1-3 = -10 / -20 / -30 %, 4-6 = +10 / +20 / +30 % capacitance (rate x 1 / C).
+// A sequential scaler rebuilds kr[] after reset or a settings change; Factory reproduces the constants exactly.
+localparam int NK = 56;
+localparam int K_SH_ENV_UP    = 0;
+localparam int K_SH_ENV_DN    = 1;
+localparam int K_BN_KC        = 2;
+localparam int K_BN_KD        = 3;
+localparam int K_OS_E2        = 4;
+localparam int K_EX_E1C       = 5;
+localparam int K_EX_E1D       = 6;
+localparam int K_MS_E1C       = 7;
+localparam int K_MS_E1D       = 8;
+localparam int K_IH_E1C       = 9;
+localparam int K_IH_E1D       = 10;
+localparam int K_IH_ENV_UP    = 11;
+localparam int K_IH_ENV_DN    = 12;
+localparam int K_EX_EC        = 13;
+localparam int K_EX_ED        = 14;
+localparam int K_MS_ENV_UP    = 15;
+localparam int K_MS_ENV_DN    = 16;
+localparam int K_MS_CR        = 17;
+localparam int K_MS_EC        = 18;
+localparam int K_MS_ED        = 19;
+localparam int K_NZ_INC       = 20;
+localparam int K_SH_OSC_D0    = 21;
+localparam int K_SH_OSC_D1    = 22;
+localparam int K_SH_VCO_KA    = 23;
+localparam int K_SH_VCO_KB    = 24;
+localparam int K_FL_KC0       = 25;
+localparam int K_FL_KC1       = 26;
+localparam int K_FL_KC2       = 27;
+localparam int K_FL_KC3       = 28;
+localparam int K_FL_KC4       = 29;
+localparam int K_FL_KC5       = 30;
+localparam int K_FL_KC6       = 31;
+localparam int K_FL_KC7       = 32;
+localparam int K_FL_KC8       = 33;
+localparam int K_FL_KC9       = 34;
+localparam int K_FL_KC10      = 35;
+localparam int K_FL_KC11      = 36;
+localparam int K_FL_KC12      = 37;
+localparam int K_FL_KC13      = 38;
+localparam int K_FL_KC14      = 39;
+localparam int K_FL_KC15      = 40;
+localparam int K_FL_KD        = 41;
+localparam int K_IH_OSC_D0    = 42;
+localparam int K_IH_OSC_D1    = 43;
+localparam int K_IH_VCO_KA    = 44;
+localparam int K_IH_VCO_KB    = 45;
+localparam int K_SN_SLF_UP    = 46;
+localparam int K_SN_SLF_DN    = 47;
+localparam int K_SN_VCO_STEP  = 48;
+localparam int K_FL_RC1       = 49;
+localparam int K_FL_RC2       = 50;
+localparam int K_MX_CAMP      = 51;
+localparam int K_EX_RC1       = 52;
+localparam int K_EX_RC2       = 53;
+localparam int K_MX_C11       = 54;
+localparam int K_MX_C44       = 55;
+localparam logic [2*NK-1:0] KG = 112'b0101010101010110101010101010101010101010101010101010101010101010101010100000000000000000000000000000000000000000;      // 0 timing, 1 filter, 2 oscillator
+localparam logic [NK-1:0]   KC = 56'b11111110001100111111111111111111100011100110011111111100;        // 1 = RC coefficient, capped at 1.0
+wire  signed [35:0] kb [NK];
+assign kb[0] = SH_ENV_UP;
+assign kb[1] = SH_ENV_DN;
+assign kb[2] = BN_KC;
+assign kb[3] = BN_KD;
+assign kb[4] = OS_E2;
+assign kb[5] = EX_E1C;
+assign kb[6] = EX_E1D;
+assign kb[7] = MS_E1C;
+assign kb[8] = MS_E1D;
+assign kb[9] = IH_E1C;
+assign kb[10] = IH_E1D;
+assign kb[11] = IH_ENV_UP;
+assign kb[12] = IH_ENV_DN;
+assign kb[13] = EX_EC;
+assign kb[14] = EX_ED;
+assign kb[15] = MS_ENV_UP;
+assign kb[16] = MS_ENV_DN;
+assign kb[17] = MS_CR;
+assign kb[18] = MS_EC;
+assign kb[19] = MS_ED;
+assign kb[20] = NZ_INC;
+assign kb[21] = SH_OSC_D0;
+assign kb[22] = SH_OSC_D1;
+assign kb[23] = SH_VCO_KA;
+assign kb[24] = SH_VCO_KB;
+assign kb[25] = FL_KC0;
+assign kb[26] = FL_KC1;
+assign kb[27] = FL_KC2;
+assign kb[28] = FL_KC3;
+assign kb[29] = FL_KC4;
+assign kb[30] = FL_KC5;
+assign kb[31] = FL_KC6;
+assign kb[32] = FL_KC7;
+assign kb[33] = FL_KC8;
+assign kb[34] = FL_KC9;
+assign kb[35] = FL_KC10;
+assign kb[36] = FL_KC11;
+assign kb[37] = FL_KC12;
+assign kb[38] = FL_KC13;
+assign kb[39] = FL_KC14;
+assign kb[40] = FL_KC15;
+assign kb[41] = FL_KD;
+assign kb[42] = IH_OSC_D0;
+assign kb[43] = IH_OSC_D1;
+assign kb[44] = IH_VCO_KA;
+assign kb[45] = IH_VCO_KB;
+assign kb[46] = SN_SLF_UP;
+assign kb[47] = SN_SLF_DN;
+assign kb[48] = SN_VCO_STEP;
+assign kb[49] = FL_RC1;
+assign kb[50] = FL_RC2;
+assign kb[51] = MX_CAMP;
+assign kb[52] = EX_RC1;
+assign kb[53] = EX_RC2;
+assign kb[54] = MX_C11;
+assign kb[55] = MX_C44;
+logic signed [35:0] kr [NK];
+logic  [6:0] ks = 7'd0;
+logic [11:0] tw_d = 12'hFFF;
+logic        krun = 1'b1;
+
+function automatic [16:0] aged_f(input [1:0] i);   // Aged Caps Off / Light / Heavy: capacitance x 1, 0.85, 0.7
+    aged_f = i == 2'd1 ? 17'd77101 : i == 2'd2 ? 17'd93623 : 17'd65536;
+endfunction
+
+function automatic [16:0] cap_f(input [2:0] i);
+    case (i)
+        3'd1: cap_f = 17'd72818;   3'd2: cap_f = 17'd81920;   3'd3: cap_f = 17'd93623;
+        3'd4: cap_f = 17'd59578;   3'd5: cap_f = 17'd54613;   3'd6: cap_f = 17'd50412;
+        default: cap_f = 17'd65536;
+    endcase
+endfunction
+
+always @(posedge clk) begin
+    if (reset || {taito, tweak} != tw_d) begin
+        tw_d <= {taito, tweak};
+        ks   <= 7'd0;
+        krun <= 1'b1;
+    end else if (krun) begin : scale
+        logic [1:0] g;
+        logic signed [55:0] pr;
+        logic        [33:0] fa;
+        logic signed [35:0] v;
+        g  = KG[ks*2 +: 2];
+        fa = cap_f(g == 2'd0 ? tweak[2:0] : g == 2'd1 ? tweak[5:3] : tweak[8:6]) * (g == 2'd2 ? 17'd65536 : aged_f(tweak[10:9]));
+        pr = kb[ks] * $signed({1'b0, fa[33:16]});
+        v  = 36'(pr >>> 16);
+        kr[ks] <= (KC[ks] && v > 36'sd268435456) ? 36'sd268435456 : v;
+        if (ks == 7'(NK - 1)) krun <= 1'b0;
+        else                  ks <= ks + 7'd1;
+    end
+end
 
 function signed [35:0] pos(input signed [35:0] v);
     pos = v < 0 ? 36'sd0 : v;
@@ -38,10 +196,10 @@ endfunction
 
 function signed [35:0] fl_kc(input [3:0] d);
     case (d)
-        4'd0: fl_kc = FL_KC0;   4'd1: fl_kc = FL_KC1;   4'd2: fl_kc = FL_KC2;   4'd3: fl_kc = FL_KC3;
-        4'd4: fl_kc = FL_KC4;   4'd5: fl_kc = FL_KC5;   4'd6: fl_kc = FL_KC6;   4'd7: fl_kc = FL_KC7;
-        4'd8: fl_kc = FL_KC8;   4'd9: fl_kc = FL_KC9;   4'd10: fl_kc = FL_KC10; 4'd11: fl_kc = FL_KC11;
-        4'd12: fl_kc = FL_KC12; 4'd13: fl_kc = FL_KC13; 4'd14: fl_kc = FL_KC14; default: fl_kc = FL_KC15;
+        4'd0: fl_kc = kr[K_FL_KC0];   4'd1: fl_kc = kr[K_FL_KC1];   4'd2: fl_kc = kr[K_FL_KC2];   4'd3: fl_kc = kr[K_FL_KC3];
+        4'd4: fl_kc = kr[K_FL_KC4];   4'd5: fl_kc = kr[K_FL_KC5];   4'd6: fl_kc = kr[K_FL_KC6];   4'd7: fl_kc = kr[K_FL_KC7];
+        4'd8: fl_kc = kr[K_FL_KC8];   4'd9: fl_kc = kr[K_FL_KC9];   4'd10: fl_kc = kr[K_FL_KC10]; 4'd11: fl_kc = kr[K_FL_KC11];
+        4'd12: fl_kc = kr[K_FL_KC12]; 4'd13: fl_kc = kr[K_FL_KC13]; 4'd14: fl_kc = kr[K_FL_KC14]; default: fl_kc = kr[K_FL_KC15];
     endcase
 endfunction
 
@@ -91,8 +249,8 @@ reg  signed [35:0] o_sh, o_fl, o_bn, o_ih, o_ex, o_ms, o_sn;
 reg  [4:0] cnt_sh, cnt_ms, cnt_sn;
 
 wire signed [35:0] os_t = (k == 2'd0 ? s_p1[3] : k == 2'd1 ? s_p1[2] : s_p1[1]) ? OS_TRIG : 36'sd0;
-wire signed [35:0] os_e1c = k == 2'd0 ? IH_E1C : k == 2'd1 ? EX_E1C : MS_E1C;
-wire signed [35:0] os_e1d = k == 2'd0 ? IH_E1D : k == 2'd1 ? EX_E1D : MS_E1D;
+wire signed [35:0] os_e1c = k == 2'd0 ? kr[K_IH_E1C] : k == 2'd1 ? kr[K_EX_E1C] : kr[K_MS_E1C];
+wire signed [35:0] os_e1d = k == 2'd0 ? kr[K_IH_E1D] : k == 2'd1 ? kr[K_EX_E1D] : kr[K_MS_E1D];
 
 localparam S_START = 6'd0,  S_OSC = 6'd1,  S_OS = 6'd20, S_IH = 6'd28, S_EX = 6'd31, S_MS = 6'd38,
            S_MX = 6'd50;
@@ -119,12 +277,12 @@ always @(posedge clk) begin
             S_START: begin : s_start
                 reg [32:0] ph;
                 reg [16:0] l;
-                ph = {1'b0, nz_ph} + {1'b0, NZ_INC[31:0]};
+                ph = {1'b0, nz_ph} + {1'b0, kr[K_NZ_INC][31:0]};
                 l = ph[32] ? {lfsr[15:0], lfsr[4] ^ lfsr[16]} : lfsr;
                 nz_ph <= ph[31:0];
                 lfsr <= l;
                 nz <= l[12] ? V12 : 36'sd0;
-                sh_env <= clamp(sh_env + (s_p2[4] ? SH_ENV_UP : 36'sd0) - SH_ENV_DN, 36'sd0, VOH);
+                sh_env <= clamp(sh_env + (s_p2[4] ? kr[K_SH_ENV_UP] : 36'sd0) - kr[K_SH_ENV_DN], 36'sd0, VOH);
                 sub <= 5'd0;
                 cnt_sh <= 5'd0; cnt_ms <= 5'd0; cnt_sn <= 5'd0;
                 st <= S_OSC;
@@ -133,8 +291,8 @@ always @(posedge clk) begin
             S_OSC: begin
                 for (n = 0; n < 2; n = n + 1) begin : osc_sub
                     reg signed [35:0] d0, d1, x;
-                    d0 = n == 0 ? SH_OSC_D0 : IH_OSC_D0;
-                    d1 = n == 0 ? SH_OSC_D1 : IH_OSC_D1;
+                    d0 = n == 0 ? kr[K_SH_OSC_D0] : kr[K_IH_OSC_D0];
+                    d1 = n == 0 ? kr[K_SH_OSC_D1] : kr[K_IH_OSC_D1];
                     if (osc_ff[n]) begin
                         x = osc_v[n] + d1;
                         if (x > OSC_TH) begin osc_v[n] <= OSC_TH; osc_ff[n] <= 1'b0; end else osc_v[n] <= x;
@@ -147,10 +305,10 @@ always @(posedge clk) begin
                 sub <= sub + 5'd1;
                 if (sub == 5'd15) st <= 6'd2;
             end
-            6'd2:  begin ma <= osc_v[0] - VBE; mb <= SH_VCO_KA; st <= 6'd3; end
-            6'd3:  begin ma <= osc_v[0] - VBE; mb <= SH_VCO_KB; st <= 6'd4; end
-            6'd4:  begin sd0 <= mq; ma <= osc_v[1] - VBE; mb <= IH_VCO_KA; st <= 6'd5; end
-            6'd5:  begin sd1 <= mq; ma <= osc_v[1] - VBE; mb <= IH_VCO_KB; st <= 6'd6; end
+            6'd2:  begin ma <= osc_v[0] - VBE; mb <= kr[K_SH_VCO_KA]; st <= 6'd3; end
+            6'd3:  begin ma <= osc_v[0] - VBE; mb <= kr[K_SH_VCO_KB]; st <= 6'd4; end
+            6'd4:  begin sd0 <= mq; ma <= osc_v[1] - VBE; mb <= kr[K_IH_VCO_KA]; st <= 6'd5; end
+            6'd5:  begin sd1 <= mq; ma <= osc_v[1] - VBE; mb <= kr[K_IH_VCO_KB]; st <= 6'd6; end
             6'd6:  begin id0 <= mq; st <= 6'd7; end
             6'd7:  begin id1 <= mq; sub <= 5'd0; st <= 6'd8; end
             // saucer hit and invader hit VCOs (VCO_1: charge while ff = 0), 16 substeps
@@ -181,7 +339,7 @@ always @(posedge clk) begin
                 sq = 36'((40'(cnt_sh) * 40'(VOH)) >>> 4);
                 o_sh <= clamp(pos(sh_env - VBE) - pos(sq - VBE) - SH_OUT_C, 36'sd0, VOH);
                 ma <= (fl_ff && s_p2[3:0] != 4'd0) ? FL_VCH - fl_v : fl_v;
-                mb <= fl_ff ? fl_kc(s_p2[3:0]) : FL_KD;
+                mb <= fl_ff ? fl_kc(s_p2[3:0]) : kr[K_FL_KD];
                 st <= 6'd10;
             end
             6'd10: st <= 6'd11;
@@ -193,15 +351,15 @@ always @(posedge clk) begin
                 if (fl_ff && x >= V555_TH) begin x = V555_TH; f = 1'b0; end
                 else if (!fl_ff && x <= V555_TR) begin x = V555_TR; f = 1'b1; end
                 fl_v <= x; fl_ff <= f;
-                ma <= (f ? VTTL : 36'sd0) - fl_rc1; mb <= FL_RC1;
+                ma <= (f ? VTTL : 36'sd0) - fl_rc1; mb <= kr[K_FL_RC1];
                 st <= 6'd12;
             end
             6'd12: st <= 6'd13;
-            6'd13: begin fl_rc1 <= fl_rc1 + mq; ma <= fl_rc1 + mq - fl_rc2; mb <= FL_RC2; st <= 6'd14; end
+            6'd13: begin fl_rc1 <= fl_rc1 + mq; ma <= fl_rc1 + mq - fl_rc2; mb <= kr[K_FL_RC2]; st <= 6'd14; end
             6'd14: st <= 6'd15;
             6'd15: begin
                 fl_rc2 <= fl_rc2 + mq; o_fl <= fl_rc2 + mq;
-                ma <= bn_ff ? V5 - bn_v : bn_v; mb <= bn_ff ? BN_KC : BN_KD;
+                ma <= bn_ff ? V5 - bn_v : bn_v; mb <= bn_ff ? kr[K_BN_KC] : kr[K_BN_KD];
                 st <= 6'd16;
             end
             6'd16: st <= 6'd17;
@@ -223,7 +381,7 @@ always @(posedge clk) begin
             end
             // op-amp one-shot k (0 invader hit, 1 explosion, 2 missile)
             S_OS: begin ma <= os_t - os_vc2[k]; mb <= OS_K10; st <= S_OS + 6'd1; end
-            S_OS + 6'd1: begin ma <= os_t - os_vc2[k]; mb <= OS_E2; st <= S_OS + 6'd2; end
+            S_OS + 6'd1: begin ma <= os_t - os_vc2[k]; mb <= kr[K_OS_E2]; st <= S_OS + 6'd2; end
             S_OS + 6'd2: begin lhs <= mq + (os_on[k] ? OS_VOUT_R5 : 36'sd0); st <= S_OS + 6'd3; end
             S_OS + 6'd3: begin : os3
                 reg signed [35:0] vo, vc1;
@@ -252,7 +410,7 @@ always @(posedge clk) begin
             end
             // invader hit output
             S_IH: begin
-                ih_env <= clamp(ih_env + (os_on[0] ? IH_ENV_UP : 36'sd0) - IH_ENV_DN, 36'sd0, VOH);
+                ih_env <= clamp(ih_env + (os_on[0] ? kr[K_IH_ENV_UP] : 36'sd0) - kr[K_IH_ENV_DN], 36'sd0, VOH);
                 ma <= pos(vco_v[1] - VBE); mb <= IH_OUT_G;
                 st <= S_IH + 6'd1;
             end
@@ -264,7 +422,7 @@ always @(posedge clk) begin
             end
             // explosion
             S_EX: begin
-                ma <= os_on[1] ? EX_VT - ex_vc : VBE - ex_vc; mb <= os_on[1] ? EX_EC : EX_ED;
+                ma <= os_on[1] ? EX_VT - ex_vc : VBE - ex_vc; mb <= os_on[1] ? kr[K_EX_EC] : kr[K_EX_ED];
                 st <= S_EX + 6'd1;
             end
             S_EX + 6'd1: st <= S_EX + 6'd2;
@@ -274,22 +432,22 @@ always @(posedge clk) begin
                 ex_vc <= vc;
                 o = pos(pos(vc - VBE) - pos(nz - VBE) - EX_C);
                 if (o > VOH) o = VOH;
-                ma <= o - ex_rc1; mb <= EX_RC1;
+                ma <= o - ex_rc1; mb <= kr[K_EX_RC1];
                 st <= S_EX + 6'd3;
             end
             S_EX + 6'd3: st <= S_EX + 6'd4;
-            S_EX + 6'd4: begin ex_rc1 <= ex_rc1 + mq; ma <= ex_rc1 + mq - ex_rc2; mb <= EX_RC2; st <= S_EX + 6'd5; end
+            S_EX + 6'd4: begin ex_rc1 <= ex_rc1 + mq; ma <= ex_rc1 + mq - ex_rc2; mb <= kr[K_EX_RC2]; st <= S_EX + 6'd5; end
             S_EX + 6'd5: st <= S_EX + 6'd6;
             S_EX + 6'd6: begin ex_rc2 <= ex_rc2 + mq; o_ex <= ex_rc2 + mq; k <= 2'd2; st <= S_OS; end
             // missile
             S_MS: begin : ms0
                 reg signed [35:0] e, x;
-                e = clamp(ms_env + (os_on[2] ? MS_ENV_UP : 36'sd0) - MS_ENV_DN, 36'sd0, VOH);
+                e = clamp(ms_env + (os_on[2] ? kr[K_MS_ENV_UP] : 36'sd0) - kr[K_MS_ENV_DN], 36'sd0, VOH);
                 ms_env <= e;
                 m73 <= clamp(e - VBE, 36'sd0, V12);
                 x = nz - ms_cr;
                 m74 <= x;
-                ma <= x; mb <= MS_CR;
+                ma <= x; mb <= kr[K_MS_CR];
                 st <= S_MS + 6'd1;
             end
             S_MS + 6'd1: begin ma <= m74; mb <= MS_NZ_G; st <= S_MS + 6'd2; end
@@ -301,7 +459,7 @@ always @(posedge clk) begin
                 d0 = MS_VCO_IF + mq + t1;
                 md0 <= d0; md1 <= MS_VCO_T1 - d0;
                 // SN76477 SLF
-                s = sn_slf_ff ? sn_slf - SN_SLF_DN : sn_slf + SN_SLF_UP;
+                s = sn_slf_ff ? sn_slf - kr[K_SN_SLF_DN] : sn_slf + kr[K_SN_SLF_UP];
                 if (!sn_slf_ff && s > SN_SLF_MAX) s = SN_SLF_MAX;
                 if (sn_slf_ff && s < SN_SLF_MIN) s = SN_SLF_MIN;
                 sn_slf <= s;
@@ -326,8 +484,8 @@ always @(posedge clk) begin
                 cnt_ms <= cnt_ms + {4'd0, f};
                 vmax = sn_slf + SN_VCO_DIFF;
                 f = sn_vco_ff;
-                if (!sn_vco_ff) begin x = sn_vco + SN_VCO_STEP; if (x > vmax) x = vmax; end
-                else begin x = sn_vco - SN_VCO_STEP; if (x < SN_SLF_MIN) x = SN_SLF_MIN; end
+                if (!sn_vco_ff) begin x = sn_vco + kr[K_SN_VCO_STEP]; if (x > vmax) x = vmax; end
+                else begin x = sn_vco - kr[K_SN_VCO_STEP]; if (x < SN_SLF_MIN) x = SN_SLF_MIN; end
                 sn_vco <= x;
                 if (x >= vmax) f = 1'b1; else if (x <= SN_SLF_MIN) f = 1'b0;
                 sn_vco_ff <= f;
@@ -341,7 +499,7 @@ always @(posedge clk) begin
                 reg signed [35:0] sq;
                 sq = 36'((40'(cnt_ms) * 40'(VOH)) >>> 4);
                 m77 <= clamp(mq - pos(sq - VBE) - MS_A3_C, 36'sd0, VOH);
-                ma <= s_p1[1] ? MS_VT - ms_vc : VBE - ms_vc; mb <= s_p1[1] ? MS_EC : MS_ED;
+                ma <= s_p1[1] ? MS_VT - ms_vc : VBE - ms_vc; mb <= s_p1[1] ? kr[K_MS_EC] : kr[K_MS_ED];
                 o_sn <= s_p1[0] ? SN_LO + 36'((40'(cnt_sn) * (40'(SN_HI) - 40'(SN_LO))) >>> 4) : SN_MID;
                 st <= S_MS + 6'd10;
             end
@@ -353,7 +511,7 @@ always @(posedge clk) begin
                 o = pos(pos(vc - VBE) - pos(m77 - VBE) - MS_C);
                 if (o > VOH) o = VOH;
                 o_ms <= o;
-                ma <= o - mx_c11; mb <= MX_C11;
+                ma <= o - mx_c11; mb <= kr[K_MX_C11];
                 st <= S_MX;
             end
             // summing amplifier
@@ -367,7 +525,7 @@ always @(posedge clk) begin
             S_MX + 6'd7:  begin acc <= acc + mq; st <= S_MX + 6'd8; end
             S_MX + 6'd8:  begin
                 v <= -(acc + mq);
-                ma <= -(acc + mq) - mx_c44; mb <= MX_C44;
+                ma <= -(acc + mq) - mx_c44; mb <= kr[K_MX_C44];
                 st <= 6'd18;
             end
             6'd18: st <= 6'd19;
@@ -378,7 +536,7 @@ always @(posedge clk) begin
                 mx_c44 <= c;
                 x = clamp(v - c, MX_VLO, MX_VHI);
                 v <= x;
-                ma <= x - mx_amp; mb <= MX_CAMP;
+                ma <= x - mx_amp; mb <= kr[K_MX_CAMP];
                 st <= S_MX + 6'd9;
             end
             S_MX + 6'd9:  st <= S_MX + 6'd10;

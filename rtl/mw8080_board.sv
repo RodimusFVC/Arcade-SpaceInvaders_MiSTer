@@ -75,6 +75,9 @@ module mw8080_board
     input  logic        ioctl_wr0,
 
     input  logic        crt_flip,
+    input  logic signed [3:0] h_adj,   // CRT position: HSYNC moved 2 pixels per step
+    input  logic signed [3:0] v_adj,   //               VSYNC moved 1 line per step
+    input  logic [10:0] snd_tweak,      // Game Audio {aged caps, oscillator, filter, timing} settings
     input  logic        ov_en,          // colour overlay on
     input  logic [1031:0] ov_tab,       // overlay: byte 0 count, then 8 bytes per rectangle (MRA index 1 from 64)
 
@@ -804,6 +807,8 @@ end
 // visible window hx 1-260 = 4 black pixels + 256 bitmap pixels; HSYNC = MAME H 272-287, VSYNC = V 236-239.
 // spacecom has no 4-pixel delay: only the 256 bitmap pixels are shown (hx 5-260, flipped hx 1-256).
 wire [8:0] hb_end   = (narrow & ~flip) ? 9'd4 : 9'd0;
+wire [8:0] hs_on    = 9'd272 + {{4{h_adj[3]}}, h_adj, 1'b0};   // blanking stays put, only the sync pulses move
+wire [8:0] vs_on    = 9'd486 + {{5{v_adj[3]}}, v_adj};
 wire [8:0] hb_start = (narrow &  flip) ? 9'd256 : 9'd260;
 always_ff @(posedge clk) begin
     if (pix) begin
@@ -813,11 +818,11 @@ always_ff @(posedge clk) begin
             video_hblank <= 1'b1;
             video_vblank <= cnt_e7[4] | (v_shut & vpos >= 8'd224);   // shuttlei: 192 lines
         end
-        if (hx == 9'd272) begin
+        if (hx == hs_on) begin
             video_hs <= 1'b1;
-            video_vs <= (vcnt >= 9'd486 && vcnt < 9'd490);
+            video_vs <= (vcnt >= vs_on && vcnt < vs_on + 9'd4);
         end
-        if (hx == 9'd288) video_hs <= 1'b0;
+        if (hx == hs_on + 9'd16) video_hs <= 1'b0;
     end
 end
 
@@ -1040,6 +1045,7 @@ invaders_sound u_sound
     .p2(sp2),
     .v16(cnt_e7[0]),
     .taito(taito_snd),
+    .tweak(snd_tweak),
     .out(board_snd)
 );
 
@@ -1054,6 +1060,7 @@ invaders_sound u_sound2
     .p2(snd4),
     .v16(cnt_e7[0]),
     .taito(taito_snd),
+    .tweak(snd_tweak),
     .out(board2_snd)
 );
 assign audio_r = smap == 8'd9 ? board2_snd : audio;

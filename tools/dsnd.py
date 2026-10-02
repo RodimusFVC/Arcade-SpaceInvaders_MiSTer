@@ -104,6 +104,41 @@ class Board(Prog):
     def __init__(self, name):
         super().__init__(name)
         self.inits = []
+        self.groups = set()
+        self.kcode = []                               # rate scaling, run only when a Game Audio setting changes
+        self.music = False                            # a music trim pot is used (mixer input flagged "music")
+
+    # --- Game Audio settings: capacitor groups T (timing / envelope), F (filters), O (oscillators). OSD index
+    # 0 Factory, 1-3 = -10 / -20 / -30 %, 4-6 = +10 / +20 / +30 % capacitance; a rate per sample scales by 1 / C.
+    GROUP_SRC = {"T": (6, 0x07, 16), "F": (6, 0x38, 13), "O": (7, 0x07, 16)}
+    SCALES = (1.0, 0.9, 0.8, 0.7, 1.1, 1.2, 1.3)
+    AGED = (1.0, 0.85, 0.7)                           # Aged Caps Off / Light / Heavy: electrolytics lose capacitance
+    MUSIC = (1.0, 0.7, 0.5, 1.4, 2.0)                 # Music Volume Factory / Low / Lowest / High / Highest
+
+    def chain(self, reg, src, mask, sh, values):
+        """reg = values[setting index] (Q24), setting = (source byte & mask) >> ... as index << 16"""
+        self.op("LDLM", 0, self.src(src, 0), imm=mask | (sh << 8))
+        self.op("ST", "_gv")
+        self.op("LDI", imm=q(values[0]))
+        self.op("ST", reg)
+        for i, v in enumerate(values[1:], 1):
+            self.op("LD", "_gv")
+            self.op("CMPI", imm=i << 16)
+            self.op("LDI", imm=q(v))
+            self.op("STF", reg)
+
+    def kreg(self, reg, k, g, clamp=True):
+        """reg = k x the group factor (k a per-sample rate: RC coefficient, slope or phase step); emitted into the
+        on-change block, so it costs nothing per sample"""
+        body, self.code = self.code, self.kcode
+        self.op("LDI", imm=q(k))
+        if g:
+            self.groups.add(g)
+            self.op("MUL", "_f" + g)
+            if clamp:
+                self.op("MINI", imm=ONE)
+        self.op("ST", reg)
+        self.kcode, self.code = self.code, body
 
     def init(self, reg, value):
         self.inits.append((reg, value))
@@ -192,9 +227,10 @@ class Board(Prog):
             self.op("STF", out)
 
     def lfsr_noise(self, out, freq, amp, bias, n=0):
-        """DSS_LFSR_NOISE clocked at freq: out = bias +/- amp / 2, held between clocks"""
+        """DSS_LFSR_NOISE clocked at freq (an RC clock on these boards: oscillator group)"""
+        self.kreg(out + "_inc", freq / FS, "O", clamp=False)
         self.op("LD", out + "_ph")
-        self.op("ADDI", imm=q(freq / FS))
+        self.op("ADD", out + "_inc")
         self.op("ST", out + "_ph")
         self.op("CMPI", imm=ONE)
         at = self.skip_if(False)
@@ -242,11 +278,14 @@ class Board(Prog):
         if c2 is None:
             self.op("LD", out + "_f2"); self.op("CMPI", imm=q(0.5))
             self.op("LDI", imm=q(kd1)); self.op("LDIF", imm=q(kc1)); self.op("ST", out + "_k")
+            self.groups.add("T"); self.op("MUL", "_fT"); self.op("MINI", imm=ONE); self.op("ST", out + "_k")
+            self.op("LD", out + "_f2"); self.op("CMPI", imm=q(0.5))
             self.op("LDI", imm=q(VBE)); self.op("LDIF", imm=q(vt1))
             self.op("RCM", out + "_c1", self.r(out + "_k"))
         else:
+            self.kreg(out + "_k", kc1 if c2 else kd1, "T")
             self.op("LDI", imm=q(vt1 if c2 else VBE))
-            self.op("RC", out + "_c1", imm=q(kc1 if c2 else kd1))
+            self.op("RCM", out + "_c1", self.r(out + "_k"))
         self.op("ADDI", imm=q(-VBE))
         self.op("MAXI", imm=0)
         self.op("MULI", imm=q(r4 / r67))
@@ -260,11 +299,14 @@ class Board(Prog):
             if cf is None:
                 self.op("LD", out + "_g"); self.op("CMPI", imm=q(0.5))
                 self.op("LDI", imm=q(k0)); self.op("LDIF", imm=q(k1)); self.op("ST", out + "_k")
+                self.groups.add("T"); self.op("MUL", "_fT"); self.op("MINI", imm=ONE); self.op("ST", out + "_k")
+                self.op("LD", out + "_g"); self.op("CMPI", imm=q(0.5))
                 self.op("LDI", imm=0); self.op("LDIF", imm=q(vt))
                 self.op("RCM", out + "_" + cc, self.r(out + "_k"))
             else:
+                self.kreg(out + "_k", k1 if cf else k0, "T")
                 self.op("LDI", imm=q(vt if cf else 0))
-                self.op("RC", out + "_" + cc, imm=q(k1 if cf else k0))
+                self.op("RCM", out + "_" + cc, self.r(out + "_k"))
             self.op("MULI", imm=q(r4 / g(rr)))
             self.op("ADD", out + "_p")
             self.op("ST", out + "_p")
@@ -283,12 +325,14 @@ class Board(Prog):
         tl = (i1 - VBE / r4) * r3 + VBE
         th = (i1 + (vh - VBE) / r4) * r3 + VBE
         d0, d1 = ch0 / FS / c, ch1 / FS / c
+        self.kreg(out + "_d0", d0, "O", clamp=False)
+        self.kreg(out + "_d1", d1, "O", clamp=False)
         # state: _v cap voltage, _lo = 1.0 while discharging (power-up: charging, MAME m_flip_flop = 1)
         self.op("LD", out + "_lo")
         self.op("CMPI", imm=q(0.5))
         at = self.skip_if(True)
         self.op("LD", out + "_v")                     # charging
-        self.op("ADDI", imm=q(d1))
+        self.op("ADD", out + "_d1")
         self.op("CMPI", imm=q(th))
         at2 = self.skip_if(False)
         self.op("ADDI", imm=q(-th))                   # overshoot turns into discharge time
@@ -308,7 +352,7 @@ class Board(Prog):
         at4 = self.skip_if(True)                      # always: skip the discharge branch
         self.land(at)
         self.op("LD", out + "_v")                     # discharging
-        self.op("ADDI", imm=q(-d0))
+        self.op("SUB", out + "_d0")
         self.op("CMPI", imm=q(tl))
         at5 = self.skip_if(True)
         self.op("ADDI", imm=q(-tl))
@@ -334,6 +378,8 @@ class Board(Prog):
         """DST_OP_AMP_FILT, DISC_OP_AMP_FILTER_IS_BAND_PASS_1 (non-Norton), output clipped to the rails"""
         rt = par(r1, r2, r3)
         gain = -rf / rt
+        self.kreg(out + "_k2", rc_exp(rt * c2), "F")
+        self.kreg(out + "_k1", rc_exp(rf * c1), "F")
         self.load(src)
         self.op("ADDI", imm=q(-vref))
         self.op("MULI", imm=q(rt / r1))               # Millman: (in - vref) / r1 * rTotal
@@ -341,9 +387,9 @@ class Board(Prog):
         self.op("SUB", out + "_c2")
         self.op("ST", out + "_hp")                    # v - vC2 (before vC2 moves)
         self.op("LD", out + "_v")
-        self.op("RC", out + "_c2", imm=q(rc_exp(rt * c2)))
+        self.op("RCM", out + "_c2", self.r(out + "_k2"))
         self.op("LD", out + "_hp")
-        self.op("RC", out + "_c1", imm=q(rc_exp(rf * c1)))
+        self.op("RCM", out + "_c1", self.r(out + "_k1"))
         lo, hi = sorted(((vn - vref) / gain, (vp - RAIL - vref) / gain))
         self.op("MAXI", imm=q(lo))                    # clip at the rails before the (large) gain: no Q24 overflow
         self.op("MINI", imm=q(hi))
@@ -367,15 +413,17 @@ class Board(Prog):
         self.op("STNF", ph)
 
     def rcfilter(self, out, src, r, c):
+        self.kreg(out + "_k", rc_exp(r * c), "F")
         self.load(src)
-        self.op("RC", out, imm=q(rc_exp(r * c)))
+        self.op("RCM", out, self.r(out + "_k"))
 
     def crfilter(self, out, src, r, c):
         """high pass: out = in - cap; cap follows"""
+        self.kreg(out + "_k", rc_exp(r * c), "F")
         self.load(src)
         self.op("SUB", out + "_c")
         self.op("ST", out)
-        self.op("MULI", imm=q(rc_exp(r * c)))
+        self.op("MUL", out + "_k")
         self.op("ADD", out + "_c")
         self.op("ST", out + "_c")
 
@@ -412,22 +460,31 @@ class Board(Prog):
 
     def mixer_op_amp(self, out, ins, rf, c_amp=0, vref=0.0):
         """DST_MIXER, DISC_MIXER_IS_OP_AMP: ins = [(src, r, c)], output high-passed by c_amp (100k)"""
+        if c_amp:
+            self.kreg(out + "_ka", rc_exp(100e3 * c_amp), "F")
         self.op("LDI", imm=0)
         self.op("ST", out + "_s")
-        for k, (src, r, c) in enumerate(ins):
+        for k, inp in enumerate(ins):
+            src, r, c = inp[:3]
+            music = len(inp) > 3 and inp[3]
             if src is None:
                 continue
+            if c:
+                self.kreg(f"{out}_k{k}", rc_exp(r * c), "F")
             self.load(src)
             if c:
                 self.op("ADDI", imm=q(-vref))
-                self.op("RC", f"{out}_hp{k}", imm=q(rc_exp(r * c)))
+                self.op("RCM", f"{out}_hp{k}", self.r(f"{out}_k{k}"))
                 self.load(src)
                 self.op("SUB", f"{out}_hp{k}")
             self.op("MULI", imm=q(-rf / r))          # (vref - in) / r * rf, vref = 0
+            if music:                                 # the music trim pot
+                self.music = True
+                self.op("MUL", "_fM")
             self.op("ADD", out + "_s")
             self.op("ST", out + "_s")
         if c_amp:
-            self.op("RC", out + "_amp", imm=q(rc_exp(100e3 * c_amp)))
+            self.op("RCM", out + "_amp", self.r(out + "_ka"))
             self.op("LD", out + "_s")
             self.op("SUB", out + "_amp")
         self.op("ST", out)
@@ -442,6 +499,7 @@ class Board(Prog):
         """wrap: init block guarded by M[255], body, END"""
         body = self.code
         self.code = []
+        self.inits.append(("_glast", -1.0))
         if self.inits:
             self.op("LD", 255)
             self.op("CMPI", imm=1)
@@ -452,6 +510,35 @@ class Board(Prog):
             self.op("LDI", imm=1)
             self.op("ST", 255)
             self.land(at)
+        # Game Audio settings changed (or first sample: _glast powers up as -1)? -> group factors + scaled rates
+        self.op("LDLM", 0, self.src(6, 0), imm=0xFF)
+        self.op("ST", "_t")
+        self.op("LDLM", 0, self.src(7, 0), imm=0xFF | (8 << 8))
+        self.op("ADD", "_t")
+        self.op("ST", "_key")
+        self.op("SUB", "_glast")
+        self.op("ABS")
+        self.op("CMPI", imm=1)
+        at = self.skip_if(False)
+        for g in sorted(self.groups):
+            src, mask, sh = self.GROUP_SRC[g]
+            self.chain("_f" + g, src, mask, sh, [1.0 / sc for sc in self.SCALES])
+        aged = sorted(self.groups & {"T", "F"})
+        if aged:                                      # Aged Caps (src7 bits 4:3) on the timing / coupling caps
+            self.chain("_fA", 7, 0x18, 13, [1.0 / a for a in self.AGED])
+            for g in aged:
+                self.op("LD", "_f" + g)
+                self.op("MUL", "_fA")
+                self.op("ST", "_f" + g)
+        if self.music:                                # Music Volume (src7 bits 7:5)
+            self.chain("_fM", 7, 0xE0, 11, self.MUSIC)
+        self.code += self.kcode
+        self.op("LD", "_key")
+        self.op("ST", "_glast")
+        self.op("END")                                # a settings change costs one (silent) sample
+        self.land(at)
         self.code += body
         self.op("END")
+        if len(self.code) > 400:                      # static count includes skipped branches; the harness
+            print(f"note: {self.name} {len(self.code)} static instructions (check executed max < 400)")
         return self

@@ -34,7 +34,7 @@
 //  20 OUT: mix += acc   21 LDF a: if F acc = M[a]   22 SKF: if F skip imm   23 SKNF: if !F skip imm
 //  24 LDL b: acc = source byte << 16   25 ABS   26 FAND b: F &= bit   27 FOR b: F |= bit   28 STNF a: if !F
 //  29 LDLM b: acc = (source byte & imm[7:0]) << imm[12:8]
-// Sources (b[5:3]): 0-3 sound latches 1-4, 4 latch 0, 5 misc; b[2:0] = bit.
+// Sources (b[5:3]): 0-3 sound latches 1-4, 4 latch 0, 5 misc, 6 / 7 Game Audio settings; b[2:0] = bit.
 
 module dsnd_engine
 (
@@ -44,7 +44,7 @@ module dsnd_engine
     input  logic        prog_wr,        // MRA index 5 byte
     input  logic [11:0] prog_addr,
     input  logic  [7:0] prog_data,
-    input  logic [47:0] src,            // sources 5..0, one byte each
+    input  logic [63:0] src,            // sources 7..0, one byte each
     output logic signed [15:0] out
 );
 
@@ -113,7 +113,7 @@ wire  [7:0] fb  = ir[47:40];
 wire signed [31:0] imm = ir[31:0];
 wire signed [31:0] m_a = fwd_a ? fwd_d : mqa;   // E1: M[a] / M[b] with the previous write forwarded
 wire signed [31:0] m_b = fwd_b ? fwd_d : mqb;
-wire  [2:0] ssel = fb[5:3] > 3'd5 ? 3'd5 : fb[5:3];
+wire  [2:0] ssel = fb[5:3];
 wire  [7:0] sbyte = src[ssel*8 +: 8];
 wire        sbit = sbyte[fb[2:0]] ^ fa[0];
 wire signed [64:0] prod  = mul_a * mul_b;

@@ -39,7 +39,7 @@ def clowns():
     # springboard miss: not modelled by MAME (a sample there); no schematic yet
     # mixer: R507 music volume at its default (MAME adjuster 40 % on the log taper = 138k)
     b.mixer_op_amp("mix", [("sb", 10 * K, 0), (None, 10 * K, 0.022 * U), ("pop", 10 * K + 1 / (1 / (15 * K) + 1 / (39 * K)), 0),
-                           ("tone", 1 * K + 138 * K, 0)], rf=100 * K, c_amp=1 * U)
+                           ("tone", 1 * K + 138 * K, 0, True)], rf=100 * K, c_amp=1 * U)
     # D3 low mutes the board (MAME system_mute)
     b.op("BIT", 0, b.src(LATCH4, 3))
     b.op("LD", "mix")
@@ -88,7 +88,7 @@ def dogpatch():
     shot_vca(b, "lshot", ("bit", LATCH1, 4), "noise", SHOT_TVCA, 12 * K, 0.01 * U, 80 * K, 0.0022 * U)
     shot_vca(b, "rshot", ("bit", LATCH1, 5), "noise", SHOT_TVCA, 12 * K, 0.01 * U, 80 * K, 0.0033 * U)
     b.mixer_op_amp("l", [("lshot", 113 * K, 0)], rf=100 * K, c_amp=0.1 * U)
-    b.mixer_op_amp("r", [("rshot", 113 * K, 0), ("tone", 543 * K, 0)], rf=100 * K, c_amp=0.1 * U)
+    b.mixer_op_amp("r", [("rshot", 113 * K, 0), ("tone", 543 * K, 0, True)], rf=100 * K, c_amp=0.1 * U)
     gated_out(b, "l", "r", 32760.0 / 5.8 / 32768, (LATCH1, 3))
     return b.finish()
 
@@ -107,7 +107,7 @@ def boothill():
     shot_vca(b, "lhit", ("bit", LATCH1, 6), "noise", hit, 12 * K, 0.033 * U, 112 * K, 0.0033 * U)
     shot_vca(b, "rhit", ("bit", LATCH1, 7), "noise", hit, 12 * K, 0.0033 * U, 112 * K, 0.0022 * U)
     b.mixer_op_amp("l", [("lshot", 113 * K, 0), ("lhit", 145 * K, 0)], rf=100 * K, c_amp=0.1 * U)
-    b.mixer_op_amp("r", [("rshot", 113 * K, 0), ("rhit", 145 * K, 0), ("tone", 33 * K + logadj(1e6, 75e3, 35), 0)],
+    b.mixer_op_amp("r", [("rshot", 113 * K, 0), ("rhit", 145 * K, 0), ("tone", 33 * K + logadj(1e6, 75e3, 35), 0, True)],
                    rf=100 * K, c_amp=0.1 * U)
     gated_out(b, "l", "r", 7200.0 / 32768, (LATCH1, 3))
     return b.finish()
@@ -151,7 +151,7 @@ def desertgu():
     b.op_amp_filt_bp1("click", "click_in", rmix, 39 * K, 0.033 * U, 0.033 * U, r3=68)
     music = 30 * K + logadj(1e6, 75e3, 60)
     b.mixer_op_amp("mix", [("shot", 110 * K, 0.1 * U), (None, 56 * K, 0.1 * U), (None, 180 * K, 0.1 * U),
-                           ("click", 47 * K, 0.1 * U), ("tone", music, 0.1 * U)], rf=100 * K, c_amp=0.1 * U)
+                           ("click", 47 * K, 0.1 * U), ("tone", music, 0.1 * U, True)], rf=100 * K, c_amp=0.1 * U)
     b.op("BIT", 0, b.src(LATCH1, 3))
     b.op("NOT")
     b.op("LD", "mix")
@@ -161,7 +161,30 @@ def desertgu():
     return b.finish()
 
 
-BOARDS = {"clowns": clowns, "dogpatch": dogpatch, "boothill": boothill, "tornbase": tornbase, "desertgu": desertgu}
+def bowler():
+    """Bowling Alley: S1 = port 5 (D1 coin, D2 sound enable, D3 foul). MAME models only the foul: 180 Hz TTL square
+    through an op-amp VCA, 68k / 0.1 uF coupling. Rolling / pin / strike / spare sounds are not modelled (MAME too)."""
+    b = Board("bowler")
+    b.squarewfix("sq", 180)
+    b.op("LD", "sq")
+    b.op("CMPI", imm=1 << 23)
+    b.op("LDI", imm=0)
+    b.op("LDIF", imm=int(round(3.4 * (1 << 24))))    # DEFAULT_TTL_V_LOGIC_1
+    b.op("ST", "sqv")
+    b.tvca("fowl_v", dict(r1=2.7 * M_, r2=680 * K, r4=680 * K, r5=1 * K, r7=300 * K, c1=0.1 * U, v1=5, vP=12,
+                          f2=FN_TRG0), trig=(("bit", LATCH1, 3), 0, 0), inp=("sqv", 0.0))
+    b.crfilter("fowl", "fowl_v", 68 * K, 0.1 * U)
+    b.op("BIT", 0, b.src(LATCH1, 2))
+    b.op("NOT")
+    b.op("LD", "fowl")
+    b.op("LDIF", imm=0)
+    b.op("MULI", imm=int(round(10000 / 32768 * (1 << 24))))
+    b.op("OUT")
+    return b.finish()
+
+
+BOARDS = {"clowns": clowns, "dogpatch": dogpatch, "boothill": boothill, "tornbase": tornbase, "desertgu": desertgu,
+          "bowler": bowler}
 
 
 def program(machine):

@@ -46,6 +46,9 @@ module zac1b1120_board
     input  logic  [7:0] ioctl_dout,
     input  logic        ioctl_wr0,
 
+    input  logic signed [3:0] h_adj,   // CRT position: HSYNC moved 4 counts per step
+    input  logic signed [3:0] v_adj,   //               VSYNC moved 1 line per step
+    input  logic [10:0] snd_tweak,      // Game Audio {aged caps, oscillator, filter, timing} settings
     input  logic        ov_en,          // colour overlay (MAME layout rectangles, raw x 0-719 / line 0-255)
     input  logic [1031:0] ov_tab,
 
@@ -84,12 +87,14 @@ always_ff @(posedge clk) if (mce) begin
 end
 
 wire vis_h = h < 10'd720;
+wire [9:0] hs_on = 10'd760 + {{4{h_adj[3]}}, h_adj, 2'b00};   // blanking stays put, only the sync pulses move
+wire [8:0] vs_on = 9'd272 + {{5{v_adj[3]}}, v_adj};
 wire vis_v = v < 9'd256;
 always_ff @(posedge clk) if (mce) begin
     video_hblank <= ~vis_h;
     video_vblank <= ~vis_v;
-    video_hs     <= h >= 10'd760 && h < 10'd828;
-    video_vs     <= v >= 9'd272 && v < 9'd276;
+    video_hs     <= h >= hs_on && h < hs_on + 10'd68;
+    video_vs     <= v >= vs_on && v < vs_on + 9'd4;
 end
 
 // ---------------------------------------------------------------- S2650
@@ -253,6 +258,7 @@ zac_snd u_snd
     .pause(pause),
     .latch(snd_l),
     .pvi(pvi_tone),
+    .tweak(snd_tweak),
     .out(audio)
 );
 
