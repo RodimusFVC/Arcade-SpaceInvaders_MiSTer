@@ -69,6 +69,10 @@ module mw8080_board
     input  logic        xhair_en,       // draw the crosshair
     input  logic [31:0] f3,
     input  logic [127:0] io_tab,        // variant 20: [63:0] read source per port, [127:64] write targets per port
+    input  logic        ext_snd,        // another board drives the sound board (this board is held in reset)
+    input  logic        snd_reset,
+    input  logic  [7:0] ext_p1,
+    input  logic  [7:0] ext_p2,
 
     input  logic [24:0] ioctl_addr,
     input  logic  [7:0] ioctl_dout,
@@ -910,7 +914,8 @@ always_comb begin
     endcase
     // family 3: MAME's sample handlers mapped onto the board's voices (invaders samples: 0 missile, 1 explosion,
     // 2 invader hit, 3 saucer hit, 4-7 fleet, 8 bonus)
-    case (smap)
+    if (ext_snd) begin sp1 = ext_p1; sp2 = ext_p2; end
+    else case (smap)
         8'd1, 8'd7: begin sp1 = 8'd0; sp2 = 8'd0; end                              // silent / lrescue (tune only)
         8'd2: begin sp1 = {2'b00, snd1[5], snd1[4], snd1[0] | snd2[4], snd1[2], snd1[1], 1'b0};     // ballbomb
                     sp2 = {4'b0000, snd1[3] | snd2[0], 2'b00, snd2[2]}; end
@@ -954,7 +959,7 @@ logic signed [15:0] board_snd;
 invaders_sound u_sound
 (
     .clk(clk),
-    .reset(~rst_n),
+    .reset(ext_snd ? snd_reset : ~rst_n),
     .pause(pause),
     .p1(sp1),
     .p2(sp2),

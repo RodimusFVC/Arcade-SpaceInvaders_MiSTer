@@ -108,16 +108,23 @@ for _m in FAMILY4:
     SUPPORTED[("mw8080bw.cpp", _m, "empty_init")] = 20
 
 
+# Zaccaria 1B1120 (zaccaria/zac1b1120.cpp): its own board (rtl/zac1b1120_board.sv), variant 32 / 33 (Dodgem)
+SUPPORTED[("zac1b1120.cpp", "tinvader", "empty_init")] = 32
+SUPPORTED[("zac1b1120.cpp", "dodgem", "empty_init")] = 33
+
+
 def family4(g):
     return FAMILY4.get(g["machine"]) if g["drv"] == "mw8080bw.cpp" else None
 
 # ioctl index 0: maincpu 0x0000-0x7FFF (the board keeps 0000-1FFF and 4000-5FFF); invmulti: the raw 128K user1 dump
 REGIONS = {"maincpu": (0x0000, 0x8000),
            "maincpu_nibhi": (0x10000, 0x8000)}                  # ROM_SHIFT_NIBBLE_HI chips (spaceattbp)
-VARIANT_REGIONS = {9: {"user1": (0x0000, 0x20000)}}
+VARIANT_REGIONS = {9: {"user1": (0x0000, 0x20000)},
+                   32: {"maincpu": (0x0000, 0x2000), "gfx1": (0x2000, 0x400)},   # zac1b1120: program, characters
+                   33: {"maincpu": (0x0000, 0x2000), "gfx1": (0x2000, 0x400)}}
 INDEX0_TEXT = {9: "raw 128K user1 dump (banked and unscrambled on the read path)"}
 IGNORED_REGIONS = {"plds", "unknown", "unk"}
-BOARD_IGNORED = {0: {"proms"}, 1: {"user1"}, 10: {"proms"}}   # dumps the MAME config never reads (invadernc, spacmiss, shuttlei)
+BOARD_IGNORED = {0: {"proms"}, 1: {"user1"}, 10: {"proms"}, 32: {"proms"}, 33: {"proms"}}  # zac: 2621 sync PROM   # dumps the MAME config never reads (invadernc, spacmiss, shuttlei)
 RAM_WINDOWS = [(0x2000, 0x4000), (0x6000, 0x8000)]      # CPU reads RAM here; ROM bytes loaded into it are dead (jspecter)
 NAME_OVERRIDE = {"invaders": "Space Invaders"}
 
@@ -136,6 +143,8 @@ PORT_TAGS = {"yosakdon": [None, "IN0", "IN1", None],   # input port tags at boar
              "claybust": [None, "IN1", None, None],       # IN1 bits 0-1 (gun on, trigger) come from the board
              "mraker": [None, "IN0", "IN1", "IN2"],
              "cane": [None, "IN1", None, None],
+             "tinvader": ["1E80", "1E81", "1E82", "1E85"],   # zac1b1120 memory-mapped ports
+             "dodgem": ["1E80", "1E81", "1E82", "1E85"],
              "starw1": [None, "IN1", "IN2", None]}   # ports FC-FF: P2 (read on the cocktail flip), FE DSW, FF   # ports 41 / 42 / 44: board slots 1-3
 LINE_BASE = 40      # control ids 40-47 = DIP byte 3 bits: MAME fake-port DIPs read through a custom handler
 CTL_VBLANK = 36     # control id 36 = VBLANK (spacecom IN2 bit 0)
@@ -151,7 +160,7 @@ CTL = {("JOYSTICK_UP", 1): 1, ("JOYSTICK_DOWN", 1): 2, ("JOYSTICK_LEFT", 1): 3, 
        ("BUTTON1", 2): 13, ("BUTTON2", 2): 14, ("BUTTON3", 2): 15, ("BUTTON4", 2): 16,
        ("BUTTON5", 1): 32, ("BUTTON6", 1): 33, ("BUTTON5", 2): 34, ("BUTTON6", 2): 35,
        ("COIN1", 0): 17, ("COIN2", 0): 18, ("START1", 0): 19, ("START2", 0): 20,
-       ("TILT", 0): 21, ("SERVICE1", 0): 22, ("SERVICE", 0): 22, ("COIN3", 0): 23,
+       ("TILT", 0): 21, ("SERVICE1", 0): 22, ("SERVICE", 0): 22, ("SERVICE2", 0): 22, ("COIN3", 0): 23,
        ("MEMORY_RESET", 0): 22,                          # operator "Name Reset" (invaddlx): service key
        ("JOYSTICK_UP", 3): 64, ("JOYSTICK_DOWN", 3): 65, ("JOYSTICK_LEFT", 3): 66, ("JOYSTICK_RIGHT", 3): 67,
        ("BUTTON1", 3): 68,
@@ -178,7 +187,8 @@ CUSTOM = {
     "dplay_pitch_left_input_r": "LPITCH",
     "dplay_pitch_right_input_r": "LPITCH",
 }
-CUSTOM_FIXED = {"tornbase_score_input_r": 0}     # SCORE switch (not used by the software) & its DIP
+CUSTOM_FIXED = {"tornbase_score_input_r": 0,     # SCORE switch (not used by the software) & its DIP
+                "bg_collision_r": 0}             # zac1b1120 1E80 bit 7: driven by the board
 
 REGION_WORDS = [("US", "US"), ("Japan", "Japan"), ("Spanish", "Spain"), ("Italian", "Italy"), ("French", "France"),
                 ("Brazil", "Brazil"), ("Argentina", "Argentina"), ("Greek", "Greece"), ("Hungarian", "Hungary")]
@@ -614,7 +624,7 @@ def _bounds(e):
 
 def overlay_rects(g):
     """MAME layout colour overlay -> [(x0, x1, y0, y1, r, g, b)] in raw scan coordinates (half-open), later wins."""
-    if not g.get("layout"):
+    if not g.get("layout") or (board_cfg(g) or 0) >= 32:   # zac1b1120: 720-wide picture, no overlay support yet
         return []
     path = LAYOUT_DIR / f'{g["layout"]}.lay'
     if not path.exists():

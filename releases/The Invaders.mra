@@ -1,0 +1,60 @@
+<misterromdescription>
+    <name>The Invaders</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>The Invaders</series>
+    <year>1979?</year>
+    <manufacturer>Zaccaria / Zelco</manufacturer>
+    <category>Shooter</category>
+
+    <setname>tinv2650</setname>
+    <parent>tinv2650</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (ccw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="7F,84,FF,FF">
+        <dip name="Lives" bits="8" ids="3,4"/>
+        <dip name="Lightning Speed" bits="9" ids="Slow,Fast"/>
+        <dip name="Coinage" bits="10,12" ids="2C/1C,1C/1C,1C/2C,1C/3C,1C/4C,1C/5C,1C/6C,1C/7C"/>
+        <dip name="Bonus Life" bits="13" ids="1000,1500"/>
+        <dip name="Extended Play" bits="14" ids="No,Yes"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="tinv2650.zip">
+        <part crc="a85550a9" name="42_1.bin"/>
+        <part crc="083c8621" name="44_2t.bin"/>
+        <part crc="12c0934f" name="46_3t.bin"/>
+        <part repeat="0x800">00</part>
+        <part crc="7bfed23e" name="06_inv.bin"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            20 10 00 00 7F 84 FF FF 00 00 00 00 00 00 00 00
+            13 14 11 16 16 05 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 04 03 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00
+        </part>
+    </rom>
+
+    <remark>The Invaders (Zaccaria / Zelco)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

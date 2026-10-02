@@ -70,6 +70,12 @@ assign HDMI_BLACKOUT = 0;
 assign HDMI_BOB_DEINT = 0;
 
 wire signed [15:0] audio, audio_r;     // audio_r: second sound board (invad2ct), else the same as audio
+wire signed [15:0] b8_audio, b8_audio_r;
+wire zac;                                   // board select (MRA variant 32 / 33): Zaccaria 1B1120
+wire z_tone;
+wire signed [16:0] z_mix = b8_audio + (z_tone ? 17'sd5000 : 17'sd0);    // Zaccaria: S2636 tone on top of the voices
+assign audio   = zac ? (z_mix > 17'sd32767 ? 16'sd32767 : 16'(z_mix)) : b8_audio;
+assign audio_r = zac ? audio : b8_audio_r;
 assign AUDIO_L = pause_cpu ? 16'd0 : audio;
 assign AUDIO_R = pause_cpu ? 16'd0 : audio_r;
 assign AUDIO_S = 1;   // signed
@@ -117,6 +123,7 @@ always @(posedge CLK_40M) begin
     end
 end
 
+assign zac = game_var >= 8'd32;
 wire game_vert = game_flags[4];
 wire vert_view = game_vert & ~status[12];
 
@@ -360,13 +367,19 @@ pause #(8,8,8,40) pause
 wire hs, vs;
 wire [7:0] r, g, b;
 wire ce_pix;
+wire b8_hs, b8_vs, b8_hb, b8_vb, b8_ce;
+wire [7:0] b8_r, b8_g, b8_b;
+wire z_hs, z_vs, z_hb, z_vb, z_ce, z_on;
+wire [7:0] z_p1, z_p2;
+assign {hs, vs, hblank, vblank, ce_pix} = zac ? {z_hs, z_vs, z_hb, z_vb, z_ce} : {b8_hs, b8_vs, b8_hb, b8_vb, b8_ce};
+assign {r, g, b} = zac ? {24{z_on}} : {b8_r, b8_g, b8_b};
 
 wire rotate_ccw = ~game_flags[7];  // ROT270 sets rotate CCW, ROT90 sets CW
 wire no_rotate  = ~game_vert | status[12] | direct_video;
 wire flip       = status[11];
 screen_rotate screen_rotate(.*);
 
-arcade_video #(260,24) arcade_video
+arcade_video #(720,24) arcade_video                 // Zaccaria: 720 master clocks per visible line
 (
 	.*,
 
@@ -386,7 +399,7 @@ arcade_video #(260,24) arcade_video
 mw8080_board board
 (
 	.clk(CLK_40M),
-	.reset(reset),
+	.reset(reset | zac),
 	.pause(pause_cpu),
 	.variant(game_var),
 
@@ -411,25 +424,57 @@ mw8080_board board
 	.ov_en(~status[23]),
 	.ov_tab(ov_tab),
 
-	.ce_pix(ce_pix),
-	.video_r(r),
-	.video_g(g),
-	.video_b(b),
-	.video_hs(hs),
-	.video_vs(vs),
-	.video_hblank(hblank),
-	.video_vblank(vblank),
+	.ce_pix(b8_ce),
+	.video_r(b8_r),
+	.video_g(b8_g),
+	.video_b(b8_b),
+	.video_hs(b8_hs),
+	.video_vs(b8_vs),
+	.video_hblank(b8_hb),
+	.video_vblank(b8_vb),
 
 	.snd1(),
 	.snd2(),
-	.audio(audio),
-	.audio_r(audio_r),
+	.audio(b8_audio),
+	.audio_r(b8_audio_r),
+	.ext_snd(zac),
+	.snd_reset(reset),
+	.ext_p1(z_p1),
+	.ext_p2(z_p2),
 	.io_tab(io_tab),
 
 	.hs_address(hs_address),
 	.hs_data_in(hs_data_in),
 	.hs_data_out(hs_data_out),
 	.hs_write(hs_write_enable & hs_configured)
+);
+
+zac1b1120_board zboard
+(
+	.clk(CLK_40M),
+	.reset(reset | ~zac),
+	.pause(pause_cpu),
+	.dodgem(game_var == 8'd33),
+
+	.in0(in_port[0]),
+	.in1(in_port[1]),
+	.in2(in_port[2]),
+	.in3(in_port[3]),
+
+	.ioctl_addr(ioctl_addr),
+	.ioctl_dout(ioctl_dout),
+	.ioctl_wr0(ioctl_wr & (ioctl_index == 8'd0)),
+
+	.ce_pix(z_ce),
+	.video_on(z_on),
+	.video_hs(z_hs),
+	.video_vs(z_vs),
+	.video_hblank(z_hb),
+	.video_vblank(z_vb),
+
+	.snd_p1(z_p1),
+	.snd_p2(z_p2),
+	.pvi_tone(z_tone)
 );
 
 // Hiscore: config = MRA index 3, dump = index 4; RAM via the board's second port while the CPU is paused
