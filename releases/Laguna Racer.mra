@@ -1,0 +1,72 @@
+<misterromdescription>
+    <name>Laguna Racer</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Laguna Racer</series>
+    <year>1977</year>
+    <manufacturer>Midway</manufacturer>
+    <category>Shooter</category>
+
+    <setname>lagunar</setname>
+    <parent>lagunar</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (cw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>2</num_buttons>
+    <buttons names="Not Used,P1 Shift,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="C0,7F,24,FF">
+        <dip name="Coinage" bits="16,17" ids="2C/1C,1C/1C,2C/3C,1C/2C" values="2,0,3,1"/>
+        <dip name="Game Time" bits="18,19" ids="45 seconds + 22 extended,60 seconds + 30 extended,75 seconds + 37 extended,90 seconds + 45 extended"/>
+        <dip name="Extended Time At" bits="20,21" ids="350,400,450,500"/>
+        <dip name="Test Modes/Extended Time" bits="22,23" ids="Off,RAM/ROM Test,Input Test,No Extended Time"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="lagunar.zip">
+        <part crc="0cd5a280" name="lagunar.h"/>
+        <part crc="824cd6f5" name="lagunar.g"/>
+        <part crc="62692ca7" name="lagunar.f"/>
+        <part crc="20e098ed" name="lagunar.e"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            14 90 00 00 C0 7F 24 FF 00 00 00 00 00 00 01 04
+            00 00 00 00 06 00 11 13 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            01 02 03 05 01 02 03 05 00 00 08 02 01 10 00 04
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 84 00 00 04 00 0F 00 00
+            80 01 00 08 01 FE 01 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00
+        </part>
+    </rom>
+
+    <remark>Laguna Racer (Midway)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

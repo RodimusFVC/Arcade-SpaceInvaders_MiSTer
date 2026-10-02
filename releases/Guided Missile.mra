@@ -1,0 +1,59 @@
+<misterromdescription>
+    <name>Guided Missile</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Guided Missile</series>
+    <year>1977</year>
+    <manufacturer>Midway</manufacturer>
+    <category>Shooter</category>
+
+    <setname>gmissile</setname>
+    <parent>gmissile</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>horizontal</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="FF,FF,9B,FF">
+        <dip name="Coinage" bits="16,17" ids="2 Coins per Player,2 Coins/1 or 2 Players,1 Coin per Player,1 Coin/1 or 2 Players" values="1,0,3,2"/>
+        <dip name="Game Time" bits="18,19" ids="60 seconds + 30 extended,70 seconds + 35 extended,80 seconds + 40 extended,90 seconds + 45 extended" values="0,2,1,3"/>
+        <dip name="Extended Time At" bits="20,21" ids="500,700,1000,1300" values="0,2,1,3"/>
+        <dip name="Unused" bits="22" ids="Off,On"/>
+        <dip name="Service Mode" bits="23" ids="Off,On" values="1,0"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="gmissile.zip">
+        <part crc="a3ebb792" name="gm_623.h"/>
+        <part crc="a5e740bb" name="gm_623.g"/>
+        <part crc="da381025" name="gm_623.f"/>
+        <part crc="f350146b" name="gm_623.e"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            14 00 00 00 FF FF 9B FF 00 00 00 00 00 00 01 00
+            00 00 0B 0C 00 00 13 0D 00 11 03 04 00 00 14 05
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            01 02 03 08 01 02 03 08 00 80 02 08 04 10 00 40
+            00
+        </part>
+    </rom>
+
+    <remark>Guided Missile (Midway)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

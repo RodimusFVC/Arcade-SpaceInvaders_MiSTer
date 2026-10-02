@@ -1,0 +1,74 @@
+<misterromdescription>
+    <name>280-ZZZAP</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>280-ZZZAP</series>
+    <year>1976</year>
+    <manufacturer>Dave Nutting Associates / Midway</manufacturer>
+    <category>Shooter</category>
+
+    <setname>280zzzap</setname>
+    <parent>280zzzap</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>horizontal</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>2</num_buttons>
+    <buttons names="Not Used,P1 Shift,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="C0,7F,00,FF">
+        <dip name="Coinage" bits="16,17" ids="2C/1C,1C/1C,2C/3C,1C/2C" values="2,0,3,1"/>
+        <dip name="Game Time" bits="18,19" ids="60 seconds + 30 extended,80 seconds + 40 extended,99 seconds + 50 extended,Test Mode" values="3,0,2,1"/>
+        <dip name="Extended Time At" bits="20,21" ids="2.00,2.50,None" values="1,0,2"/>
+        <dip name="Language" bits="22,23" ids="English,German,French,Spanish"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="280zzzap.zip">
+        <part crc="1fa86e1c" name="zzzaph"/>
+        <part crc="9639bc6b" name="zzzapg"/>
+        <part crc="adc6ede1" name="zzzapf"/>
+        <part crc="472493d6" name="zzzape"/>
+        <part crc="4c240ee1" name="zzzapd"/>
+        <part crc="6e85aeaf" name="zzzapc"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            14 00 00 00 C0 7F 00 FF 00 00 00 00 00 00 01 04
+            00 00 00 00 06 00 11 13 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            01 02 03 05 01 02 03 05 00 00 08 02 01 10 00 04
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 84 00 00 04 00 0F 00 00
+            80 01 00 08 01 FE 01 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00
+        </part>
+    </rom>
+
+    <remark>280-ZZZAP (Set 1) (Dave Nutting Associates / Midway)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

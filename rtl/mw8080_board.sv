@@ -89,6 +89,7 @@ module mw8080_board
 
     output logic  [7:0] snd1,
     output logic  [7:0] snd2,
+    output logic [15:0] snd34,          // variant 20 sound latches {4, 3}
     output logic signed [15:0] audio,
     output logic signed [15:0] audio_r,
 
@@ -207,10 +208,11 @@ wire v_cane  = variant == 8'd18;
 wire v_orb   = variant == 8'd19;
 wire v_tab   = variant == 8'd20;
 
-wire [7:0] col_mode = f3[7:0];       // 0 none, 1 PROM, 2 colour RAM C000, 3 schaser, 4 polaris, 5 rollingc, 6 cosmo
+wire [7:0] col_mode = f3[7:0];       // 0 none, 1 PROM, 2 colour RAM C000, 3 schaser, 4 polaris, 5 rollingc, 6 cosmo, 7 phantom2, 8 spcenctr
 wire [7:0] cflags   = f3[15:8];
 wire [7:0] smap     = f3[23:16];
-wire       colour   = col_mode != 8'd0 && col_mode != 8'd7;      // 7 = phantom2 clouds on the B&W picture
+wire       colour   = col_mode != 8'd0 && col_mode != 8'd7 && col_mode != 8'd8;   // 7 phantom2 clouds, 8 spcenctr trench
+wire       v_spc    = v_tab && col_mode == 8'd8;
 wire is_cram  = ((col_mode == 8'd2 || col_mode == 8'd3 || col_mode == 8'd4) && cpu_a[15:13] == 3'b110) |
                 (col_mode == 8'd5 && cpu_a[15:13] == 3'b101) | (col_mode == 8'd6 && cpu_a[15:10] == 6'b010111);
 wire is_cram2 = col_mode == 8'd5 && cpu_a[15:13] == 3'b111;          // rollingc background colours
@@ -489,6 +491,12 @@ wire  out_wr = ce & out_strobe & ~out_d;
 logic [7:0] wd_cnt = 8'd0;
 logic [7:0] snd0 = 8'd0;               // extra sound / music latch (port 0, polaris port 2)
 logic [7:0] snd3 = 8'd0, snd4 = 8'd0;  // variant 20 sound latches 3 / 4
+assign snd34 = {snd4, snd3};
+// spcenctr (MAME spcenctr_state::io_w): A2-A0 0 /BRITE (D3), 1 sound P1 / P2 / P3 by A4 A3 (A6 low), 3 trench slope
+// [A7 A6 A4 A3], 4 trench centre, 7 trench width
+logic       sc_bright = 1'b0;
+logic [7:0] sc_center = 8'd0, sc_width = 8'd0;
+logic [3:0] sc_slope[16];
 logic       v128_d = 1'b0;
 logic       dv_flip = 1'b0;
 logic [1:0] dv_step = 2'd0, dv_play = 2'd0;
@@ -531,6 +539,21 @@ always_ff @(posedge clk) begin
             if (tab_wr[4])             snd2 <= cpu_do;
             if (tab_wr[5])             snd3 <= cpu_do;
             if (tab_wr[6])             snd4 <= cpu_do;
+            if (v_spc)
+                case (cpu_a[2:0])
+                    3'd0: sc_bright <= ~cpu_do[3];
+                    3'd1: if (!cpu_a[6])
+                              case (cpu_a[4:3])
+                                  2'd0: snd1 <= cpu_do;
+                                  2'd1: snd2 <= cpu_do;
+                                  2'd2: snd3 <= cpu_do;
+                                  default: ;
+                              endcase
+                    3'd3: sc_slope[{cpu_a[7], cpu_a[6], cpu_a[4], cpu_a[3]}] <= cpu_do[3:0];
+                    3'd4: sc_center <= cpu_do;
+                    3'd7: sc_width  <= cpu_do;
+                    default: ;
+                endcase
         end
         else if (out_wr && v_afc) begin
             case (cpu_a[2:0])
@@ -829,7 +852,7 @@ always_ff @(posedge clk) begin
         end
         ov_r <= r; ov_g <= g; ov_b <= b;
         // crosshair: 9 x 9 cross centred on the gun, picture x = bitmap x + 4
-        xh <= xhair_en && v_clay && ((ox == {1'b0, gun_x} + 9'd4 && oy + 8'd4 >= gun_y && oy <= gun_y + 8'd4) ||
+        xh <= xhair_en && (v_clay || f3[28]) && ((ox == {1'b0, gun_x} + 9'd4 && oy + 8'd4 >= gun_y && oy <= gun_y + 8'd4) ||
                                      (oy == gun_y && ox >= {1'b0, gun_x} && ox <= {1'b0, gun_x} + 9'd8));
     end
 end
@@ -872,6 +895,62 @@ always_ff @(posedge clk) begin
     if (pix) p2_bit <= col_mode == 8'd7 && cloud_q[p2_x[3:1]];
 end
 
+// spcenctr trench (MAME spcenctr_state::screen_update): width / floor width start the frame at the width register and
+// step +1 / -1 per pixel by bit 7 of a counter running from the centre register; at the end of a line the line's last
+// byte (column 31) sets / clears the trench and floor, and the slope nibble for V[3:0] widens them. A 256 x 1 line
+// buffer carries the trench edge pattern down the sides and floor. /BRITE flashes the screen white, decaying 10 per frame.
+logic [255:0] sc_lb = '0;
+logic   [7:0] sc_w = 8'd0, sc_fw = 8'd0, sc_c = 8'd0, sc_tc = 8'd0, sc_gray = 8'd0, sc_lvl = 8'd0;
+logic         sc_dt = 1'b0, sc_df = 1'b0, sc_dl = 1'b0, sc_prev = 1'b0, sc_vb = 1'b0;
+always_ff @(posedge clk) begin
+    if (ce) begin
+        sc_vb <= cnt_e7[4];
+        if (cnt_e7[4] && !sc_vb)
+            sc_lvl <= sc_bright ? 8'd255 : sc_lvl > 8'd10 ? sc_lvl - 8'd10 : 8'd0;
+    end
+    if (pix) begin
+        if (load_norm) sc_tc <= rdb;                       // the last byte loaded on a line is column 31
+        if (!v_act) begin
+            sc_w    <= sc_width;
+            sc_fw   <= sc_width;
+            sc_c    <= sc_center;
+            sc_dt   <= 1'b0;
+            sc_df   <= 1'b0;
+            sc_dl   <= 1'b0;
+            sc_lb   <= '0;
+            sc_gray <= 8'd0;
+        end else if (!hx[8]) begin : trench
+            logic       top, side, flr, old, nv, dt, df;
+            logic [7:0] cn, w1, fw1;
+            top  = !sc_w[7] && sc_dt;
+            side = !top && !sc_fw[7] && (sc_dt || sc_df);
+            flr  = !top && !side && sc_df;
+            old  = sc_lb[hx[7:0]];
+            nv   = top ? sc_dl : flr ? sc_prev : old;
+            sc_lb[hx[7:0]] <= nv;
+            sc_prev <= nv;
+            sc_gray <= top ? (sc_dl ? 8'hE6 : 8'h4D) : side ? (old ? 8'h80 : 8'h1A) : flr ? (nv ? 8'h66 : 8'h0D) : 8'h00;
+            cn  = sc_c + 8'd1;
+            w1  = cn[7] ? sc_w - 8'd1 : sc_w + 8'd1;
+            fw1 = cn[7] ? sc_fw - 8'd1 : sc_fw + 8'd1;
+            if (hx[7:0] == 8'd255) begin                   // end of line: trench control for the next one
+                dt = sc_tc[5] ? 1'b0 : sc_tc[6] ? 1'b1 : sc_dt;
+                df = sc_tc[3] ? 1'b0 : sc_tc[4] ? 1'b1 : sc_df;
+                sc_dt <= dt;
+                sc_df <= df;
+                sc_dl <= sc_tc[7];
+                if (dt) w1  = w1  + {6'd0, sc_slope[vpos[3:0]][1:0]};
+                if (df) fw1 = fw1 + {6'd0, sc_slope[vpos[3:0]][3:2]};
+            end
+            sc_c  <= cn;
+            sc_w  <= w1;
+            sc_fw <= fw1;
+        end else
+            sc_gray <= 8'd0;
+    end
+end
+wire [7:0] sc_pix = sc_gray > sc_lvl ? sc_gray : sc_lvl;
+
 // pens -> RGB: RBG_3BIT (b0 R, b1 B, b2 G), RGB_3BIT (b0 R, b1 G, b2 B), rollingc 16 pens (b3 intensity, pens 5 / 6
 // pink / orange as MAME)
 wire [3:0] pen = vid ? gvid[3:0] : (gvid[8] && cl_bit) ? 4'd7 : gvid[7:4];
@@ -888,9 +967,9 @@ end
 
 // vortex: red / green from the next byte's bit 0, blue on source columns 4-7 of every 8 (MAME screen_update_vortex)
 wire [7:0] bg = p2_bit ? 8'hC0 : 8'h00;          // phantom2 cloud grey (through the overlay like lit pixels)
-assign video_r = xh ? 8'hFF : colour ? pen_rgb[23:16] : !vid ? (p2_bit ? ov_r & 8'hC0 : 8'd0) : v_vtx ? {8{~cvid[1]}} : ov_r;
-assign video_g = xh ? 8'h00 : colour ? pen_rgb[15:8]  : !vid ? (p2_bit ? ov_g & bg : 8'd0)    : v_vtx ? {8{ cvid[1]}} : ov_g;
-assign video_b = xh ? 8'h00 : colour ? pen_rgb[7:0]   : !vid ? (p2_bit ? ov_b & bg : 8'd0)    : v_vtx ? {8{ cvid[0]}} : ov_b;
+assign video_r = xh ? 8'hFF : colour ? pen_rgb[23:16] : !vid ? (v_spc ? sc_pix : p2_bit ? ov_r & 8'hC0 : 8'd0) : v_vtx ? {8{~cvid[1]}} : ov_r;
+assign video_g = xh ? 8'h00 : colour ? pen_rgb[15:8]  : !vid ? (v_spc ? sc_pix : p2_bit ? ov_g & bg : 8'd0) : v_vtx ? {8{ cvid[1]}} : ov_g;
+assign video_b = xh ? 8'h00 : colour ? pen_rgb[7:0]   : !vid ? (v_spc ? sc_pix : p2_bit ? ov_b & bg : 8'd0) : v_vtx ? {8{ cvid[0]}} : ov_b;
 
 // ---------------------------------------------------------------- sound board (port 3 / port 5, 16V = "480 Hz")
 

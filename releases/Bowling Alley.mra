@@ -1,0 +1,77 @@
+<misterromdescription>
+    <name>Bowling Alley</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Bowling Alley</series>
+    <year>1978</year>
+    <manufacturer>Midway</manufacturer>
+    <category>Shooter</category>
+
+    <setname>bowler</setname>
+    <parent>bowler</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (cw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>2</num_buttons>
+    <buttons names="Hook/Straight,Game Select,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="2C,00,00,00">
+        <dip name="Language" bits="0,1" ids="English,French,German" values="0,1,2"/>
+        <dip name="Demo Sounds" bits="2" ids="Off,On"/>
+        <dip name="Game Time" bits="3" ids="No Limit,5 Minutes"/>
+        <dip name="Coinage" bits="4" ids="2C/1C,1C/1C" values="1,0"/>
+        <dip name="Difficulty" bits="5" ids="Easy,Hard" values="1,0"/>
+        <dip name="Cabinet" bits="6" ids="Upright,Cocktail (not functional)"/>
+        <dip name="Service Mode" bits="7" ids="Off,On"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="bowler.zip">
+        <part crc="74c29b93" name="h.cpu"/>
+        <part crc="ca26d8b4" name="g.cpu"/>
+        <part crc="ba8a0bfa" name="f.cpu"/>
+        <part crc="4da65a40" name="e.cpu"/>
+        <part repeat="0x2000">00</part>
+        <part crc="e7dbc9d9" name="d.cpu"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            14 90 00 00 2C 00 00 00 00 00 00 00 00 00 01 08
+            00 00 00 00 00 00 00 00 11 05 13 06 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 07 01 06 02 03 04 00 00 01 02 00 04 08 10 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 88 02 00 08 00 FF 01 00
+            87 03 00 08 00 FF 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00
+        </part>
+    </rom>
+
+    <remark>Bowling Alley (Midway)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

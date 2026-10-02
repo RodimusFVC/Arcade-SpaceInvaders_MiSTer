@@ -1,0 +1,73 @@
+<misterromdescription>
+    <name>Shuffleboard</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Shuffleboard</series>
+    <year>1978</year>
+    <manufacturer>Midway</manufacturer>
+    <category>Shooter</category>
+
+    <setname>shuffle</setname>
+    <parent>shuffle</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (cw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Game Select,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="D4,FF,00,00">
+        <dip name="Language" bits="0,1" ids="English,French,German" values="0,1,2"/>
+        <dip name="Points to Win" bits="2,3" ids="Game 1 = 25; Game 2 = 11,Game 1 = 35; Game 2 = 15,Game 1 = 40; Game 2 = 18,Game 1 = 50; Game 2 = 21"/>
+        <dip name="Coinage" bits="4,5" ids="2 Coins per Player,2 Coins/1 or 2 Players,1 Coin per Player,1 Coin/1 or 2 Players" values="3,2,1,0"/>
+        <dip name="Time Limit" bits="6" ids="Off,On"/>
+        <dip name="Service Mode" bits="7" ids="Off,On" values="1,0"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="shuffle.zip">
+        <part crc="0d422a18" name="shuffle.h"/>
+        <part crc="7db7fcf9" name="shuffle.g"/>
+        <part crc="cd04d848" name="shuffle.f"/>
+        <part crc="2c118357" name="shuffle.e"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            14 90 00 00 D4 FF 00 00 00 00 00 00 00 00 01 00
+            00 00 00 00 00 00 00 00 11 13 14 05 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 05 01 06 02 03 04 00 00 01 02 00 04 08 10 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 88 02 00 08 00 FF 00 00
+            87 03 00 08 00 FF 01 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00
+        </part>
+    </rom>
+
+    <remark>Shuffleboard (Midway)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

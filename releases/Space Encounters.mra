@@ -1,0 +1,77 @@
+<misterromdescription>
+    <name>Space Encounters</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Space Encounters</series>
+    <year>1980</year>
+    <manufacturer>Midway</manufacturer>
+    <category>Shooter</category>
+
+    <setname>spcenctr</setname>
+    <parent>spcenctr</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>horizontal</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="D1,D3,42,FF">
+        <dip name="Bonus Life" bits="16,17" ids="2000 4000 8000,3000 6000 12000,4000 8000 16000,5000 10000 20000"/>
+        <dip name="Coinage" bits="18,19" ids="2C/1C,1C/1C,2C/3C,1C/3C" values="1,0,3,2"/>
+        <dip name="Bonus/Test Mode" bits="20,21" ids="Bonus On,Bonus Off,Cross Hatch,Test Mode" values="0,3,2,1"/>
+        <dip name="Time" bits="22,23" ids="45,60,75,90"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="spcenctr.zip">
+        <part crc="7458b2db" name="9316b-4m33_m645h-09s0.h1"/>
+        <part crc="1b873788" name="9316b-4m32_m645g-09s0.g1"/>
+        <part crc="d4319c91" name="9316b-4m31_m645f-09s0.f1"/>
+        <part crc="9b9a1a45" name="9316b-4m30_m645e-09s0.e1"/>
+        <part repeat="0x2000">00</part>
+        <part crc="294d52ce" name="9316b-4m29_m645d-09s0.d1"/>
+        <part crc="ce44c923" name="9316b-4m28_m645c-09s0.c1"/>
+        <part crc="098070ab" name="9316b-4m27_m645b-09s0.b1"/>
+        <part crc="7f1d1f44" name="9316b-4m26_m645a-09s0.a1"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            14 00 00 00 D1 D3 42 FF 00 00 00 00 08 00 01 00
+            00 00 00 00 00 00 05 11 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            01 02 03 00 01 02 03 00 00 00 04 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 80 00 00 06 23 00 19 0C
+            86 01 00 06 14 00 19 16 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 3F 3E 3C 3D 39 38 3A 3B
+            33 32 30 31 35 34 36 37 27 26 24 25 21 20 22 23
+            2B 2A 28 29 2D 2C 2E 2F 0F 0E 0C 0D 09 08 0A 0B
+            03 02 00 01 05 04 06 07 17 16 14 15 11 10 12 13
+            1B 1A 18 19 1D 1C 1E 1F 00
+        </part>
+    </rom>
+
+    <remark>Space Encounters (Midway)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

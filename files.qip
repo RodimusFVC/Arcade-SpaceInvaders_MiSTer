@@ -6,6 +6,7 @@ set_global_assignment -name SYSTEMVERILOG_FILE rtl/invaders_sound.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/eeprom_93c46.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/zac1b1120_board.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/zac_snd.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/dsnd_engine.sv
 set_global_assignment -name VHDL_FILE rtl/cpu/s2650/base/base_pack.vhd
 set_global_assignment -name VHDL_FILE rtl/cpu/s2650/sgs2650_pack.vhd
 set_global_assignment -name VHDL_FILE rtl/cpu/s2650/sgs2650.vhd

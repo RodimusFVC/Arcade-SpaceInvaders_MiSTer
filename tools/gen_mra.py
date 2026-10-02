@@ -17,6 +17,9 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import dsnd_boards                                  # noqa: E402  discrete sound engine programs (MRA index 5)
+
 MAME_VERSION = "0289"
 RBF = "SpaceInvaders"
 MAME_DIR = Path("/Work/Build/mame/src/mame/midw8080")
@@ -92,7 +95,9 @@ def family3(g):
 #   wr: target bits per port A2-A0 (bytes 56-63): [0] shift count, [1] shift data, [2] watchdog, [3]-[6] sound latch
 #       1-4, [7] reversible shift count
 #   wd: 0 255 frames, 1 555 2.97 s, 2 555 1.1 s, 3 none; a3: ports 8-15 ignored (A3 decoded); col: colour mode
-#   (7 = phantom2 clouds); snd: sound map (1 silent, 9 two invaders boards, stereo)
+#   (7 = phantom2 clouds, 8 = spcenctr trench + its I/O decode); snd: sound map (1 silent, 9 two invaders boards,
+#   stereo); sel: controller-select line (index 1 byte 296: 0x80 | latch 0-3 << 4 | bit, 0 = latch 1 bit 1);
+#   xh: show the gun crosshair; vch: analog channel for POSITIONAL_V (default the Btn 2 / 3 aim)
 WC, WD, WW, S1, S2, S3, S4, RC = 1, 2, 4, 8, 16, 32, 64, 128
 def _and3(a0):                                   # gunfight / tornbase: A0 sound, A1 count, A2 data (AND gates)
     return [(a0 if p & 1 else 0) | (WC if p & 2 else 0) | (WD if p & 4 else 0) for p in range(8)]
@@ -103,6 +108,23 @@ FAMILY4 = {
     "tornbase": dict(rd=[1, 2, 3, 5] * 2, wr=_and3(S1), wd=3, snd=1),
     "dplay":    dict(rd=[1, 2, 3, 5] * 2, wr=[0, WC, WD, S1, WW, S2, S3, 0], wd=0, snd=1),
     "phantom2": dict(rd=[6, 1, 2, 5] * 2, wr=[0, WC, WD, 0, WW, S1, S2, 0], wd=0, snd=1, col=7),
+    # batch B: analog / positional controls (index 1 bytes 200+, rtl in Arcade-SpaceInvaders.sv)
+    "gunfight": dict(rd=[1, 2, 3, 5] * 2, wr=_and3(S1), wd=3, snd=1),
+    "boothill": dict(rd=[1, 2, 3, 8] * 2, wr=[0, RC, WD, S1, WW, S2, S3, 0], wd=1, snd=1),
+    "dogpatch": dict(rd=[1, 2, 3, 5] * 2, wr=[0, WC, WD, S1, WW, S2, S3, 0], wd=0, snd=1),
+    "seawolf":  dict(rd=[6, 1, 2, 5] * 2, wr=[0, 0, 0, WD, WC, S1, 0, 0], wd=3, snd=1),
+    "clowns":   dict(rd=[1, 2, 3, 5] * 2, wr=[0, WC, WD, S1, WW, S2, S3, S4], wd=0, snd=1),
+    "spacwalk": dict(rd=[1, 2, 3, 5, 0, 0, 0, 0], wr=[0, WC, WD, S1, WW, S2, S3, S4], wd=0, snd=1),
+    "blueshrk": dict(rd=[6, 1, 2, 5] * 2, wr=[0, WC, WD, S1, WW, 0, 0, 0], wd=0, snd=1),
+    "zzzap":    dict(rd=[1, 2, 3, 5] * 2, wr=[0, 0, S1, WD, WC, S2, 0, WW], wd=2, snd=1),
+    "lagunar":  dict(rd=[1, 2, 3, 5] * 2, wr=[0, 0, S1, WD, WC, S2, 0, WW], wd=2, snd=1),
+    "m4":       dict(rd=[1, 2, 3, 8] * 2, wr=[0, RC, WD, S1, WW, S2, 0, 0], wd=0, snd=1),
+    "gmissile": dict(rd=[1, 2, 3, 8] * 2, wr=[0, RC, WD, S1, WW, S2, 0, S4], wd=0, snd=1),
+    # batch C: gun / trackball / trench
+    "desertgu": dict(rd=[6, 1, 2, 5] * 2, wr=[0, WC, WD, S1, WW, S2, S3, S4], wd=0, snd=1, sel=0xB3, xh=1),
+    "shuffle":  dict(rd=[0, 5, 1, 6, 2, 3, 4, 0], wr=[0, WC, WD, 0, WW, S1, S2, 0], wd=0, snd=1),
+    "bowler":   dict(rd=[0, 7, 1, 6, 2, 3, 4, 0], wr=[0, WC, WD, 0, WW, S1, S2, 0], wd=0, snd=1, a3=1),
+    "spcenctr": dict(rd=[1, 2, 3, 0] * 2, wr=[0, 0, WW, 0, 0, 0, 0, 0], wd=0, snd=1, col=8, vch=6),
 }
 for _m in FAMILY4:
     SUPPORTED[("mw8080bw.cpp", _m, "empty_init")] = 20
@@ -147,6 +169,7 @@ PORT_TAGS = {"yosakdon": [None, "IN0", "IN1", None],   # input port tags at boar
              "dodgem": ["1E80", "1E81", "1E82", "1E85"],
              "starw1": [None, "IN1", "IN2", None]}   # ports FC-FF: P2 (read on the cocktail flip), FE DSW, FF   # ports 41 / 42 / 44: board slots 1-3
 LINE_BASE = 40      # control ids 40-47 = DIP byte 3 bits: MAME fake-port DIPs read through a custom handler
+SEL_BASE = 56       # control ids 56-59 = DIP byte 4 bits 0-3 when the select line is high, else DIP byte 3's
 CTL_VBLANK = 36     # control id 36 = VBLANK (spacecom IN2 bit 0)
 ROM_DECODE = {"init_attackfc": 0x01,                   # index 1 byte 3: [0] A8/A9 swapped, [1] vortex A0/A3/A9 XOR
               "init_vortex": 0x02}
@@ -186,7 +209,10 @@ CUSTOM = {
     "tornbase_pitch_right_input_r": "LPITCH",
     "dplay_pitch_left_input_r": "LPITCH",
     "dplay_pitch_right_input_r": "LPITCH",
+    "erase_input_r": "ERASESW",                  # seawolf: high-score erase switch (& its DIP, at default on)
+    "blueshrk_coin_input_r": "COIN",
 }
+ANALOG_TYPES = {"PADDLE", "PEDAL", "POSITIONAL", "POSITIONAL_V", "TRACKBALL_X", "TRACKBALL_Y"}
 CUSTOM_FIXED = {"tornbase_score_input_r": 0,     # SCORE switch (not used by the software) & its DIP
                 "bg_collision_r": 0}             # zac1b1120 1E80 bit 7: driven by the board
 
@@ -411,9 +437,20 @@ def parse_inputs(src):
                 if not fn:
                     raise SystemExit(f"INPUT_PORTS({name}): unhandled custom {args[0]}")
                 fld["custom"] = fn.group(1)
+            elif mac == "PORT_MINMAX":
+                fld["minmax"] = (num(args[0]), num(args[1]))
+            elif mac == "PORT_POSITIONS":
+                fld["positions"] = num(args[0])
+            elif mac == "PORT_REMAP_TABLE":
+                fld["remap"] = args[0].strip()
+            elif mac == "PORT_INVERT":
+                fld["invert"] = True
+            elif mac == "PORT_REVERSE":
+                fld["reverse"] = True
             elif mac in ("PORT_DIPLOCATION", "PORT_CODE", "PORT_TOGGLE", "PORT_2WAY", "PORT_4WAY", "PORT_8WAY",
-                         "PORT_SENSITIVITY", "PORT_KEYDELTA", "PORT_CHANGED_MEMBER",
-                         "PORT_IMPULSE", "PORT_MINMAX", "PORT_CROSSHAIR"):   # gun axes: the core's crosshair
+                         "PORT_SENSITIVITY", "PORT_KEYDELTA", "PORT_CHANGED_MEMBER", "PORT_CENTERDELTA",
+                         "PORT_CODE_DEC", "PORT_CODE_INC",
+                         "PORT_IMPULSE", "PORT_CROSSHAIR"):   # gun axes: the core's crosshair
                 pass
             else:
                 raise SystemExit(f"INPUT_PORTS({name}): unhandled {mac}")
@@ -497,7 +534,10 @@ def port_default(fields):
 def input_config(g, ports):
     """-> (idle bytes, dip list, input map, P1 button names)."""
     idle, dips, imap, buttons = [], [], [0] * 32, {}
+    analog = g.setdefault("analog", [])
+    analog.clear()
     lines = []                                         # fake-port DIP bits routed through DIP byte 3
+    sel_dips = {3: 0xFF, 4: 0xFF}                      # DIP bytes 3 / 4 switched by the select line
 
     def holds(cond):
         """PORT_CONDITION under every other DIP at its default (the MRA has no conditional settings)."""
@@ -547,6 +587,31 @@ def input_config(g, ports):
                 if "reset" in (f["name"] or "").lower():
                     control(dict(f, type="MEMORY_RESET", player=0), p * 8 + lo)   # operator name-reset button
                 continue                               # spare switches: idle level
+            elif f["kind"] == "input" and f["type"] in ANALOG_TYPES:
+                analog.append(dict(f, port=p, lo=lo, width=hi - lo + 1))
+                continue
+            elif f["kind"] == "input" and f["type"] == "CUSTOM" and f.get("custom") == "controller_r":
+                src = next(sf for sf in ports["CONTP1"] if sf["type"] == "PADDLE")   # clowns: P1 / P2 paddle by select
+                analog.append(dict(src, port=p, lo=lo, width=hi - lo + 1, mux=True))
+                continue
+            elif f["kind"] == "input" and f["type"] == "CUSTOM" and f.get("custom") == "gun_input_r":
+                for sel, src_tag in ((1, "GUNX"), (2, "GUNY")):     # desertgu: gun X / Y by the select line
+                    src = next(sf for sf in ports[src_tag] if sf["type"].startswith("LIGHTGUN"))
+                    analog.append(dict(src, port=p, lo=lo, width=hi - lo + 1, sel=sel))
+                continue
+            elif f["kind"] == "input" and f["type"] == "CUSTOM" and f.get("custom") == "dip_sw_0_1_r":
+                if lines:
+                    raise SystemExit(f'{g["name"]}: switched DIPs and fake-port DIPs both need DIP byte 3')
+                for byte, src_tag in ((3, "DIPSW01SET1"), (4, "DIPSW01SET2")):   # set 1 / 2 by the select line
+                    for sf in ports[src_tag]:
+                        if sf["kind"] != "dip":
+                            continue
+                        slo, shi, _ = contiguous(sf["mask"])
+                        sel_dips[byte] = (sel_dips[byte] & ~sf["mask"]) | (sf["default"] & sf["mask"])
+                        dip(dict(sf, lo_src=slo), byte, slo, shi)
+                        for b in range(slo, shi + 1):
+                            imap[p * 8 + lo + b] = SEL_BASE + b
+                continue
             elif f["kind"] == "input" and f["type"] == "CUSTOM" and f.get("custom") in CUSTOM_FIXED:
                 level = (level & ~f["mask"]) | (CUSTOM_FIXED[f["custom"]] & f["mask"])
             elif f["kind"] == "input" and f["type"] == "CUSTOM" and f.get("custom") == "game_select_r":
@@ -575,6 +640,10 @@ def input_config(g, ports):
         idle.append(level & 0xFF)
     if lines:
         idle[3] = sum(v << i for i, v in enumerate(lines)) | (0xFF << len(lines)) & 0xFF
+    if sel_dips[3] != 0xFF or sel_dips[4] != 0xFF:
+        while len(idle) < 5:
+            idle.append(None)
+        idle[3], idle[4] = sel_dips[3], sel_dips[4]
     idle = [0xFF if b is None else b for b in idle]
     return idle, dips, imap, buttons
 
@@ -682,6 +751,60 @@ def overlay_bytes(rects):
     return out
 
 
+REMAP_RE = re.compile(r'static const ioport_value (\w+)\[\d*\]\s*=\s*\{([^}]*)\}', re.S)
+
+
+def remap_table(name):
+    for d in ("mw8080bw.cpp", "8080bw.cpp"):
+        for m in REMAP_RE.finditer((MAME_DIR / d).read_text()):
+            if m.group(1) == name:
+                return [int(v, 0) for v in m.group(2).replace("\n", " ").split(",") if v.strip()]
+    raise SystemExit(f"remap table {name} not found")
+
+
+def analog_bytes(g):
+    """Index 1 from byte 200: 4 analog field descriptors (8 bytes), 64 bytes of remap tables, the select line (296).
+       descriptor: [0] valid | channel (0 / 1 P1 / P2 paddle, 2 / 3 P1 / P2 aim, 4 pedal, 5 paddle P1 / P2 by the
+       select line, 6 P1 vertical, 7 / 8 trackball X / Y, 10 / 11 gun X / Y), [1] port, [2] lsb, [3] width,
+       [4] min or positions, [5] max, [6] flags ([0] reverse, [1] invert, [2] table + 32, [3] positional,
+       [4] remap, [5] only with the select line low, [6] only with it high), [7] remap table offset"""
+    f4 = family4(g) or {}
+    out, tables, placed = [], [], {}
+    for f in g.get("analog", []):
+        t, pl = f["type"], f.get("player", 1)
+        if f.get("mux"):
+            ch = 5
+        elif f.get("sel"):
+            ch = 9 + f["sel"]
+        elif t == "PEDAL":
+            ch = 4
+        elif t in ("TRACKBALL_X", "TRACKBALL_Y"):
+            ch = 7 if t == "TRACKBALL_X" else 8
+        elif t == "POSITIONAL_V":
+            ch = f4.get("vch", 2 + (pl == 2))
+        else:
+            ch = 0 + (pl == 2)
+        flags = (1 if f.get("reverse") else 0) | (2 if f.get("invert") else 0) | {1: 32, 2: 64}.get(f.get("sel"), 0)
+        base = 0
+        if t in ("POSITIONAL", "POSITIONAL_V"):
+            a, b = f["positions"], 0
+            flags |= 8
+            if f.get("remap"):
+                name, _, off = f["remap"].partition("+")
+                name = name.strip()
+                if name not in placed:
+                    placed[name] = sum(len(x) for x in tables)
+                    tables.append(remap_table(name))
+                base = placed[name] + int(off or 0)
+                flags |= 16
+        else:
+            a, b = f.get("minmax", (0, (1 << f["width"]) - 1))
+        out += [0x80 | ch, f["port"], f["lo"], f["width"], a, b, flags, base]
+    tab = [v for x in tables for v in x]
+    assert len(out) <= 32 and len(tab) <= 64, g["name"]
+    return out + [0] * (32 - len(out)) + tab + [0] * (64 - len(tab)) + [f4.get("sel", 0)]
+
+
 def config_bytes(g, idle, imap):
     """MRA index 1: variant, flags, sound board, ROM decode, idle levels (bytes 4-11), input map, overlay."""
     flags = (F_VERT if g["rot"] in ("ROT90", "ROT270") else 0) | (F_ROT90 if g["rot"] == "ROT90" else 0)
@@ -691,11 +814,15 @@ def config_bytes(g, idle, imap):
     dec = ROM_DECODE.get(g["init"], 0) | (0x04 if g["name"] in NIBBLE_SETS else 0)
     f3, f4 = family3(g), family4(g)
     if f4:
-        f3 = (20, f4.get("col", 0), 0, f4["snd"], (f4["wd"] << 1) | (8 if f4.get("a3") else 0))
+        f3 = (20, f4.get("col", 0), 0, f4["snd"],
+              (f4["wd"] << 1) | (8 if f4.get("a3") else 0) | (16 if f4.get("xh") else 0))
     cfg = [board_cfg(g), flags, sflags, dec] + idle + [0] * (8 - len(idle)) + (list(f3[1:]) if f3 else [0] * 4) + imap
     if f4:
         cfg += f4["rd"] + f4["wr"]
-    return cfg + [0] * (OV_BASE - len(cfg)) + overlay_bytes(overlay_rects(g))
+    cfg = cfg + [0] * (OV_BASE - len(cfg)) + overlay_bytes(overlay_rects(g))
+    if g.get("analog"):
+        cfg += [0] * (200 - len(cfg)) + analog_bytes(g)
+    return cfg
 
 
 def mra(g, games, segs, build_inputs):
@@ -732,6 +859,12 @@ def mra(g, games, segs, build_inputs):
                           for n, b, i, v in dips)
     cfg = config_bytes(g, idle, imap)
     cfg_rows = "\n".join("            " + " ".join(f"{b:02X}" for b in cfg[i:i + 16]) for i in range(0, len(cfg), 16))
+    ds = dsnd_boards.program(g["machine"]) if g["drv"] == "mw8080bw.cpp" else None
+    ds_block = "" if ds is None else (
+        f"\n    <!-- Index 5: sound board program for the discrete sound engine (tools/dsnd_boards.py) -->\n"
+        f"    <rom index=\"5\">\n        <part>\n"
+        + "\n".join("            " + " ".join(f"{b:02X}" for b in ds[i:i + 16]) for i in range(0, len(ds), 16))
+        + "\n        </part>\n    </rom>\n")
     return f"""<misterromdescription>
     <name>{display_name(g)}</name>
     <region>{region}</region>
@@ -776,7 +909,7 @@ def mra(g, games, segs, build_inputs):
 {cfg_rows}
         </part>
     </rom>
-
+{ds_block}
     <remark>{remark(g)}</remark>
     <mratimestamp>20260930000000</mratimestamp>
 </misterromdescription>

@@ -49,6 +49,8 @@ wire  [7:0] ioctl_dout;
 wire [15:0] joystick_0, joystick_1, joystick_2, joystick_3;
 wire [15:0] joy_la0, joy_la1;   // analog sticks {Y, X}, signed, -Y = up
 wire [24:0] ps2_mouse;
+wire  [7:0] paddle_0, paddle_1;
+wire  [8:0] spinner_0, spinner_1;
 wire [21:0] gamma_bus;
 wire        direct_video;
 wire        video_rotated;
@@ -73,8 +75,10 @@ wire signed [15:0] audio, audio_r;     // audio_r: second sound board (invad2ct)
 wire signed [15:0] b8_audio, b8_audio_r;
 wire zac;                                   // board select (MRA variant 32 / 33): Zaccaria 1B1120
 wire signed [15:0] z_audio;
-assign audio   = zac ? z_audio : b8_audio;
-assign audio_r = zac ? audio : b8_audio_r;
+wire signed [15:0] ds_audio;
+wire               ds_on;
+assign audio   = zac ? z_audio : ds_on ? ds_audio : b8_audio;
+assign audio_r = zac ? audio : ds_on ? ds_audio : b8_audio_r;
 assign AUDIO_L = pause_cpu ? 16'd0 : audio;
 assign AUDIO_R = pause_cpu ? 16'd0 : audio_r;
 assign AUDIO_S = 1;   // signed
@@ -95,6 +99,7 @@ assign BUTTONS = 0;
 //   bytes 4-11  DIP switch bytes 0-7 at their MRA defaults (MiSTer sends index 254 only for MRAs with a <dip>)
 //   bytes 12-15 colour mode, colour flags, sound map, board flags (rtl/mw8080_board.sv)
 //   bytes 48-63 family 4 port tables: read source / write targets per port A2-A0 (rtl/mw8080_board.sv)
+//   bytes 200-296 analog fields: 4 descriptors (8 bytes), 64 bytes of remap tables, select line; gen_mra analog_bytes
 //   bytes 64+   colour overlay: count, then 8 bytes per rectangle (rtl/mw8080_board.sv)
 //   bytes 16-47 input map, one byte per port bit (IN0, IN1, IN2, IN3; bit 0 first): control id, 0 = none
 // DIP switch bytes 0-3 hold the idle level of every bit of IN0-IN3; a pressed control inverts its bit
@@ -105,6 +110,7 @@ reg [7:0] rom_dec    = 8'd0;
 reg [31:0] f3_cfg    = 32'd0;
 reg [6:0] in_map[32];
 reg [127:0] io_tab = 128'd0;
+reg  [7:0] an_cfg[97];              // analog descriptors (0-31), remap tables (32-95), select line (96)
 reg [1031:0] ov_tab = 1032'd0;
 
 always @(posedge CLK_40M) begin
@@ -117,6 +123,11 @@ always @(posedge CLK_40M) begin
         if (ioctl_addr[24:5] == 20'd0 && ioctl_addr[4]) in_map[{1'b0, ioctl_addr[3:0]}] <= ioctl_dout[6:0];
         if (ioctl_addr[24:5] == 20'd1 && ioctl_addr[4] == 1'b0) in_map[{1'b1, ioctl_addr[3:0]}] <= ioctl_dout[6:0];
         if (ioctl_addr >= 25'd48 && ioctl_addr < 25'd64) io_tab[ioctl_addr[3:0]*8 +: 8] <= ioctl_dout;
+        if (ioctl_addr == 25'd0) begin                                                  // a set without analog fields
+            for (int i = 0; i < 4; i++) an_cfg[i*8] <= 8'd0;
+            an_cfg[96] <= 8'd0;
+        end
+        if (ioctl_addr >= 25'd200 && ioctl_addr < 25'd297) an_cfg[7'(ioctl_addr - 25'd200)] <= ioctl_dout;
         if (ioctl_addr == 25'd0) ov_tab[7:0] <= 8'd0;                                   // an MRA without overlay data
         if (ioctl_addr >= 25'd64 && ioctl_addr < 25'd193) ov_tab[(ioctl_addr - 25'd64) * 8 +: 8] <= ioctl_dout;
     end
@@ -145,6 +156,7 @@ localparam CONF_STR = {
 	"P2,Game Options;",
 	"P2ON,Overlay,On,Off;",
 	"P2OO,Crosshair,On,Off;",
+	"P2OPQ,Trackball Speed,Normal,Fast,Slow;",
 	"-;",
 	"P3,Pause Options;",
 	"P3OJ,Pause when OSD is open,On,Off;",
@@ -192,6 +204,10 @@ hps_io #(.CONF_STR(CONF_STR)) hps_io
 	.joystick_l_analog_0(joy_la0),
 	.joystick_l_analog_1(joy_la1),
 	.ps2_mouse(ps2_mouse),
+	.paddle_0(paddle_0),
+	.paddle_1(paddle_1),
+	.spinner_0(spinner_0),
+	.spinner_1(spinner_1),
 	.ps2_key(ps2_key)
 );
 
@@ -284,6 +300,9 @@ always @(posedge CLK_40M) begin
 		dip_sw[ioctl_addr[2:0] - 3'd4] <= ioctl_dout;
 end
 
+wire       an_sel;                  // the board's controller-select line (clowns / spacwalk / desertgu)
+wire [3:0] dsel = an_sel ? dip_sw[4][3:0] : dip_sw[3][3:0];
+
 // control ids used by the MRA input map
 wire [127:0] ctl =
 {
@@ -294,7 +313,8 @@ wire [127:0] ctl =
 	joystick_3[0], joystick_3[1], joystick_3[2], joystick_3[3],   // 72 R, 71 L, 70 D, 69 U
 	joystick_2[4],                                  // 68 P3 Btn 1
 	joystick_2[0], joystick_2[1], joystick_2[2], joystick_2[3],   // 67 R, 66 L, 65 D, 64 U
-	8'd0,                                           // 63-56 unused
+	4'd0,                                           // 63-60 unused
+	dsel,                                           // 59-56 DIP byte 4 / 3 bits 3-0 by the select line
 	dip_sw[4],                                      // 55-48 DIP byte 4 (MAME fake port lines)
 	dip_sw[3],                                      // 47-40 DIP byte 3 (MAME fake port lines)
 	3'd0,
@@ -311,16 +331,123 @@ wire [127:0] ctl =
 	joystick_0[8] | kb_coin1,                       // 17 coin 1
 	joystick_1[7:4],                                // 16-13 P2 Btn 4-1
 	dir2[0], dir2[1], dir2[2], dir2[3],             // 12 R, 11 L, 10 D, 9 U
-	joystick_0[7], joystick_0[6], joystick_0[5] | kb_b2, joystick_0[4] | kb_b1,   // 8-5 P1 Btn 4-1
+	joystick_0[7], joystick_0[6], joystick_0[5] | kb_b2, joystick_0[4] | kb_b1 | ps2_mouse[0],   // 8-5 P1 Btn 4-1
 	dir1[0], dir1[1], dir1[2], dir1[3],             // 4 R, 3 L, 2 D, 1 U
 	1'b0                                            // 0 none
 };
+
+// Analog controls (Midway one-offs): paddles / wheels / periscope from the MiSTer paddle, spinner, mouse X, left stick
+// or D-pad; gun angles from Btn 2 / 3; pedal from Btn 1 or the stick pushed up. Each MRA descriptor turns a channel
+// into a port field: linear between min / max (optionally reversed) or N positions through a MAME remap table.
+reg  [7:0] pad[2]  = '{8'd128, 8'd128};
+reg  [7:0] aim[2]  = '{8'd128, 8'd128};
+reg  [7:0] pady    = 8'd255;         // P1 vertical (spcenctr thrust: MAME default position 19 of 20)
+reg  [7:0] tb[2]   = '{8'd0, 8'd0};  // trackball X / Y counters (wrap)
+reg        an_vbl = 1'b0, an_mtog = 1'b0, sp0_d = 1'b0, sp1_d = 1'b0;
+reg  [7:0] pd0_d = 8'd0, pd1_d = 8'd0;
+
+function automatic [7:0] padd(input [7:0] v, input signed [9:0] d);
+	reg signed [10:0] t;
+	t = $signed({3'b000, v}) + d;
+	padd = t < 0 ? 8'd0 : t > 255 ? 8'd255 : t[7:0];
+endfunction
+
+wire signed [7:0] an_x0 = joy_la0[7:0], an_x1 = joy_la1[7:0], an_y0 = joy_la0[15:8];
+wire signed [9:0] an_v0 = (an_x0 > 8'sd12 || an_x0 < -8'sd12) ? (10'(an_x0) >>> 4) : dir1[0] ? 10'sd3 : dir1[1] ? -10'sd3 : 10'sd0;
+wire signed [9:0] an_v1 = (an_x1 > 8'sd12 || an_x1 < -8'sd12) ? (10'(an_x1) >>> 4) : dir2[0] ? 10'sd3 : dir2[1] ? -10'sd3 : 10'sd0;
+wire signed [9:0] an_vy = (an_y0 > 8'sd12 || an_y0 < -8'sd12) ? (10'(an_y0) >>> 4) : dir1[2] ? 10'sd3 : dir1[3] ? -10'sd3 : 10'sd0;
+wire signed [9:0] an_mx = {ps2_mouse[4], ps2_mouse[4], ps2_mouse[15:8]};
+wire signed [9:0] an_my = -{ps2_mouse[5], ps2_mouse[5], ps2_mouse[23:16]};   // PS/2 Y is positive upward
+wire signed [9:0] an_sx = 10'($signed(spinner_0[7:0]));
+wire signed [9:0] tb_sx = (an_x0 > 8'sd12 || an_x0 < -8'sd12) ? (10'(an_x0) >>> 3) : dir1[0] ? 10'sd8 : dir1[1] ? -10'sd8 : 10'sd0;
+wire signed [9:0] tb_sy = (an_y0 > 8'sd12 || an_y0 < -8'sd12) ? (10'(an_y0) >>> 3) : dir1[2] ? 10'sd8 : dir1[3] ? -10'sd8 : 10'sd0;
+wire       [7:0] gx, gy;            // light gun position scaled to 0-255 (assigned with the gun below)
+
+// trackball speed (Game Options): Normal 1/2, Fast 1/1, Slow 1/4 of the mouse / stick delta
+function automatic [7:0] tbd(input [7:0] v, input signed [9:0] d, input [1:0] spd);
+	tbd = v + 8'(spd == 2'd1 ? d : spd == 2'd2 ? d >>> 2 : d >>> 1);
+endfunction
+
+wire       [7:0] pedal = (joystick_0[4] | kb_b1) ? 8'd255 : (an_y0 == -8'sd128) ? 8'd255 : (an_y0 < -8'sd12) ? 8'(-{an_y0, 1'b0}) : 8'd0;
+
+always @(posedge CLK_40M) begin
+	an_vbl  <= vblank;
+	an_mtog <= ps2_mouse[24];
+	sp0_d   <= spinner_0[8];
+	sp1_d   <= spinner_1[8];
+	pd0_d   <= paddle_0;
+	pd1_d   <= paddle_1;
+	if (paddle_0 != pd0_d)                pad[0] <= paddle_0;
+	else if (spinner_0[8] != sp0_d)       pad[0] <= padd(pad[0], 10'($signed(spinner_0[7:0])));
+	else if (ps2_mouse[24] != an_mtog)    pad[0] <= padd(pad[0], {ps2_mouse[4], ps2_mouse[4], ps2_mouse[15:8]});
+	else if (vblank && !an_vbl)           pad[0] <= padd(pad[0], an_v0);
+	if (paddle_1 != pd1_d)                pad[1] <= paddle_1;
+	else if (spinner_1[8] != sp1_d)       pad[1] <= padd(pad[1], 10'($signed(spinner_1[7:0])));
+	else if (vblank && !an_vbl)           pad[1] <= padd(pad[1], an_v1);
+	if (ps2_mouse[24] != an_mtog)          pady <= padd(pady, an_my);
+	else if (vblank && !an_vbl)            pady <= padd(pady, an_vy);
+	if (ps2_mouse[24] != an_mtog) begin
+		tb[0] <= tbd(tb[0], an_mx, status[26:25]);
+		tb[1] <= tbd(tb[1], an_my, status[26:25]);
+	end else if (spinner_0[8] != sp0_d)
+		tb[0] <= tbd(tb[0], an_sx, status[26:25]);
+	else if (vblank && !an_vbl) begin
+		tb[0] <= tbd(tb[0], tb_sx, status[26:25]);
+		tb[1] <= tbd(tb[1], tb_sy, status[26:25]);
+	end
+	if (vblank && !an_vbl) begin
+		aim[0] <= padd(aim[0], joystick_0[5] ? 10'sd4 : joystick_0[6] ? -10'sd4 : 10'sd0);
+		aim[1] <= padd(aim[1], joystick_1[5] ? 10'sd4 : joystick_1[6] ? -10'sd4 : 10'sd0);
+	end
+end
+
+reg [7:0] an_mask[4], an_val[4];
+always @* begin
+	for (int p = 0; p < 4; p++) begin an_mask[p] = 8'd0; an_val[p] = 8'd0; end
+	for (int k = 0; k < 4; k++) begin : an_field
+		reg [7:0] d0, port, lsb, wid, a, bmax, fl, base, raw, v, fm;
+		reg [15:0] prod;
+		reg [5:0] pos;
+		d0 = an_cfg[k*8]; port = an_cfg[k*8+1]; lsb = an_cfg[k*8+2]; wid = an_cfg[k*8+3];
+		a = an_cfg[k*8+4]; bmax = an_cfg[k*8+5]; fl = an_cfg[k*8+6]; base = an_cfg[k*8+7];
+		pos = 6'd0; v = 8'd0; prod = 16'd0;
+		case (d0[3:0])
+			4'd0:  raw = pad[0];
+			4'd1:  raw = pad[1];
+			4'd2:  raw = aim[0];
+			4'd3:  raw = aim[1];
+			4'd4:  raw = pedal;
+			4'd5:  raw = an_sel ? pad[1] : pad[0];
+			4'd6:  raw = pady;
+			4'd7:  raw = tb[0];
+			4'd8:  raw = tb[1];
+			4'd10: raw = gx;
+			4'd11: raw = gy;
+			default: raw = 8'd0;
+		endcase
+		if (fl[3]) begin                                    // N positions, optionally through the remap table
+			prod = raw * a;
+			pos  = fl[0] ? 6'(a - 8'd1 - prod[15:8]) : prod[13:8];
+			v    = fl[4] ? an_cfg[32 + 6'(base[5:0] + {fl[2], 5'd0} + pos)] : {2'b00, pos};
+		end else begin                                      // linear min .. max
+			prod = raw * (bmax - a + 8'd1);
+			v = a + prod[15:8];
+			if (fl[0]) v = a + bmax - v;
+		end
+		if (fl[1]) v = ~v;
+		fm = 8'hFF >> (4'd8 - wid[3:0]);
+		if (d0[7] && !(fl[5] && an_sel) && !(fl[6] && !an_sel)) begin    // [5] / [6]: only with select low / high
+			an_mask[port[1:0]] = an_mask[port[1:0]] | (fm << lsb[2:0]);
+			an_val[port[1:0]]  = an_val[port[1:0]]  | ((v & fm) << lsb[2:0]);
+		end
+	end
+end
 
 reg [7:0] in_port[4];
 always @(posedge CLK_40M) begin
 	for (int p = 0; p < 4; p++)
 		for (int b = 0; b < 8; b++)
-			in_port[p][b] <= dip_sw[p][b] ^ ctl[in_map[p*8 + b]];
+			in_port[p][b] <= an_mask[p][b] ? an_val[p][b] : dip_sw[p][b] ^ ctl[in_map[p*8 + b]];
 end
 
 // Light gun (claybust / gunchamp): crosshair moved by the mouse, the left stick or the D-pad; fire or the left
@@ -349,6 +476,8 @@ always @(posedge CLK_40M) begin
 	end
 end
 wire gun_trig = joystick_0[4] | kb_b1 | ps2_mouse[0];
+assign gx = 8'((({1'b0, gun_x} + 9'd4) * 17'd252) >> 8);   // picture x 0-259 -> 0-255
+assign gy = 8'(({1'b0, gun_y} * 17'd293) >> 8);            // row 0-223 -> 0-255
 
 // PAUSE SYSTEM
 wire [23:0] rgb_out;
@@ -371,7 +500,33 @@ wire [7:0] b8_r, b8_g, b8_b;
 wire z_hs, z_vs, z_hb, z_vb, z_ce, z_on;
 assign {hs, vs, hblank, vblank, ce_pix} = zac ? {z_hs, z_vs, z_hb, z_vb, z_ce} : {b8_hs, b8_vs, b8_hb, b8_vb, b8_ce};
 wire [7:0] z_r, z_g, z_b;
+wire [7:0] b8_snd1;
+wire [31:0] b8_lat;                 // sound latches 4-1
+assign b8_lat[7:0] = b8_snd1;
+assign an_sel = an_cfg[96][7] ? b8_lat[{an_cfg[96][5:4], an_cfg[96][2:0]}] : b8_snd1[1];
 assign {r, g, b} = zac ? {z_r, z_g, z_b} : {b8_r, b8_g, b8_b};
+
+// discrete sound engine: the set's sound board program arrives as MRA index 5 (tools/dsnd_boards.py)
+reg ds_on_r = 1'b0;
+always @(posedge CLK_40M) if (ioctl_wr) begin
+	if (ioctl_index == 8'd1 && ioctl_addr == 25'd0) ds_on_r <= 1'b0;
+	if (ioctl_index == 8'd5) ds_on_r <= 1'b1;
+end
+assign ds_on = ds_on_r;
+
+wire [47:0] ds_src = {7'd0, vblank, 8'd0, b8_lat};     // misc, latch 0, latches 4-1
+
+dsnd_engine dsnd
+(
+	.clk(CLK_40M),
+	.reset(reset),
+	.pause(pause_cpu),
+	.prog_wr(ioctl_wr && ioctl_index == 8'd5),
+	.prog_addr(ioctl_addr[11:0]),
+	.prog_data(ioctl_dout),
+	.src(ds_src),
+	.out(ds_audio)
+);
 
 wire rotate_ccw = ~game_flags[7];  // ROT270 sets rotate CCW, ROT90 sets CW
 wire no_rotate  = ~game_vert | status[12] | direct_video;
@@ -432,8 +587,9 @@ mw8080_board board
 	.video_hblank(b8_hb),
 	.video_vblank(b8_vb),
 
-	.snd1(),
-	.snd2(),
+	.snd1(b8_snd1),
+	.snd2(b8_lat[15:8]),
+	.snd34(b8_lat[31:16]),
 	.audio(b8_audio),
 	.audio_r(b8_audio_r),
 	.io_tab(io_tab),

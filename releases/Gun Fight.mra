@@ -1,0 +1,70 @@
+<misterromdescription>
+    <name>Gun Fight</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Gun Fight</series>
+    <year>1975</year>
+    <manufacturer>Dave Nutting Associates / Midway</manufacturer>
+    <category>Shooter</category>
+
+    <setname>gunfight</setname>
+    <parent>gunfight</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>horizontal</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="30,30,10,FF">
+        <dip name="Coinage" bits="16,19" ids="4C/1C,3C/1C,4C/2C,2C/1C,3C/2C,4C/3C,4C/4C,3C/3C,2C/2C,1C/1C,3C/4C,2C/3C,2C/4C,1C/2C,1C/3C,1C/4C" values="3,2,7,1,6,11,15,10,5,0,14,9,13,4,8,12"/>
+        <dip name="Game Time" bits="20,21" ids="60 seconds,70 seconds,80 seconds,90 seconds"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="gunfight.zip">
+        <part crc="0b117d73" name="7609h.bin"/>
+        <part crc="57bc3159" name="7609g.bin"/>
+        <part crc="8049a6bd" name="7609f.bin"/>
+        <part crc="773264e2" name="7609e.bin"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            14 00 00 00 30 30 10 FF 00 00 00 00 00 00 01 06
+            01 02 03 04 00 00 00 05 09 0A 0B 0C 00 00 00 0D
+            00 00 00 00 00 00 11 13 00 00 00 00 00 00 00 00
+            01 02 03 05 01 02 03 05 00 08 01 09 02 0A 03 0B
+            01 00 02 04 00 E0 FF FF 20 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 82 00 04 03 07 00 1A 00
+            83 01 04 03 07 00 1A 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 06 02 00 04 05 01 03 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00
+        </part>
+    </rom>
+
+    <remark>Gun Fight (Set 1) (Dave Nutting Associates / Midway)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

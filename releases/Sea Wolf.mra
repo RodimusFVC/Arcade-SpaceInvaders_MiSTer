@@ -1,0 +1,71 @@
+<misterromdescription>
+    <name>Sea Wolf</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Sea Wolf</series>
+    <year>1976</year>
+    <manufacturer>Dave Nutting Associates / Midway</manufacturer>
+    <category>Shooter</category>
+
+    <setname>seawolf</setname>
+    <parent>seawolf</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>horizontal</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="4F,60,FF,FF">
+        <dip name="Game Time" bits="6,7" ids="60 seconds + 20 extended,70 seconds + 20 extended,80 seconds + 20 extended,90 seconds + 20 extended"/>
+        <dip name="Coinage" bits="10,11" ids="2C/1C,1C/1C,2C/3C,1C/2C" values="1,0,3,2"/>
+        <dip name="Extended Time At" bits="13,15" ids="None,2000,3000,4000,5000,6000,7000,Test Mode"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="seawolf.zip">
+        <part crc="8f597323" name="sw0041.h"/>
+        <part crc="db980974" name="sw0042.g"/>
+        <part crc="e6ffa008" name="sw0043.f"/>
+        <part crc="c3557d6a" name="sw0044.e"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            14 00 00 00 4F 60 FF FF 00 00 00 00 00 00 01 06
+            00 00 00 00 00 05 00 00 11 13 00 00 16 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            06 01 02 05 06 01 02 05 00 00 00 02 01 08 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 80 00 00 05 1E 00 1A 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 1E 1C 1D 19 18 1A 1B 13
+            12 10 11 15 14 16 17 07 06 04 05 01 00 02 03 0B
+            0A 08 09 0D 0C 0E 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00
+        </part>
+    </rom>
+
+    <remark>Sea Wolf (Set 1) (Dave Nutting Associates / Midway)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

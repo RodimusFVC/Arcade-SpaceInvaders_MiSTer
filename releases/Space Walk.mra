@@ -1,0 +1,77 @@
+<misterromdescription>
+    <name>Space Walk</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Space Walk</series>
+    <year>1978</year>
+    <manufacturer>Midway</manufacturer>
+    <category>Shooter</category>
+
+    <setname>spacwalk</setname>
+    <parent>spacwalk</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>horizontal</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>0</num_buttons>
+    <buttons names="Not Used,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="00,FF,01,FF">
+        <dip name="Game Time" bits="16,17" ids="40 seconds,50 seconds,60 seconds,70 seconds" values="3,2,1,0"/>
+        <dip name="Coinage" bits="18,19" ids="1 Coin per Player,1 Coin/1 or 2 Players,2 Coins per Player,2 Coins/1 or 2 Players" values="0,1,3,2"/>
+        <dip name="Extended Time At" bits="20,21" ids="None,5000,6000,7000"/>
+        <dip name="Springboard Alignment" bits="22" ids="Off,On"/>
+        <dip name="Service Mode" bits="23" ids="Off,On"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="spacwalk.zip">
+        <part crc="1b07fc1f" name="sw.h"/>
+        <part crc="52220910" name="sw.g"/>
+        <part crc="787d4ef6" name="sw.f"/>
+        <part crc="d62d324b" name="sw.e"/>
+        <part crc="17dcc591" name="sw.d"/>
+        <part crc="61aef726" name="sw.c"/>
+        <part crc="c59d45d0" name="sw.b"/>
+        <part crc="d563da07" name="sw.a"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            14 00 00 00 00 FF 01 FF 00 00 00 00 00 00 01 00
+            00 00 00 00 00 00 00 00 00 00 00 00 14 13 11 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            01 02 03 05 00 00 00 00 00 01 02 08 04 10 20 40
+            0A 00 02 04 00 E0 FF FF FF 00 00 83 9E B5 33 80
+            FF 83 02 04 9E B5 00 E6 80 00 00 83 B5 CF 00 E6
+            80 83 02 04 B5 CF 33 80 FF 00 00 2F CF E0 33 80
+            FF 2F 00 7A CF E0 FF FF 40 7A 00 8D CF E0 FF 33
+            26 8D 00 DA CF E0 FF FF 40 DA 02 04 CF E0 00 E6
+            80 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 85 00 00 08 01 FE 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00
+        </part>
+    </rom>
+
+    <remark>Space Walk (Midway)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>
