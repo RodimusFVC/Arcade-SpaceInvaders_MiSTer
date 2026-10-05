@@ -7,6 +7,11 @@ set_global_assignment -name SYSTEMVERILOG_FILE rtl/eeprom_93c46.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/zac1b1120_board.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/zac_snd.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/dsnd_engine.sv
+set_global_assignment -name VERILOG_FILE rtl/cpu/jt680x/jt680x.v
+set_global_assignment -name VERILOG_FILE rtl/cpu/jt680x/jt680x_ctrl.v
+set_global_assignment -name VERILOG_FILE rtl/cpu/jt680x/jt680x_alu.v
+set_global_assignment -name VERILOG_FILE rtl/cpu/jt680x/jt680x_regs.v
+set_global_assignment -name SEARCH_PATH rtl/cpu/jt680x
 set_global_assignment -name VHDL_FILE rtl/cpu/s2650/base/base_pack.vhd
 set_global_assignment -name VHDL_FILE rtl/cpu/s2650/sgs2650_pack.vhd
 set_global_assignment -name VHDL_FILE rtl/cpu/s2650/sgs2650.vhd

@@ -10,7 +10,7 @@ FS = 48000.0
 ONE = 1 << 24
 OPS = dict(END=0, LD=1, LDI=2, ADD=3, SUB=4, ADDI=5, MULI=6, MUL=7, ST=8, STF=9, LDIF=10, RC=11, RCM=12, CMP=13,
            CMPI=14, MAXI=15, MINI=16, BIT=17, NOT=18, NOISE=19, OUT=20, LDF=21, SKF=22, SKNF=23, LDL=24, ABS=25,
-           FAND=26, FOR=27, STNF=28, LDLM=29)
+           FAND=26, FOR=27, STNF=28, LDLM=29, MACI=30)
 # bit sources: sound latches 1-4, latch 0, misc
 LATCH1, LATCH2, LATCH3, LATCH4, LATCH0, MISC = range(6)
 
@@ -90,6 +90,15 @@ RAIL = 1.5          # OP_AMP_VP_RAIL_OFFSET
 FN_NONE, FN_TRG0, FN_TRG0_INV, FN_TRG1, FN_TRG1_INV, FN_TRG2, FN_TRG2_INV, FN_TRG01_AND, FN_TRG01_NAND = range(9)
 
 
+def wrap32(v):
+    return (v + (1 << 31)) % (1 << 32) - (1 << 31)
+
+
+def qmul(a, b):
+    """the engine's Q24 multiply (MULI / MUL) on two Q24 integers, exactly"""
+    return wrap32((a * b) >> 24)
+
+
 def rc_exp(rc):
     return 1.0 if rc <= 0 else 1.0 - math.exp(-1.0 / (FS * rc))
 
@@ -155,8 +164,9 @@ class Board(Prog):
             return None
         return bool(t)
 
-    def logic_reg(self, reg, fn, trig):
-        """reg = dst_trigger_function(trig0, trig1, trig2, fn) as 0 / 1.0; returns the constant if it is one"""
+    def logic_reg(self, reg, fn, trig, store=True):
+        """reg = dst_trigger_function(trig0, trig1, trig2, fn) as 0 / 1.0; returns the constant if it is one.
+        A dynamic result also leaves F = the function value; store=False only sets F"""
         t0, t1, t2 = trig
         const = {FN_NONE: True}.get(fn)
         if const is None:
@@ -189,9 +199,10 @@ class Board(Prog):
             if const is None:
                 if inv:
                     self.op("NOT")
-                self.op("LDI", imm=0)
-                self.op("LDIF", imm=ONE)
-                self.op("ST", reg)
+                if store:
+                    self.op("LDI", imm=0)
+                    self.op("LDIF", imm=ONE)
+                    self.op("ST", reg)
                 return None
         return bool(const)
 
@@ -203,8 +214,9 @@ class Board(Prog):
             self.op("LDI", imm=q(v))
 
     # --- nodes -----------------------------------------------------------------------------------------------
-    def midway_tone(self, out, lo, hi, clock=19968000 / 10 / 2):
-        """DISCRETE_NOTE fed by the Midway tone latches: lo = (source, ) D5-D1, hi = D5-D0; out = 0 / 1.0"""
+    def midway_tone(self, out, lo, hi, clock=19968000 / 10 / 2, toggles=2):
+        """DISCRETE_NOTE fed by the Midway tone latches: lo = (source, ) D5-D1, hi = D5-D0; out = 0 / 1.0. toggles =
+        output edges handled per sample (a second one only matters for notes above 24 kHz)"""
         n = out
         self.op("LDLM", 0, self.src(hi, 0), imm=0x3F | (22 << 8))
         self.op("ST", n + "_d")
@@ -217,7 +229,7 @@ class Board(Prog):
         self.op("LD", n + "_ph")
         self.op("ADDI", imm=int(round(clock / FS * 65536)))
         self.op("ST", n + "_ph")
-        for _ in range(2):                            # up to two toggles a sample (anything faster is ultrasonic)
+        for _ in range(toggles):                      # anything faster is ultrasonic
             self.op("LD", n + "_ph")
             self.op("CMP", n + "_p")
             self.op("SUB", n + "_p")
@@ -254,32 +266,47 @@ class Board(Prog):
         kc1 = rc_exp(par(g("r5"), r67) * g("c1"))
         kd1 = rc_exp(r67 * g("c1"))
         fixed = r4 * vmax / g("r1")
-        # i2 / i3 input terms, scaled by r4 into volts
-        self.op("LDI", imm=q(fixed))
-        self.op("ST", out + "_n")
+        # i2 / i3 input terms, scaled by r4 into volts. n stays a known constant (no register) until a term needs
+        # it in one; constant inputs are folded exactly as the engine would compute them
+        n_const = q(fixed)
         for rk, fk, ik in (("r2", "f0", 0), ("r3", "f1", 1)):
             if not g(rk):
+                continue
+            src = inp[ik]
+            if n_const is not None and not isinstance(src, str):
+                v = qmul(max(wrap32(q(src) + q(-VBE)), 0), q(r4 / g(rk)))
+                c = self.logic_reg(out + "_g", g(fk), trig, store=False)
+                if c is True:
+                    n_const = wrap32(n_const + v)
+                elif c is None:                       # F = the gate
+                    self.op("LDI", imm=n_const)
+                    self.op("LDIF", imm=wrap32(n_const + v))
+                    self.op("ST", out + "_n")
+                    n_const = None
                 continue
             c = self.logic_reg(out + "_g", g(fk), trig)
             if c is False:
                 continue
-            self.load(inp[ik])
+            self.load(src)
             self.op("ADDI", imm=q(-VBE))
             self.op("MAXI", imm=0)
             self.op("MULI", imm=q(r4 / g(rk)))
             if c is None:
                 self.op("MUL", out + "_g")
-            self.op("ADD", out + "_n")
+            if n_const is not None:
+                self.op("ADDI", imm=n_const)
+                n_const = None
+            else:
+                self.op("ADD", out + "_n")
             self.op("ST", out + "_n")
         f3 = self.logic_reg(out + "_f3", g("f3"), trig)
         assert f3 is True, "dynamic F3 not needed by the boards so far"
         # c1: charge toward vt1 while F2 is open, else discharge toward VBE through r6 + r7
-        c2 = self.logic_reg(out + "_f2", g("f2"), trig)
-        if c2 is None:
-            self.op("LD", out + "_f2"); self.op("CMPI", imm=q(0.5))
-            self.op("LDI", imm=q(kd1)); self.op("LDIF", imm=q(kc1)); self.op("ST", out + "_k")
-            self.groups.add("T"); self.op("MUL", "_fT"); self.op("MINI", imm=ONE); self.op("ST", out + "_k")
-            self.op("LD", out + "_f2"); self.op("CMPI", imm=q(0.5))
+        c2 = self.logic_reg(out + "_f2", g("f2"), trig, store=False)
+        if c2 is None:                                # F = F2: pick the pre-scaled charge / discharge rate
+            self.kreg(out + "_kd1", kd1, "T")
+            self.kreg(out + "_kc1", kc1, "T")
+            self.op("LD", out + "_kd1"); self.op("LDF", out + "_kc1"); self.op("ST", out + "_k")
             self.op("LDI", imm=q(VBE)); self.op("LDIF", imm=q(vt1))
             self.op("RCM", out + "_c1", self.r(out + "_k"))
         else:
@@ -289,18 +316,17 @@ class Board(Prog):
         self.op("ADDI", imm=q(-VBE))
         self.op("MAXI", imm=0)
         self.op("MULI", imm=q(r4 / r67))
-        self.op("ST", out + "_p")
-        for rv, rr, cc, vk, fk in (("r8", "r9", "c2", "v2", "f4"), ("r10", "r11", "c3", "v3", "f5")):
-            if not g(rr):
-                continue
+        caps = [x for x in (("r8", "r9", "c2", "v2", "f4"), ("r10", "r11", "c3", "v3", "f5")) if g(x[1])]
+        if caps:
+            self.op("ST", out + "_p")
+        for j, (rv, rr, cc, vk, fk) in enumerate(caps):
             vt = (g(vk) - 0.6 - VBE) * div(g(rv), g(rr))
             k0, k1 = rc_exp(g(rr) * g(cc)), rc_exp(par(g(rv), g(rr)) * g(cc))
-            cf = self.logic_reg(out + "_g", g(fk), trig)
+            cf = self.logic_reg(out + "_g", g(fk), trig, store=False)
             if cf is None:
-                self.op("LD", out + "_g"); self.op("CMPI", imm=q(0.5))
-                self.op("LDI", imm=q(k0)); self.op("LDIF", imm=q(k1)); self.op("ST", out + "_k")
-                self.groups.add("T"); self.op("MUL", "_fT"); self.op("MINI", imm=ONE); self.op("ST", out + "_k")
-                self.op("LD", out + "_g"); self.op("CMPI", imm=q(0.5))
+                self.kreg(f"{out}_k0{cc}", k0, "T")
+                self.kreg(f"{out}_k1{cc}", k1, "T")
+                self.op("LD", f"{out}_k0{cc}"); self.op("LDF", f"{out}_k1{cc}"); self.op("ST", out + "_k")
                 self.op("LDI", imm=0); self.op("LDIF", imm=q(vt))
                 self.op("RCM", out + "_" + cc, self.r(out + "_k"))
             else:
@@ -309,11 +335,15 @@ class Board(Prog):
                 self.op("RCM", out + "_" + cc, self.r(out + "_k"))
             self.op("MULI", imm=q(r4 / g(rr)))
             self.op("ADD", out + "_p")
-            self.op("ST", out + "_p")
+            if j < len(caps) - 1:
+                self.op("ST", out + "_p")
         if g("c4"):                                   # output cap through r4: exponential charge toward i_out x r4
             self.kreg(out + "_k4", rc_exp(r4 * g("c4")), "T")
-        self.op("LD", out + "_p")
-        self.op("SUB", out + "_n")
+        # acc = p here
+        if n_const is not None:
+            self.op("ADDI", imm=wrap32(-n_const))
+        else:
+            self.op("SUB", out + "_n")
         self.op("MAXI", imm=0)
         if g("c4"):
             self.op("RCM", out + "_c4", self.r(out + "_k4"))
@@ -410,18 +440,16 @@ class Board(Prog):
     def op_amp_norton(self, out, inp0, inp1, r1, r2, r3, r4, vP, vN=0.0):
         """DST_OP_AMP, DISC_OP_AMP_IS_NORTON, no cap: out = r4 x (i+ - i-), clamped to vN .. vP - VBE"""
         vmax = vP - VBE
-        self.load(inp1)
-        self.op("ADDI", imm=q(-VBE))
-        self.op("MAXI", imm=0)
-        self.op("MULI", imm=q(r4 / r2))
-        self.op("ST", out + "_p")
         self.load(inp0)
         self.op("ADDI", imm=q(-VBE))
         self.op("MAXI", imm=0)
         self.op("MULI", imm=q(r4 / r1))
         self.op("ADDI", imm=q(r4 * vmax / r3 if r3 else 0))
         self.op("ST", out + "_n")
-        self.op("LD", out + "_p")
+        self.load(inp1)
+        self.op("ADDI", imm=q(-VBE))
+        self.op("MAXI", imm=0)
+        self.op("MULI", imm=q(r4 / r2))
         self.op("SUB", out + "_n")
         self.op("MAXI", imm=q(vN))
         self.op("MINI", imm=q(vmax))
@@ -436,39 +464,279 @@ class Board(Prog):
         self.load(src)
         self.op("ST", out + "_x0")
         self.op("MULI", imm=q(b0))
-        self.op("ST", out + "_s")
-        self.op("LD", out + "_x1"); self.op("MULI", imm=q(b0)); self.op("ADD", out + "_s"); self.op("ST", out + "_s")
-        self.op("LD", out); self.op("MULI", imm=q(-a1)); self.op("ADD", out + "_s"); self.op("ST", out)
+        self.op("MACI", out + "_x1", imm=q(b0))
+        self.op("MACI", out, imm=q(-a1))
+        self.op("ST", out)
         self.op("LD", out + "_x0"); self.op("ST", out + "_x1")
 
-    def mixer_resistor(self, out, ins):
-        """DST_MIXER, DISC_MIXER_IS_RESISTOR (no rF / cAmp): Millman sum of the (high-passed) inputs"""
-        rt = par(*[r for _, r, _ in ins])
+    def mixer_resistor(self, out, ins, c_amp=0):
+        """DST_MIXER, DISC_MIXER_IS_RESISTOR (no rF): Millman sum of the (high-passed) inputs, ins = [(src, r, c
+        [, music [, gain]])]; output high-passed by c_amp (100k)"""
+        rt = par(*[inp[1] for inp in ins])
+        if c_amp:
+            self.kreg(out + "_ka", rc_exp(100e3 * c_amp), "F")
+        terms = [(k, inp[0], inp[1], inp[2], (inp[4] if len(inp) > 4 else 1.0) * rt / inp[1], len(inp) > 3 and inp[3])
+                 for k, inp in enumerate(ins)]       # inp[4]: a gain stage in front of this input, folded in
+        self._mix_sum(out, terms, 0.0)
+        if c_amp:
+            self.op("RCM", out + "_amp", self.r(out + "_ka"))
+            self.op("LD", out + "_s")
+            self.op("SUB", out + "_amp")
+        self.op("ST", out)
+
+    def _mix_sum(self, out, terms, vref):
+        """out_s = sum of w x input over terms (k, src, r, c, w, music); acc = out_s after. An input with a coupling
+        cap (high-passed through r * c, after subtracting vref) or the music trim pot takes the long path; a plain
+        register input is one MACI. Each term rounds the same either way and integer sums are exact: the order
+        does not change the result"""
+        slow = [t for t in terms if t[1] is not None and (t[3] or t[5] or not isinstance(t[1], str))]
+        fast = [t for t in terms if t[1] is not None and t not in slow]
         self.op("LDI", imm=0)
-        self.op("ST", out + "_s")
-        for k, (src, r, c) in enumerate(ins):
-            if src is None:
-                continue
+        if slow or not fast:
+            self.op("ST", out + "_s")
+        for k, src, r, c, w, music in slow:
             if c:
                 self.kreg(f"{out}_k{k}", rc_exp(r * c), "F")
             self.load(src)
             if c:
+                if vref:
+                    self.op("ADDI", imm=q(-vref))
                 self.op("RCM", f"{out}_hp{k}", self.r(f"{out}_k{k}"))
                 self.load(src)
                 self.op("SUB", f"{out}_hp{k}")
-            self.op("MULI", imm=q(rt / r))
+            self.op("MULI", imm=q(w))
+            if music:                                 # the music trim pot
+                self.music = True
+                self.op("MUL", "_fM")
             self.op("ADD", out + "_s")
             self.op("ST", out + "_s")
+        if fast:
+            if slow:
+                self.op("LD", out + "_s")
+            for k, src, r, c, w, music in fast:
+                self.op("MACI", src, imm=q(w))
+            self.op("ST", out + "_s")
+
+    def rcdisc2(self, out, sw, in0, r0, in1, r1, c):
+        """DST_RCDISC2: relaxes toward in0 through r0 while the switch bit is low, toward in1 through r1 when high"""
+        self.kreg(out + "_k0", rc_exp(r0 * c), "T")
+        self.kreg(out + "_k1", rc_exp(r1 * c), "T")
+        self.op("BIT", 0, self.src(*sw))
+        self.op("LD", out + "_k0")
+        self.op("LDF", out + "_k1")
+        self.op("ST", out + "_k")
+        self.op("LDI", imm=q(in0))
+        self.op("LDIF", imm=q(in1))
+        self.op("RCM", out, self.r(out + "_k"))
+
+    def op_amp_osc2_norton_cap(self, out, r1, r2, r3, r4, c, vP):
+        """DSS_OP_AMP_OSC type 2 | NORTON, OUT_CAP (r5 = r6 = 0): exponential charge toward v1 / discharge toward v0
+        through r1 || r2; a threshold crossing clamps to the threshold (sub-sample time lost: LFO-rate, negligible).
+        out = the cap voltage"""
+        vh = vP - VBE
+        rc = par(r1, r2)
+        v0 = VBE / r2 * rc
+        v1 = (vh / r1 + VBE / r2) * rc
+        tl = vh / r4 * r2 + VBE
+        th = (vh / r4 + (vP - 2 * VBE) / r3) * r2 + VBE
+        self.kreg(out + "_k", rc_exp(rc * c), "O")
+        self.op("LD", out + "_dis")                   # _dis = 1 while discharging (power-up: charging from 0 V)
+        self.op("CMPI", imm=q(0.5))
+        self.op("LDI", imm=q(v1))
+        self.op("LDIF", imm=q(v0))
+        self.op("RCM", out, self.r(out + "_k"))
+        self.op("CMPI", imm=q(th))
+        self.op("LDI", imm=q(th))
+        self.op("STF", out)
+        self.op("LDI", imm=ONE)
+        self.op("STF", out + "_dis")
+        self.op("LD", out + "_dis")
+        self.op("CMPI", imm=q(0.5))
+        at = self.skip_if(False)
+        self.op("LD", out)
+        self.op("CMPI", imm=q(tl))
+        self.op("LDI", imm=q(tl))
+        self.op("STNF", out)
+        self.op("LDI", imm=0)
+        self.op("STNF", out + "_dis")
+        self.land(at)
+
+    def op_amp_vco1_norton_cap(self, out, vmod, en, r1, r2, r3, r4, r5, c, vP):
+        """DSS_OP_AMP_OSC VCO_1 | NORTON, OUT_CAP, r6 = r7 = r8 = 0 (vmod fed straight in), linear charge. en low =
+        MAME force_charge (cap charges to the rail). Charge / discharge currents both scale with vmod, so the
+        overshoot carry ratio is a constant: exact. out = the cap voltage"""
+        vh = vP - VBE
+        i1 = vh / r5
+        tl = (i1 - (vP - 2 * VBE) / r4) * r3 + VBE
+        th = (i1 + VBE / r4) * r3 + VBE
+        self.kreg(out + "_nk0", -1.0 / (r1 * FS * c), "O", clamp=False)
+        self.kreg(out + "_k1", (1.0 / r2 - 1.0 / r1) / (FS * c), "O", clamp=False)
+        self.load(vmod)
+        self.op("ADDI", imm=q(-VBE))
+        self.op("ST", out + "_vm")
+        # _hi = MAME flip_flop: charges while low (xor 1), power-up low
+        self.op("LD", out + "_hi")
+        self.op("CMPI", imm=q(0.5))
+        self.op("FAND", 0, self.src(*en))
+        at = self.skip_if(True)
+        self.op("LD", out + "_vm")                    # charging
+        self.op("MUL", out + "_k1")
+        self.op("ADD", out)
+        self.op("MINI", imm=q(vh))                    # forced: the cap stops at the rail
         self.op("ST", out)
+        self.op("CMPI", imm=q(th))
+        at2 = self.skip_if(False)
+        self.op("LDI", imm=ONE)
+        self.op("ST", out + "_hi")
+        self.op("BIT", 0, self.src(*en))
+        at_f = self.skip_if(False)                    # forced (disabled): keep charging, no carry
+        self.op("LD", out)
+        self.op("ADDI", imm=q(-th))
+        self.op("MULI", imm=q(-r2 / (r1 - r2)))       # overshoot time x discharge rate (d0 / d1 constant)
+        self.op("ADDI", imm=q(th))
+        self.op("ST", out)
+        self.land(at_f)
+        self.land(at2)
+        self.op("LDI", imm=ONE)
+        self.op("CMPI", imm=0)
+        at3 = self.skip_if(True)
+        self.land(at)
+        self.op("LD", out + "_vm")                    # discharging
+        self.op("MUL", out + "_nk0")
+        self.op("ADD", out)
+        self.op("ST", out)
+        self.op("CMPI", imm=q(tl))
+        at4 = self.skip_if(True)
+        self.op("LDI", imm=0)
+        self.op("ST", out + "_hi")
+        self.op("LD", out)
+        self.op("ADDI", imm=q(-tl))
+        self.op("MULI", imm=q(-(r1 - r2) / r2))
+        self.op("ADDI", imm=q(tl))
+        self.op("ST", out)
+        self.land(at4)
+        self.land(at3)
+
+    def op_amp_vco3_norton(self, out, vmod, r1, r2, r3, r4, r5, c, vP, r7=0, sqw=False):
+        """DSS_OP_AMP_OSC VCO_3 | NORTON (no r6 / r8 enable), linear charge, OUT_CAP or OUT_SQW. Discharge current
+        = fixed (r7) + max(0, vmod - VBE) / r1, charge = (vP - 2 VBE) / r2 - discharge. The overshoot carry ratio
+        follows vmod (no divide in the engine): a crossing lands half a step past the threshold, the expected value
+        of the exact carry -> no pitch bias, edge jitter within one sample. The cap stays inside tl - step .. th, so
+        MAME's 0 .. vh clamp never acts (the assert keeps the charge current positive for any vmod <= vP).
+        OUT_CAP: out = the cap voltage. SQW: out = vh while charging, 0 while discharging; the cap is out_v"""
+        vh = vP - VBE
+        i1 = vh / r5
+        tl = (i1 - VBE / r4) * r3 + VBE
+        th = (i1 + (vP - 2 * VBE) / r4) * r3 + VBE
+        assert vh / r1 + (vh / r7 if r7 else 0.0) < (vP - 2 * VBE) / r2, "charge current must stay positive"
+        cap = out + "_v" if sqw else out
+        self.kreg(out + "_ka", 1.0 / (r1 * FS * c), "O", clamp=False)
+        self.kreg(out + "_kf", (vh / r7 if r7 else 0.0) / (FS * c), "O", clamp=False)
+        self.kreg(out + "_kt", (vP - 2 * VBE) / r2 / (FS * c), "O", clamp=False)
+        self.load(vmod)
+        self.op("ADDI", imm=q(-VBE))
+        self.op("MAXI", imm=0)
+        self.op("MUL", out + "_ka")
+        self.op("ADD", out + "_kf")
+        self.op("ST", out + "_d0")                    # discharge step; charge step = kt - d0
+        if sqw:                                       # power-up: charging from 0 V
+            self.init(out, vh)
+            self.op("LD", out)
+            self.op("CMPI", imm=q(vh / 2))
+            at = self.skip_if(False)
+        else:
+            self.op("LD", out + "_lo")                # _lo = 1 while discharging
+            self.op("CMPI", imm=q(0.5))
+            at = self.skip_if(True)
+        self.op("LD", cap)                            # charging
+        self.op("ADD", out + "_kt")
+        self.op("SUB", out + "_d0")
+        self.op("ST", cap)
+        self.op("CMPI", imm=q(th))
+        at2 = self.skip_if(False)
+        self.op("LD", out + "_d0")
+        self.op("MULI", imm=q(-0.5))
+        self.op("ADDI", imm=q(th))
+        self.op("ST", cap)
+        if sqw:
+            self.op("LDI", imm=0)
+            self.op("ST", out)
+        else:
+            self.op("LDI", imm=ONE)
+            self.op("ST", out + "_lo")
+        self.land(at2)
+        self.op("LDI", imm=ONE)
+        self.op("CMPI", imm=0)
+        at3 = self.skip_if(True)
+        self.land(at)
+        self.op("LD", cap)                            # discharging
+        self.op("SUB", out + "_d0")
+        self.op("ST", cap)
+        self.op("CMPI", imm=q(tl))
+        at4 = self.skip_if(True)
+        self.op("LD", out + "_kt")
+        self.op("SUB", out + "_d0")
+        self.op("MULI", imm=q(0.5))
+        self.op("ADDI", imm=q(tl))
+        self.op("ST", cap)
+        if sqw:
+            self.op("LDI", imm=q(vh))
+            self.op("ST", out)
+        else:
+            self.op("LDI", imm=0)
+            self.op("ST", out + "_lo")
+        self.land(at4)
+        self.land(at3)
+
+    def op_amp_filt_bp1m_norton(self, out, src, r1, r3, rf, c1, c2, vP, vN=0.0, r2=0):
+        """DST_OP_AMP_FILT BAND_PASS_1M | NORTON: input max(0, in - VBE), MAME bilinear band pass with the circuit
+        gain, vRef = (vP - VBE) / r3 x rF, clipped vN .. vP - VBE; the clipped output feeds back (as MAME)"""
+        rt = par(r1, r2) if r2 else r1
+        fc = 1.0 / (2 * math.pi * math.sqrt(rt * rf * c1 * c2))
+        d = (c1 + c2) / math.sqrt(rf / rt * c1 * c2)
+        gain = -rf / rt * c2 / (c1 + c2)
+        wc = FS * 2.0 * math.tan(math.pi * fc / FS)
+        t2 = 2 * FS
+        den = t2 * t2 + d * wc * t2 + wc * wc
+        a1 = 2.0 * (-t2 * t2 + wc * wc) / den
+        a2 = (t2 * t2 - d * wc * t2 + wc * wc) / den
+        b0 = d * wc * t2 / den * gain
+        vref = (vP - VBE) / r3 * rf
+        vmax = vP - VBE
+        assert vref - vN < 120, "feedback state outside Q24"
+        self.load(src)
+        self.op("ADDI", imm=q(-VBE))
+        self.op("MAXI", imm=0)
+        self.op("ST", out + "_x0")
+        self.op("MULI", imm=q(b0))
+        for reg, k in (("_x2", -b0), ("_y2", -a2), ("_y1", -a1)):     # y2 before y1: partial sums stay small
+            self.op("MACI", out + reg, imm=q(k))
+        self.op("ST", out + "_s")
+        self.op("LD", out + "_x1"); self.op("ST", out + "_x2")
+        self.op("LD", out + "_x0"); self.op("ST", out + "_x1")
+        self.op("LD", out + "_y1"); self.op("ST", out + "_y2")
+        self.op("LD", out + "_s")
+        self.op("ADDI", imm=q(vref))
+        self.op("MAXI", imm=q(vN))
+        self.op("MINI", imm=q(vmax))
+        self.op("ST", out)
+        self.op("ADDI", imm=q(-vref))
+        self.op("ST", out + "_y1")
 
     def integrate_norton1(self, out, src, v_on, r1, r2, c, v1, vP):
         """DST_INTEGRATE, DISC_INTEGRATE_OP_AMP_1 | NORTON: dv = (max(0, (in - VBE) / r2) - (v1 - VBE) / r1) / FS / C,
-        clipped 0 .. vP - VBE. src = (source, bit): the input is v_on when the bit is set (INPUTX_LOGIC)"""
+        clipped 0 .. vP - VBE. src = (source, bit): the input is v_on when the bit is set (INPUTX_LOGIC);
+        src = a register name: the input is that voltage (v_on unused)"""
         self.kreg(out + "_ka", 1.0 / (r2 * FS * c), "T", clamp=False)
         self.kreg(out + "_kb", (v1 - VBE) / (r1 * FS * c), "T", clamp=False)
-        self.op("BIT", 0, self.src(*src))
-        self.op("LDI", imm=0)
-        self.op("LDIF", imm=q(v_on - VBE))
+        if isinstance(src, str):
+            self.op("LD", src)
+            self.op("ADDI", imm=q(-VBE))
+            self.op("MAXI", imm=0)
+        else:
+            self.op("BIT", 0, self.src(*src))
+            self.op("LDI", imm=0)
+            self.op("LDIF", imm=q(v_on - VBE))
         self.op("MUL", out + "_ka")
         self.op("SUB", out + "_kb")
         self.op("ADD", out)
@@ -553,9 +821,10 @@ class Board(Prog):
         self.op("ADDI", imm=q(-vref))
         self.op("MULI", imm=q(rt / r1))
         self.op("ST", out + "_x0")
-        self.op("MULI", imm=q(b0)); self.op("ST", out + "_s")
+        self.op("MULI", imm=q(b0))
         for reg, k in (("_x2", -b0), ("_y1", -a1), ("_y2", -a2)):
-            self.op("LD", out + reg); self.op("MULI", imm=q(k)); self.op("ADD", out + "_s"); self.op("ST", out + "_s")
+            self.op("MACI", out + reg, imm=q(k))
+        self.op("ST", out + "_s")
         self.op("LD", out + "_x1"); self.op("ST", out + "_x2")
         self.op("LD", out + "_x0"); self.op("ST", out + "_x1")
         self.op("LD", out + "_y1"); self.op("ST", out + "_y2")
@@ -671,9 +940,10 @@ class Board(Prog):
             b1 = -2.0 * b0
         self.load(src)
         self.op("ST", out + "_x0")
-        self.op("MULI", imm=q(b0)); self.op("ST", out + "_s")
+        self.op("MULI", imm=q(b0))
         for reg, k in (("_x1", b1), ("_x2", b2), ("_y1", -a1), ("_y2", -a2)):
-            self.op("LD", out + reg); self.op("MULI", imm=q(k)); self.op("ADD", out + "_s"); self.op("ST", out + "_s")
+            self.op("MACI", out + reg, imm=q(k))
+        self.op("ST", out + "_s")
         self.op("LD", out + "_x1"); self.op("ST", out + "_x2")
         self.op("LD", out + "_x0"); self.op("ST", out + "_x1")
         self.op("LD", out + "_y1"); self.op("ST", out + "_y2")
@@ -689,27 +959,9 @@ class Board(Prog):
         """DST_MIXER, DISC_MIXER_IS_OP_AMP: ins = [(src, r, c)], output high-passed by c_amp (100k)"""
         if c_amp:
             self.kreg(out + "_ka", rc_exp(100e3 * c_amp), "F")
-        self.op("LDI", imm=0)
-        self.op("ST", out + "_s")
-        for k, inp in enumerate(ins):
-            src, r, c = inp[:3]
-            music = len(inp) > 3 and inp[3]
-            if src is None:
-                continue
-            if c:
-                self.kreg(f"{out}_k{k}", rc_exp(r * c), "F")
-            self.load(src)
-            if c:
-                self.op("ADDI", imm=q(-vref))
-                self.op("RCM", f"{out}_hp{k}", self.r(f"{out}_k{k}"))
-                self.load(src)
-                self.op("SUB", f"{out}_hp{k}")
-            self.op("MULI", imm=q(-rf / r))          # (vref - in) / r * rf, vref = 0
-            if music:                                 # the music trim pot
-                self.music = True
-                self.op("MUL", "_fM")
-            self.op("ADD", out + "_s")
-            self.op("ST", out + "_s")
+        terms = [(k, inp[0], inp[1], inp[2], -rf / inp[1], len(inp) > 3 and inp[3])    # (vref - in) / r * rf, vref 0
+                 for k, inp in enumerate(ins)]
+        self._mix_sum(out, terms, vref)
         if c_amp:
             self.op("RCM", out + "_amp", self.r(out + "_ka"))
             self.op("LD", out + "_s")
@@ -766,6 +1018,21 @@ class Board(Prog):
         self.land(at)
         self.code += body
         self.op("END")
-        if len(self.code) > 400:                      # static count includes skipped branches; the harness
-            print(f"note: {self.name} {len(self.code)} static instructions (check executed max < 400)")
+        worst = self.worst_path()
+        assert worst <= 410, f"{self.name}: a sample can run {worst} instructions (engine budget 410)"
         return self
+
+    def worst_path(self):
+        """most instructions any sample can execute: longest path through the forward skips (exact bound)"""
+        n = len(self.code)
+        L = [0] * (n + 1)
+        for i in range(n - 1, -1, -1):
+            o, _, _, imm = self.code[i]
+            if o == OPS["END"]:
+                L[i] = 1
+            elif o in (OPS["SKF"], OPS["SKNF"]):
+                j = i + 1 + imm
+                L[i] = 1 + max(L[i + 1], L[j] if j < n else 0)
+            else:
+                L[i] = 1 + L[i + 1]
+        return L[0]

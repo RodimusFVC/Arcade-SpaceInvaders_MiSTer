@@ -54,7 +54,7 @@ SUPPORTED = {
 #     screen red, [7:6] PROM half: 0 first, 1 port 5 bit 5, 2 inverted port 5 bit 5, 3 port 5 bit 6
 #   sound map: 0 invaders board bits, 1 silent, 2 ballbomb, 3 indianbt, 4 indianbtbr, 5 schasercv, 6 rollingc,
 #     7 lrescue (tune speaker only), 8 spcewarla
-#   board flags: [0] no watchdog
+#   board flags: [0] no watchdog, [5] port 5 bit 4 = screen red (invrvnge)
 FAMILY3 = {
     "invadpt2":   (0, 1, 0x60, 0, 0),
     "spacerng":   (0, 1, 0x20, 0, 0),
@@ -80,9 +80,12 @@ FAMILY3 = {
     "mraker":     (2, 5, 0x00, 1, 1),
     "cane":       (18, 0, 0x00, 1, 0),
     "orbite":     (19, 2, 0x10, 1, 0),
+    "invrvnge":   (0, 1, 0x00, 1, 0x20),     # Zenitone: port 5 bit 4 screen red; 6802 + AY sound not yet (silent)
+    "sflush":     (21, 3, 0x00, 1, 0x01),    # MC6800 main CPU, colour RAM at A000, pen 0 blue; MAME: no sound
 }
 for _m, _c in FAMILY3.items():
     SUPPORTED[("8080bw.cpp", _m, "empty_init")] = _c[0]
+SUPPORTED[("8080bw.cpp", "invrvnge", "init_invrvnge")] = 0      # init only decrypts the sound CPU ROM
 
 
 def family3(g):
@@ -142,6 +145,7 @@ def family4(g):
 REGIONS = {"maincpu": (0x0000, 0x8000),
            "maincpu_nibhi": (0x10000, 0x8000)}                  # ROM_SHIFT_NIBBLE_HI chips (spaceattbp)
 VARIANT_REGIONS = {9: {"user1": (0x0000, 0x20000)},
+                   21: {"maincpu": (-0xC000, 0x10000)},                         # sflush: C000-FFFF at 0
                    32: {"maincpu": (0x0000, 0x2000), "gfx1": (0x2000, 0x400)},   # zac1b1120: program, characters
                    33: {"maincpu": (0x0000, 0x2000), "gfx1": (0x2000, 0x400)}}
 INDEX0_TEXT = {9: "raw 128K user1 dump (banked and unscrambled on the read path)"}
@@ -167,7 +171,8 @@ PORT_TAGS = {"yosakdon": [None, "IN0", "IN1", None],   # input port tags at boar
              "cane": [None, "IN1", None, None],
              "tinvader": ["1E80", "1E81", "1E82", "1E85"],   # zac1b1120 memory-mapped ports
              "dodgem": ["1E80", "1E81", "1E82", "1E85"],
-             "starw1": [None, "IN1", "IN2", None]}   # ports FC-FF: P2 (read on the cocktail flip), FE DSW, FF   # ports 41 / 42 / 44: board slots 1-3
+             "starw1": [None, "IN1", "IN2", None],
+             "sflush": ["IN0", "PADDLE", "IN2", None]}       # 800B / 8008 / 800A   # ports FC-FF: P2 (read on the cocktail flip), FE DSW, FF   # ports 41 / 42 / 44: board slots 1-3
 LINE_BASE = 40      # control ids 40-47 = DIP byte 3 bits: MAME fake-port DIPs read through a custom handler
 SEL_BASE = 56       # control ids 56-59 = DIP byte 4 bits 0-3 when the select line is high, else DIP byte 3's
 CTL_VBLANK = 36     # control id 36 = VBLANK (spacecom IN2 bit 0)
@@ -191,7 +196,8 @@ CTL = {("JOYSTICK_UP", 1): 1, ("JOYSTICK_DOWN", 1): 2, ("JOYSTICK_LEFT", 1): 3, 
        ("BUTTON1", 4): 73, ("START3", 0): 74, ("START4", 0): 75}
 IGNORED_TYPES = {"UNUSED", "UNKNOWN"}
 READ_LINE_FIXED = {"cosmicmo_cab_r": 0,                # cabinet type: upright
-                   "gun_on_r": 0}                     # claybust: driven by the board
+                   "gun_on_r": 0,                     # claybust: driven by the board
+                   "sflush_80_r": 0}                  # sflush IN2 bit 7 (vpos bit 7): driven by the board
 
 # PORT_CUSTOM_MEMBER handlers, upright cabinet: the fake port whose bits the handler returns
 CUSTOM = {
@@ -222,7 +228,7 @@ REGION_WORDS = [("US", "US"), ("Japan", "Japan"), ("Spanish", "Spain"), ("Italia
 # ---------------------------------------------------------------- parsing
 
 GAME_RE = re.compile(r'^\s*(?:/\*[^*]*\*/)?\s*GAMEL?\(\s*([\w?]+),\s*(\w+),\s*(\w+),\s*(\w+),\s*(\w+),\s*\w+,\s*(\w+),'
-                     r'\s*(ROT\d+),\s*"([^"]*)",\s*"([^"]*)",\s*([^)]*)\)', re.M)
+                     r'\s*(ROT\d+),\s*"([^"]*)"\s*,\s*"([^"]*)"\s*,\s*([^)]*)\)', re.M)
 LOAD_RE = re.compile(r'ROM_LOAD\(\s*"([^"]+)"\s*,\s*(0x[0-9a-fA-F]+),\s*(0x[0-9a-fA-F]+),\s*(?:BAD_DUMP\s+)?CRC\(([0-9a-fA-F]+)\)')
 LOADX_RE = re.compile(r'ROMX_LOAD\(\s*"([^"]+)"\s*,\s*(0x[0-9a-fA-F]+),\s*(0x[0-9a-fA-F]+),\s*CRC\(([0-9a-fA-F]+)\).*\)\s*,\s*([^)]*)\)')
 CONT_RE = re.compile(r'ROM_CONTINUE\(\s*(0x[0-9a-fA-F]+),\s*(0x[0-9a-fA-F]+)\s*\)')
@@ -965,7 +971,7 @@ def rom_segments(g, src):
     if family4(g) and family4(g).get("col") == 7:   # phantom2 cloud PROM
         f3 = (20, 1)
     if f3:                                     # colour boards: PROM (and polaris clouds) at 0x20000 when the mode reads it
-        ignored |= {"proms", "user1", "stars"}
+        ignored |= {"proms", "user1", "stars", "audiocpu"}
         regions = dict(regions)
         if f3[1] in (1, 3, 4):
             ignored.discard("proms")

@@ -162,12 +162,20 @@ wire [8:0] vcnt = {cnt_e7, cnt_e6};
 
 // ---------------------------------------------------------------- CPU
 
+wire v_sfl = variant == 8'd21;        // sflush: MC6800 main CPU, memory-mapped I/O
+wire        sfl_vb = v_sfl & ~pause;              // sflush CPU on the second video RAM port (hiscore while paused)
+logic [7:0] vram_qb, sram_qa;
+
 logic  [7:0] cpu_di;
-logic  [7:0] cpu_do;
-logic [15:0] cpu_a;
-logic        cpu_sync, cpu_wr_n, cpu_inte;
+wire   [7:0] cpu_do;
+wire  [15:0] cpu_a;
+wire         cpu_wr_n;
+logic        cpu_sync, cpu_inte;
 logic        ready = 1'b0;
 logic        cpu_int = 1'b0;
+wire   [7:0] i80_do;
+wire  [15:0] i80_a;
+wire         i80_wr_n;
 
 `ifdef VERILATOR
 T8080se u_cpu
@@ -175,7 +183,7 @@ T8080se u_cpu
 T8080se #(.Mode(2), .T2Write(1)) u_cpu
 `endif
 (
-    .RESET_n(rst_n),
+    .RESET_n(rst_n & ~v_sfl),
     .CLK(clk),
     .CLKEN(cpu_ce),
     .READY(ready & ~pause),
@@ -186,11 +194,73 @@ T8080se #(.Mode(2), .T2Write(1)) u_cpu
     .SYNC(cpu_sync),
     .VAIT(),
     .HLDA(),
-    .WR_n(cpu_wr_n),
-    .A(cpu_a),
+    .WR_n(i80_wr_n),
+    .A(i80_a),
     .DI(cpu_di),
-    .DO(cpu_do)
+    .DO(i80_do)
 );
+
+// sflush: MC6800 (jt680x, 6800 microcode) at E = 1.5 MHz as MAME, cen = 4 x E = 6 MHz (39.936 MHz x 375 / 2496).
+// A bus cycle spans 4 cen: each write is latched on every cen while wr is high and committed once, a clock after
+// the cycle ends (one pulse per write, final data), at the latched address.
+logic [11:0] m68_acc = 12'd0;
+logic        m68_tick = 1'b0;
+always_ff @(posedge clk) begin
+    m68_tick <= m68_acc >= 12'd2121;
+    m68_acc  <= m68_acc >= 12'd2121 ? m68_acc - 12'd2121 : m68_acc + 12'd375;
+end
+wire         m68_cen = m68_tick & v_sfl & ~pause;
+wire         m68_wr;
+wire  [15:0] m68_a;
+wire   [7:0] m68_do;
+logic        m68_irq = 1'b0;
+
+jt680x u_m68
+(
+    .rst(~rst_n | ~v_sfl),
+    .clk(clk),
+    .cen(m68_cen),
+    .wr(m68_wr),
+    .addr(m68_a),
+    .din(cpu_di),
+    .dout(m68_do),
+    .ext_halt(1'b0),
+    .ba(),
+    .irq(m68_irq),
+    .nmi(1'b0),
+    .irq_icf(1'b0),
+    .irq_ocf(1'b0),
+    .irq_tof(1'b0),
+    .irq_sci(1'b0),
+    .irq_cmf(1'b0),
+    .irq2(1'b0)
+);
+
+logic [15:0] wl_a = 16'd0, cmt_a = 16'd0;
+logic  [7:0] wl_d = 8'd0, cmt_d = 8'd0;
+logic        wpend = 1'b0, sfl_wr = 1'b0;
+always_ff @(posedge clk) begin
+    sfl_wr <= 1'b0;
+    if (!rst_n || !v_sfl)
+        wpend <= 1'b0;
+    else if (m68_cen) begin
+        if (wpend && (!m68_wr || m68_a != wl_a)) begin
+            cmt_a  <= wl_a;
+            cmt_d  <= wl_d;
+            sfl_wr <= 1'b1;
+            wpend  <= 1'b0;
+        end
+        if (m68_wr) begin
+            wl_a  <= m68_a;
+            wl_d  <= m68_do;
+            wpend <= 1'b1;
+        end
+    end
+end
+
+assign cpu_a    = v_sfl ? (sfl_wr ? cmt_a : m68_a) : i80_a;
+assign cpu_do   = v_sfl ? cmt_d : i80_do;
+assign cpu_wr_n = v_sfl ? 1'b1 : i80_wr_n;           // sflush writes go through sfl_wr
 
 // status latch D7: [0] INTA, [4] OUT, [6] INP
 logic [7:0] status = 8'd0;
@@ -216,7 +286,7 @@ wire [7:0] cflags   = f3[15:8];
 wire [7:0] smap     = f3[23:16];
 wire       colour   = col_mode != 8'd0 && col_mode != 8'd7 && col_mode != 8'd8;   // 7 phantom2 clouds, 8 spcenctr trench
 wire       v_spc    = v_tab && col_mode == 8'd8;
-wire is_cram  = ((col_mode == 8'd2 || col_mode == 8'd3 || col_mode == 8'd4) && cpu_a[15:13] == 3'b110) |
+wire is_cram  = ((col_mode == 8'd2 || col_mode == 8'd3 || col_mode == 8'd4) && cpu_a[15:13] == (v_sfl ? 3'b101 : 3'b110)) |
                 (col_mode == 8'd5 && cpu_a[15:13] == 3'b101) | (col_mode == 8'd6 && cpu_a[15:10] == 6'b010111);
 wire is_cram2 = col_mode == 8'd5 && cpu_a[15:13] == 3'b111;          // rollingc background colours
 wire is_star  = col_mode == 8'd6 && cpu_a[15:10] == 6'b010110;       // cosmo 5800 star control (not modelled)
@@ -245,6 +315,16 @@ end
 // interrupt E3: set on (!64V & 128V) | VBLANK rising (V = 128 and 218), cleared by INTA; darthvdr: VBLANK only
 wire int_trig = v_dvdr ? cnt_e7[4] : (~cnt_e7[2] & cnt_e7[3]) | cnt_e7[4];
 logic int_trig_d = 1'b0;
+
+// sflush IRQ: held from each interrupt point until the program reads 800B (MAME sflush_in0_r)
+always_ff @(posedge clk) begin
+    if (!rst_n)
+        m68_irq <= 1'b0;
+    else begin
+        if (ce && !int_trig_d && int_trig)               m68_irq <= 1'b1;
+        if (m68_cen && !m68_wr && m68_a == 16'h800B)     m68_irq <= 1'b0;
+    end
+end
 
 // RAM read register / READY: the CPU owns the RAM while 4H is high
 logic [9:0] rr = 10'd0;
@@ -300,6 +380,7 @@ wire [12:0] rom_a = rom_dec[0] ? {cpu_a[12:10], cpu_a[8], cpu_a[9], cpu_a[7:0]} 
 wire [16:0] im_i  = {bank, cpu_a[14], cpu_a[12:0]};
 wire [16:0] rom_ra = v_imul ? {im_i[16], im_i[15], im_i[11], im_i[12], im_i[13], im_i[8], im_i[14], im_i[9], im_i[10],
                                im_i[7:0]} :
+                     v_sfl  ? {3'b000, cpu_a[13:0]} :
                               {2'b00, cpu_a[14], 1'b0, rom_a};
 wire  [7:0] rom_q = v_imul     ? {rom_raw[0], rom_raw[6], rom_raw[5], rom_raw[7], rom_raw[4], rom_raw[3], rom_raw[1], rom_raw[2]} :
                    rom_dec[2] ? {rom_hi[3:0], rom_raw[3:0]} :
@@ -450,7 +531,7 @@ dpram_dc #(.widthad_a(11)) u_wram
 // (D0 DI, D4 SK, D6 CS), reads there return its DO on D0
 wire  mem_strobe = ~cpu_wr_n & ~status[4];
 logic mem_d = 1'b0;
-wire  mem_wr = ce & mem_strobe & ~mem_d;
+wire  mem_wr = v_sfl ? sfl_wr : ce & mem_strobe & ~mem_d;
 always_ff @(posedge clk) if (ce) mem_d <= mem_strobe;
 
 always_ff @(posedge clk) begin
@@ -474,8 +555,26 @@ eeprom_93c46 u_eeprom
 );
 
 // data in: INTA -> RST vector, INP -> ports, video RAM -> RAM register, work RAM, EEPROM, else ROM
+// sflush (MAME sflush_map): 0000 work RAM, 4000 video RAM, 8008 paddle, 8009 shifter, 800A IN2 (bit 7 = MAME vpos
+// bit 7: V >= 160 or VBLANK), 800B IN0, A000 colour RAM, D800-FFFF ROM; anything else reads 0
+wire       sfl_v128 = cnt_e7[4] | (vpos >= 8'd160);
+logic [7:0] sfl_di;
 always_comb begin
-    if (status[0])      cpu_di = v_dvdr ? 8'hFF : {3'b110, cnt_e7[2], ~cnt_e7[2], 3'b111};
+    case (cpu_a[15:13])
+        3'b000:  sfl_di = sram_qa;
+        3'b010:  sfl_di = vram_qb;
+        3'b101:  sfl_di = cram_qa;
+        3'b110:  sfl_di = cpu_a[12:11] == 2'b11 ? rom_q : 8'h00;
+        3'b111:  sfl_di = rom_q;
+        3'b100:  sfl_di = cpu_a == 16'h8008 ? in1 : cpu_a == 16'h8009 ? shift_q :
+                          cpu_a == 16'h800A ? {sfl_v128, in2[6:0]} : cpu_a == 16'h800B ? in0 : 8'h00;
+        default: sfl_di = 8'h00;
+    endcase
+end
+
+always_comb begin
+    if (v_sfl)          cpu_di = sfl_di;
+    else if (status[0]) cpu_di = v_dvdr ? 8'hFF : {3'b110, cnt_e7[2], ~cnt_e7[2], 3'b111};
     else if (status[6]) cpu_di = port_in;
     else if (is_ram)    cpu_di = rr[7:0];
     else if (is_wram)   cpu_di = wram_q;
@@ -521,7 +620,11 @@ always_ff @(posedge clk) begin
         out_d      <= 1'b0;
     end else begin
         if (ce) out_d <= out_strobe;
-        if (out_wr && v_dvdr) begin
+        if (sfl_wr && v_sfl) begin
+            if (cpu_a == 16'h8018) shift_data <= {cpu_do, shift_data[15:8]};
+            if (cpu_a == 16'h8019) shift_cnt  <= cpu_do[2:0];
+        end
+        else if (out_wr && v_dvdr) begin
             case (cpu_a[3:0])
                 4'd0: dv_flip <= cpu_do[0];
                 4'd8: begin
@@ -639,22 +742,23 @@ dpram_dc #(.widthad_a(13)) u_ram
     .byteena_a(1'b1),
 
     .clock_b(clk),
-    .address_b(hs_address[12:0]),
-    .data_b(hs_data_in),
-    .wren_b(hs_write),
-    .q_b(hs_data_out),
+    .address_b(sfl_vb ? cpu_a[12:0] : hs_address[12:0]),
+    .data_b(sfl_vb ? cpu_do : hs_data_in),
+    .wren_b(sfl_vb ? sfl_wr & cpu_a[15:13] == 3'b010 : hs_write),
+    .q_b(vram_qb),
     .byteena_b(1'b1)
 );
+assign hs_data_out = vram_qb;
 
 // vortex colour: bit 0 of the byte after the one fetched, from a copy of the video RAM read in parallel
 logic [7:0] sram_q;
 dpram_dc #(.widthad_a(13)) u_sram
 (
     .clock_a(clk),
-    .address_a(ram_a),
+    .address_a(v_sfl ? cpu_a[12:0] : ram_a),     // sflush: work RAM 0000-1FFF
     .data_a(cpu_do),
-    .wren_a(ram_we & v_vtx),
-    .q_a(),
+    .wren_a(v_sfl ? sfl_wr & cpu_a[15:13] == 3'b000 : ram_we & v_vtx),
+    .q_a(sram_qa),
     .byteena_a(1'b1),
 
     .clock_b(clk),
@@ -746,7 +850,7 @@ always_ff @(posedge clk) if (ce) begin
     c2q <= cram2_qb;
 end
 
-wire       red_on = cflags[5] & snd1[2];               // invadpt2 "screen red" (port 3 bit 2)
+wire       red_on = (cflags[5] & snd1[2]) | (f3[29] & snd2[4]);   // "screen red": invadpt2 port 3 bit 2, invrvnge port 5 bit 4
 wire [2:0] cq_f   = cflags[3] ? ~cq[2:0] : cq[2:0];
 logic [3:0] g_fore, g_back;
 logic       g_cloud;
@@ -756,7 +860,7 @@ always_comb begin
     g_cloud = 1'b0;
     case (col_mode)
         8'd1: g_fore = red_on ? 4'd1 : {1'b0, pq[2:0]};
-        8'd3: g_back = snd2[3] ? 4'd0 : (pq[3:2] == 2'b11 && snd2[4]) ? 4'd4 : 4'd2;   // schaser field control
+        8'd3: g_back = v_sfl || snd2[3] ? 4'd0 : (pq[3:2] == 2'b11 && snd2[4]) ? 4'd4 : 4'd2;   // schaser field control
         8'd4: begin g_fore = {1'b0, ~cq[2:0]}; g_back = pq[0] ? 4'd6 : 4'd2; g_cloud = ~pq[3]; end
         8'd5: begin g_fore = cq[3:0]; g_back = c2q[3:0]; end
         default: ;
@@ -873,7 +977,7 @@ assign      cloud_a = {~cl_y[5:0], cl_x[3:2]};
 always_ff @(posedge clk) begin
     if (ce) begin
         cl_vb <= cnt_e7[4];
-        if (cnt_e7[4] && !cl_vb) begin
+        if (cnt_e7[4] && !cl_vb && !pause) begin      // clouds hold while paused
             cloud_div <= cloud_div + 2'd1;
             if (cloud_div == 2'd3) cloud_pos <= cloud_pos + 8'd1;
         end
@@ -894,7 +998,7 @@ assign       p2_a = {p2_row[7:1], p2_x[7:4]};
 always_ff @(posedge clk) begin
     if (ce) begin
         p2_vb <= cnt_e7[4];
-        if (cnt_e7[4] && !p2_vb)
+        if (cnt_e7[4] && !p2_vb && !pause)            // clouds hold while paused
             p2_frame <= p2_next >= 13'h1000 ? 12'(p2_next - 13'h1F5) : p2_next[11:0];
     end
     if (pix) p2_bit <= col_mode == 8'd7 && cloud_q[p2_x[3:1]];
@@ -910,7 +1014,7 @@ logic         sc_dt = 1'b0, sc_df = 1'b0, sc_dl = 1'b0, sc_prev = 1'b0, sc_vb = 
 always_ff @(posedge clk) begin
     if (ce) begin
         sc_vb <= cnt_e7[4];
-        if (cnt_e7[4] && !sc_vb)
+        if (cnt_e7[4] && !sc_vb && !pause)            // flash decay holds while paused
             sc_lvl <= sc_bright ? 8'd255 : sc_lvl > 8'd10 ? sc_lvl - 8'd10 : 8'd0;
     end
     if (pix) begin
@@ -961,7 +1065,9 @@ wire [7:0] sc_pix = sc_gray > sc_lvl ? sc_gray : sc_lvl;
 wire [3:0] pen = vid ? gvid[3:0] : (gvid[8] && cl_bit) ? 4'd7 : gvid[7:4];
 logic [23:0] pen_rgb;
 always_comb begin
-    if (col_mode == 8'd5)
+    if (v_sfl && pen == 4'd0)
+        pen_rgb = 24'h8080FF;                    // MAME sflush_palette: pen 0 bright blue
+    else if (col_mode == 8'd5)
         pen_rgb = pen == 4'd5 ? 24'hFF0080 : pen == 4'd6 ? 24'hFF8000 :
                   {{8{pen[2]}}, {8{pen[1]}}, {8{pen[0]}}} & (pen[3] ? 24'hFFFFFF : 24'h7F7F7F);
     else if (cflags[4])
@@ -972,9 +1078,29 @@ end
 
 // vortex: red / green from the next byte's bit 0, blue on source columns 4-7 of every 8 (MAME screen_update_vortex)
 wire [7:0] bg = p2_bit ? 8'hC0 : 8'h00;          // phantom2 cloud grey (through the overlay like lit pixels)
-assign video_r = xh ? 8'hFF : colour ? pen_rgb[23:16] : !vid ? (v_spc ? sc_pix : p2_bit ? ov_r & 8'hC0 : 8'd0) : v_vtx ? {8{~cvid[1]}} : ov_r;
-assign video_g = xh ? 8'h00 : colour ? pen_rgb[15:8]  : !vid ? (v_spc ? sc_pix : p2_bit ? ov_g & bg : 8'd0) : v_vtx ? {8{ cvid[1]}} : ov_g;
-assign video_b = xh ? 8'h00 : colour ? pen_rgb[7:0]   : !vid ? (v_spc ? sc_pix : p2_bit ? ov_b & bg : 8'd0) : v_vtx ? {8{ cvid[0]}} : ov_b;
+wire [7:0] base_r = xh ? 8'hFF : colour ? pen_rgb[23:16] : !vid ? (v_spc ? sc_pix : p2_bit ? ov_r & 8'hC0 : 8'd0) : v_vtx ? {8{~cvid[1]}} : ov_r;
+wire [7:0] base_g = xh ? 8'h00 : colour ? pen_rgb[15:8]  : !vid ? (v_spc ? sc_pix : p2_bit ? ov_g & bg : 8'd0) : v_vtx ? {8{ cvid[1]}} : ov_g;
+wire [7:0] base_b = xh ? 8'h00 : colour ? pen_rgb[7:0]   : !vid ? (v_spc ? sc_pix : p2_bit ? ov_b & bg : 8'd0) : v_vtx ? {8{ cvid[0]}} : ov_b;
+
+// spcenctr cabinet lamp / strobe reflected on the screen (MAME layout_spcenctr, additive): lamp = P3 D3 at
+// (0.5, 0.125, 0.05); strobe = 9 Hz 555 lit 5 % of each period, enabled by P3 D2 at the start of the flash (0.7 grey)
+localparam int ST_PERIOD = 1109333;              // ce (9.984 MHz) / 9 Hz
+localparam int ST_ON     = 55467;                // 5 %
+logic [20:0] st_cnt = 21'd0;
+logic        st_lit = 1'b0;
+always_ff @(posedge clk) if (ce) begin
+    st_cnt <= st_cnt == 21'(ST_PERIOD - 1) ? 21'd0 : st_cnt + 21'd1;
+    if (st_cnt == 21'(ST_PERIOD - 1)) st_lit <= snd3[2];
+end
+wire       spc_fx = v_spc && ov_en;
+wire       lamp   = spc_fx && snd3[3];
+wire       strobe = spc_fx && st_lit && st_cnt < 21'(ST_ON);
+wire [9:0] add_r  = {2'b00, base_r} + (lamp ? 10'h080 : 10'h000) + (strobe ? 10'h0B3 : 10'h000);
+wire [9:0] add_g  = {2'b00, base_g} + (lamp ? 10'h020 : 10'h000) + (strobe ? 10'h0B3 : 10'h000);
+wire [9:0] add_b  = {2'b00, base_b} + (lamp ? 10'h00D : 10'h000) + (strobe ? 10'h0B3 : 10'h000);
+assign video_r = |add_r[9:8] ? 8'hFF : add_r[7:0];
+assign video_g = |add_g[9:8] ? 8'hFF : add_g[7:0];
+assign video_b = |add_b[9:8] ? 8'hFF : add_b[7:0];
 
 // ---------------------------------------------------------------- sound board (port 3 / port 5, 16V = "480 Hz")
 

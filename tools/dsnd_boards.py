@@ -50,6 +50,56 @@ def clowns():
     return b.finish()
 
 
+def spacwalk():
+    """Space Walk: S1 = port 3 (D0 coin, D1 controller select, D2 sound enable, D3 space ship), S2 / S3 = tone
+    generator, S4 = port 7 (D0-D2 target hit bottom / middle / top, D3 / D4 springboard hit 1 / 2, D5 springboard
+    miss). Resistor mixer, R507 music volume at its 40 % default (1M..7k log), output 11000, MAME route 1.0."""
+    b = Board("spacwalk")
+    b.midway_tone("tone_sq", LATCH2, LATCH3, toggles=1)
+    b.tvca("tone", MIDWAY_MUSIC_TVCA, trig=("tone_sq", ("bit", LATCH2, 0), 0), inp=(12.0, 0.0))
+    b.lfsr_noise("noise", 7700, 12.0, 6.0)
+    # target hit: noise through a three-trigger VCA (top / middle / bottom), two RC filters
+    b.tvca("hit_v", dict(r1=1 * M_, r2=680 * K, r4=3680 * K, r5=1 * K, r7=270 * K, r8=1 * K, r9=300 * K, r10=1 * K,
+                         r11=330 * K, c1=2.2 * U, c2=2.2 * U, c3=2.2 * U, v1=5, v2=5, v3=5, vP=12,
+                         f2=FN_TRG0, f4=FN_TRG1, f5=FN_TRG2),
+           trig=(("bit", LATCH4, 2), ("bit", LATCH4, 1), ("bit", LATCH4, 0)), inp=("noise", 0.0))
+    b.rcfilter("hit_f", "hit_v", 20 * K, 0.0047 * U)
+    b.rcfilter("hit", "hit_f", 40 * K, 0.0047 * U)
+    # springboard hit 1 / 2: filtered noise modulates a Norton VCO, VCA, low pass (MAME: "wrong values", x 0.5 —
+    # folded into the mixer weight). Both circuits' noise filters + VCO have identical inputs and parts in MAME, so
+    # they are one shared copy here (identical output, half the instructions)
+    b.rcfilter("sb_n1", "noise", 330 * K, 0.1 * U)
+    b.rcfilter("sb_n2", "sb_n1", 480 * K, 0.1 * U)
+    b.op_amp_vco3_norton("sb_o", "sb_n2", 510 * K, 82 * K, 150 * K, 240 * K, 1 * M_, 0.0022 * U, 12, r7=820 * K)
+    for n in (1, 2):
+        p = f"sb{n}"
+        b.tvca(p + "_v", dict(r1=1 * M_, r2=220 * K, r4=300 * K, r5=1 * K, r7=120 * K, c1=3.3 * U, v1=5, vP=12,
+                              f2=FN_TRG0), trig=(("bit", LATCH4, 2 + n), 0, 0), inp=("sb_o", 0.0))
+        b.filter2(p, p + "_v", 2000.0 - n * 500, 1.0 / 0.8, "lp")
+    # springboard miss: RCDISC2 envelope -> integrator + VCO -> CR -> Norton band pass -> Norton amp
+    b.rcdisc2("miss_e", (LATCH4, 5), 0.5, 1 / (1 / (200 * K) + 1 / (820 * K)), 11.5, 1 * K, 0.68 * U)
+    b.integrate_norton1("miss_i", "miss_e", 0, 1 * M_, 200 * K, 0.68 * U, 12, 12)
+    b.op_amp_vco3_norton("miss_o", "miss_e", 820 * K, 330 * K, 47 * K, 300 * K, 1 * M_, 0.0022 * U, 12, sqw=True)
+    b.crfilter("miss_c", "miss_o", 10 * K, 0.001 * U)
+    b.op_amp_filt_bp1m_norton("miss_b", "miss_c", 10 * K, 1 * M_, 4.7 * M_, 0.001 * U, 0.001 * U, 12)
+    b.op_amp_norton("miss", "miss_b", "miss_i", 100 * K, 220 * K, 0, 51 * K, 12)
+    # space ship: Norton LFO (cap voltage) modulates a Norton VCO_1 (enable = D3), two RC filters
+    b.op_amp_osc2_norton_cap("ship_l", 75 * K, 1 * M_, 6.8 * M_, 2.4 * M_, 2.2 * U, 12)
+    b.op_amp_vco1_norton_cap("ship_o", "ship_l", (LATCH1, 3), 680 * K, 300 * K, 100 * K, 150 * K, 120 * K,
+                             0.0012 * U, 12)
+    b.rcfilter("ship_f", "ship_o", 1 * K, 0.15 * U)
+    b.rcfilter("ship", "ship_f", 11 * K, 0.015 * U)
+    b.mixer_resistor("mix", [("sb1", 75 * K, 0, False, 0.5), ("sb2", 75 * K, 0, False, 0.5), ("ship", 50 * K, 0), ("miss", 11 * K, 0),
+                             ("hit", 20 * K, 0), ("tone", 2.7 * K + logadj(1e6, 7000, 40), 0, True)], c_amp=1 * U)
+    b.op("BIT", 0, b.src(LATCH1, 2))                  # D2 low mutes the board (MAME system_mute)
+    b.op("NOT")
+    b.op("LD", "mix")
+    b.op("LDIF", imm=0)
+    b.op("MULI", imm=int(round(11000 / 32768 * (1 << 24))))
+    b.op("OUT")
+    return b.finish()
+
+
 def logadj(rmin, rmax, pct):
     """DISCRETE_ADJUSTMENT with DISC_LOGADJ at a PORT_ADJUSTER default (percent)"""
     import math
@@ -366,7 +416,8 @@ def maze():
 
 
 BOARDS = {"clowns": clowns, "dogpatch": dogpatch, "boothill": boothill, "tornbase": tornbase, "desertgu": desertgu,
-          "bowler": bowler, "shuffle": shuffle, "dplay": dplay, "checkmat": checkmat, "maze": maze}
+          "bowler": bowler, "shuffle": shuffle, "dplay": dplay, "checkmat": checkmat, "maze": maze,
+          "spacwalk": spacwalk}
 
 
 def program(machine):
@@ -379,4 +430,4 @@ if __name__ == "__main__":
     for m in sys.argv[1:] or BOARDS:
         p = BOARDS[m]()
         open(f"{m}.dsnd.bin", "wb").write(p.binary())
-        print(f"{m}: {len(p.code)} instructions, {len(p.regs)} registers")
+        print(f"{m}: {len(p.code)} instructions, worst sample {p.worst_path()}, {len(p.regs)} registers")

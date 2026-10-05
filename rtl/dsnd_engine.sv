@@ -24,7 +24,7 @@
 
 // Instruction (64 bits, little endian in the MRA; up to 1024): [63:56] op, [55:48] a, [47:40] b, [31:0] imm. Values are Q24
 // (1.0 = 1 << 24), the accumulator and the 256-word state memory M are 32 bits and wrap. 2 clocks per instruction,
-// at most 400 instructions per sample; the sample ends at END. Output = mix >> 9, saturated (1.0 = full scale). Bit-exact with verilator/snd/dsnd_model.h.
+// at most 410 instructions per sample (824 of the 832 clocks); the sample ends at END. Output = mix >> 9, saturated (1.0 = full scale). Bit-exact with verilator/snd/dsnd_model.h.
 //   0 END              1 LD a: acc = M[a]          2 LDI: acc = imm            3 ADD a: acc += M[a]
 //   4 SUB a: acc -= M[a]  5 ADDI: acc += imm       6 MULI: acc = acc * imm >> 24   7 MUL a: acc = acc * M[a] >> 24
 //   8 ST a: M[a] = acc  9 STF a: if F           10 LDIF: if F acc = imm
@@ -33,7 +33,7 @@
 //  17 BIT b: F = source bit (a[0] inverts)   18 NOT: F = !F   19 NOISE b: step LFSR b[1:0], F = its new bit
 //  20 OUT: mix += acc   21 LDF a: if F acc = M[a]   22 SKF: if F skip imm   23 SKNF: if !F skip imm
 //  24 LDL b: acc = source byte << 16   25 ABS   26 FAND b: F &= bit   27 FOR b: F |= bit   28 STNF a: if !F
-//  29 LDLM b: acc = (source byte & imm[7:0]) << imm[12:8]
+//  29 LDLM b: acc = (source byte & imm[7:0]) << imm[12:8]   30 MACI a: acc += M[a] * imm >> 24
 // Sources (b[5:3]): 0-3 sound latches 1-4, 4 latch 0, 5 misc, 6 / 7 Game Audio settings; b[2:0] = bit.
 
 module dsnd_engine
@@ -131,6 +131,7 @@ always_comb begin
         8'd4:  acc_n = acc - ma_r;
         8'd5:  acc_n = acc + imm;
         8'd6, 8'd7: acc_n = mul_q;
+        8'd30: acc_n = acc + mul_q;
         8'd8:  we_n = 1'b1;
         8'd9:  we_n = f;
         8'd28: we_n = ~f;
@@ -189,6 +190,7 @@ always_ff @(posedge clk) begin
             case (op)
                 8'd6:  begin mul_a <= 33'(acc); mul_b <= imm; end
                 8'd7:  begin mul_a <= 33'(acc); mul_b <= m_a; end
+                8'd30: begin mul_a <= 33'(m_a); mul_b <= imm; end
                 8'd11: begin mul_a <= 33'(acc) - 33'(m_a); mul_b <= imm; end
                 8'd12: begin mul_a <= 33'(acc) - 33'(m_a); mul_b <= m_b; end
                 default: ;
@@ -213,7 +215,7 @@ always_ff @(posedge clk) begin
             fwd_d <= wd_n;
             icnt  <= icnt + 9'd1;
             st    <= S_E1;
-            if (icnt != 9'd0 && (op == 8'd0 || icnt == 9'd400)) st <= S_PUB;   // END, or the 400-instruction budget
+            if (icnt != 9'd0 && (op == 8'd0 || icnt == 9'd410)) st <= S_PUB;   // END, or the 410-instruction budget
         end
         S_PUB: begin                                    // publish the sample (1.0 = full scale)
             out <= (mix >>> 9) > 32'sd32767 ? 16'sd32767 : (mix >>> 9) < -32'sd32768 ? -16'sd32768 : 16'(mix >>> 9);

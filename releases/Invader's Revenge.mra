@@ -1,0 +1,61 @@
+<misterromdescription>
+    <name>Invader's Revenge</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Invader's Revenge</series>
+    <year>1980?</year>
+    <manufacturer>Zenitone-Microsec Ltd.</manufacturer>
+    <category>Shooter</category>
+
+    <setname>invrvnge</setname>
+    <parent>invrvnge</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (ccw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="80,81,08,FF">
+        <dip name="Difficulty" bits="1,2" ids="Easy,Hard,Harder,Hardest"/>
+        <dip name="Fuel Destroyed by Comet" bits="7" ids="3,6"/>
+        <dip name="Lives" bits="16,17" ids="3,4,5,6"/>
+        <dip name="Bonus Life" bits="19" ids="1500,2000"/>
+        <dip name="Coinage" bits="23" ids="2C/1C,1C/1C" values="1,0"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="invrvnge.zip">
+        <part crc="0e229b9f" name="h.ic36"/>
+        <part crc="26b38aa4" name="g.ic35"/>
+        <part crc="b3b2749e" name="f.ic34"/>
+        <part crc="d8e75102" name="e.ic33"/>
+        <part repeat="0x1E000">00</part>
+        <part crc="7de74988" name="colour.bin"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            00 10 01 00 80 81 08 FF 00 00 00 00 01 00 01 20
+            00 00 00 00 00 00 00 00 11 14 13 00 05 03 04 00
+            00 00 15 00 05 03 04 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00
+        </part>
+    </rom>
+
+    <remark>Invader's Revenge (Set 1) (Zenitone-Microsec Ltd.)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>
