@@ -10,7 +10,8 @@ FS = 48000.0
 ONE = 1 << 24
 OPS = dict(END=0, LD=1, LDI=2, ADD=3, SUB=4, ADDI=5, MULI=6, MUL=7, ST=8, STF=9, LDIF=10, RC=11, RCM=12, CMP=13,
            CMPI=14, MAXI=15, MINI=16, BIT=17, NOT=18, NOISE=19, OUT=20, LDF=21, SKF=22, SKNF=23, LDL=24, ABS=25,
-           FAND=26, FOR=27, STNF=28, LDLM=29, MACI=30)
+           FAND=26, FOR=27, STNF=28, LDLM=29, MACI=30, EXP=31, RCP=32)
+COST = {OPS["EXP"]: 4, OPS["RCP"]: 5}                 # engine budget units per instruction (others 1)
 # bit sources: sound latches 1-4, latch 0, misc
 LATCH1, LATCH2, LATCH3, LATCH4, LATCH0, MISC = range(6)
 
@@ -1019,11 +1020,11 @@ class Board(Prog):
         self.code += body
         self.op("END")
         worst = self.worst_path()
-        assert worst <= 410, f"{self.name}: a sample can run {worst} instructions (engine budget 410)"
+        assert worst <= 410, f"{self.name}: a sample can use {worst} budget units (engine budget 410)"
         return self
 
     def worst_path(self):
-        """most instructions any sample can execute: longest path through the forward skips (exact bound)"""
+        """most budget units any sample can use (EXP 4, RCP 5, others 1): longest path through the forward skips"""
         n = len(self.code)
         L = [0] * (n + 1)
         for i in range(n - 1, -1, -1):
@@ -1034,5 +1035,5 @@ class Board(Prog):
                 j = i + 1 + imm
                 L[i] = 1 + max(L[i + 1], L[j] if j < n else 0)
             else:
-                L[i] = 1 + L[i + 1]
+                L[i] = COST.get(o, 1) + L[i + 1]
         return L[0]

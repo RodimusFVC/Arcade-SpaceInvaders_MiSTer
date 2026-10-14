@@ -34,6 +34,10 @@
 //  20 OUT: mix += acc   21 LDF a: if F acc = M[a]   22 SKF: if F skip imm   23 SKNF: if !F skip imm
 //  24 LDL b: acc = source byte << 16   25 ABS   26 FAND b: F &= bit   27 FOR b: F |= bit   28 STNF a: if !F
 //  29 LDLM b: acc = (source byte & imm[7:0]) << imm[12:8]   30 MACI a: acc += M[a] * imm >> 24
+//  31 EXP: acc = 2^acc (degree-5 polynomial in Q28 on the fraction, then a shift; >= 7.0 -> 7FFFFFFF, < -24.0 -> 0)
+//  32 RCP: acc = 1 / acc (normalise, linear seed, 3 Newton-Raphson steps in Q24; 0 -> 7FFFFFFF, saturated)
+// Budget units: 1 per instruction, EXP 4 (8 clocks), RCP 5 (10 clocks); a sample stops after the instruction that
+// reaches 410 units.
 // Sources (b[5:3]): 0-3 sound latches 1-4, 4 latch 0, 5 misc, 6 / 7 Game Audio settings; b[2:0] = bit.
 
 module dsnd_engine
@@ -51,7 +55,7 @@ module dsnd_engine
 // Two clocks per instruction: E1 reads M[a] / M[b] (addressed from the program word in the previous E2), registers
 // the multiplier operands and starts the next program fetch; E2 multiplies, writes back and addresses the next M
 // reads. A write in E2 lands on the same edge as the next instruction's M read, so that read is forwarded.
-typedef enum logic [2:0] { S_IDLE, S_LOAD, S_E1, S_E2, S_PUB, S_CLR } state_t;
+typedef enum logic [2:0] { S_IDLE, S_LOAD, S_E1, S_E2, S_PUB, S_CLR, S_X } state_t;
 state_t st = S_CLR;
 
 logic  [9:0] pc = 10'd0, pa;
@@ -119,6 +123,28 @@ wire        sbit = sbyte[fb[2:0]] ^ fa[0];
 wire signed [64:0] prod  = mul_a * mul_b;
 wire signed [31:0] mul_q = 32'(prod >>> 24);
 
+// EXP / RCP micro-sequence (S_X), on the same multiplier
+localparam logic signed [31:0] EXP_C0 = 32'sd268435436, EXP_C1 = 32'sd186066863, EXP_C2 = 32'sd64465738,
+                               EXP_C3 = 32'sd14985772,  EXP_C4 = 32'sd2413057,   EXP_C5 = 32'sd504005;     // Q28
+localparam logic signed [31:0] RCP_K48 = 32'sd47370962, RCP_K32 = -32'sd31580641;                         // 48/17, -32/17
+logic  [3:0] xk = 4'd0;
+logic        xbig = 1'b0, xsmall = 1'b0, xneg = 1'b0;
+logic signed [7:0]  xsh = 8'sd0;
+logic signed [32:0] xp = 33'sd0;                 // EXP: polynomial value (Q28); RCP: Newton estimate Y (Q24)
+logic signed [31:0] xd = 32'sd0;                 // RCP: normalised divisor D (Q24, 0.5 .. 1)
+logic signed [31:0] xres = 32'sd0;
+wire  [7:0]  cost = op == 8'd31 ? 8'd4 : op == 8'd32 ? 8'd5 : 8'd1;
+function automatic [4:0] lzc32(input [31:0] v);
+    lzc32 = 5'd0;
+    for (int i = 0; i < 32; i++) if (v[i]) lzc32 = 5'(31 - i);
+endfunction
+wire [31:0] rcp_m0 = acc[31] ? 32'(-acc) : acc;
+wire  [4:0] rcp_z  = lzc32(rcp_m0);
+wire [31:0] rcp_mn = rcp_m0 << rcp_z;
+wire signed [63:0] xshl = 64'(xp) <<< xsh;       // final shifts
+wire signed [32:0] xshr = xp >>> (-xsh);
+wire signed [31:0] xl32 = 32'(xshl), xr32 = 32'(xshr);   // (Quartus 17: no unary minus on a size cast)
+
 // E2 results
 logic signed [31:0] acc_n, wd_n;
 logic        f_n, we_n;
@@ -149,6 +175,7 @@ always_comb begin
         8'd25: if (acc < 0) acc_n = -acc;
         8'd26: f_n = f & sbit;
         8'd27: f_n = f | sbit;
+        8'd31, 8'd32: acc_n = xres;
         default: ;
     endcase
 end
@@ -193,10 +220,55 @@ always_ff @(posedge clk) begin
                 8'd30: begin mul_a <= 33'(m_a); mul_b <= imm; end
                 8'd11: begin mul_a <= 33'(acc) - 33'(m_a); mul_b <= imm; end
                 8'd12: begin mul_a <= 33'(acc) - 33'(m_a); mul_b <= m_b; end
+                8'd31: begin                            // EXP: Horner on the fraction, shift by the integer part - 4
+                    mul_a <= 33'(EXP_C5); mul_b <= {8'd0, acc[23:0]};
+                    xsh <= acc[31:24] - 8'sd4;
+                    xbig <= acc >= 32'sh07000000; xsmall <= acc < -32'sh18000000;
+                end
+                8'd32: begin                            // RCP: D = |acc| normalised to 0.5 .. 1, seed 48/17 - 32/17 D
+                    mul_a <= 33'(rcp_mn[31:8]); mul_b <= RCP_K32; xd <= 32'(rcp_mn[31:8]);
+                    xsh <= 8'(rcp_z) - 8'sd8; xneg <= acc[31]; xbig <= acc == 32'sd0;
+                end
                 default: ;
             endcase
+            xk <= 4'd0;
             pc <= pc_next;
-            st <= S_E2;
+            st <= (op == 8'd31 || op == 8'd32) ? S_X : S_E2;
+        end
+        S_X: begin
+            xk <= xk + 4'd1;
+            if (op == 8'd31) begin
+                case (xk)
+                    4'd0: begin xp <= 33'(EXP_C4 + mul_q); mul_a <= 33'(EXP_C4 + mul_q); end
+                    4'd1: begin xp <= 33'(EXP_C3 + mul_q); mul_a <= 33'(EXP_C3 + mul_q); end
+                    4'd2: begin xp <= 33'(EXP_C2 + mul_q); mul_a <= 33'(EXP_C2 + mul_q); end
+                    4'd3: begin xp <= 33'(EXP_C1 + mul_q); mul_a <= 33'(EXP_C1 + mul_q); end
+                    4'd4: xp <= 33'(EXP_C0 + mul_q);
+                    default: begin                     // 2^ip x p (Q28 -> Q24: shift ip - 4)
+                        xres <= xbig ? 32'sh7FFFFFFF : xsmall ? 32'sd0 : (xsh >= 0) ? xl32 : xr32;
+                        st <= S_E2;
+                    end
+                endcase
+            end else begin
+                case (xk)
+                    4'd0, 4'd2, 4'd4: begin            // Y (seed, or Y x (2 - e)) -> e = D x Y next
+                        xp <= 33'((xk == 4'd0 ? RCP_K48 : 32'sd0) + mul_q);
+                        mul_a <= 33'(xd); mul_b <= (xk == 4'd0 ? RCP_K48 : 32'sd0) + mul_q;
+                    end
+                    4'd1, 4'd3, 4'd5: begin            // e -> Y x (2 - e)
+                        mul_a <= xp; mul_b <= 32'sh02000000 - mul_q;
+                    end
+                    4'd6: xp <= 33'(mul_q);
+                    default: begin
+                        if (xbig) xres <= 32'sh7FFFFFFF;
+                        else if (xsh >= 0)
+                            xres <= (xshl > 64'sh7FFFFFFF) ? (xneg ? -32'sh7FFFFFFF : 32'sh7FFFFFFF)
+                                                          : (xneg ? -xl32 : xl32);
+                        else xres <= xneg ? -xr32 : xr32;
+                        st <= S_E2;
+                    end
+                endcase
+            end
         end
         S_E2: begin
             acc <= acc_n;
@@ -213,9 +285,9 @@ always_ff @(posedge clk) begin
             fwd_a <= we_n && pq[55:48] == fa && icnt != 9'd0;
             fwd_b <= we_n && pq[47:40] == fa && icnt != 9'd0;
             fwd_d <= wd_n;
-            icnt  <= icnt + 9'd1;
+            icnt  <= icnt + 9'(cost);
             st    <= S_E1;
-            if (icnt != 9'd0 && (op == 8'd0 || icnt == 9'd410)) st <= S_PUB;   // END, or the 410-instruction budget
+            if (icnt != 9'd0 && (op == 8'd0 || icnt + 9'(cost) - 9'd1 >= 9'd410)) st <= S_PUB;   // END, or the 410-unit budget
         end
         S_PUB: begin                                    // publish the sample (1.0 = full scale)
             out <= (mix >>> 9) > 32'sd32767 ? 16'sd32767 : (mix >>> 9) < -32'sd32768 ? -16'sd32768 : 16'(mix >>> 9);

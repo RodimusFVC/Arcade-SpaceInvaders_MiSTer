@@ -147,8 +147,11 @@ wire vert_view = game_vert & ~status[12];
 
 wire [1:0] ar = status[9:8];
 
-assign VIDEO_ARX = (!ar) ? (vert_view ? 12'd3 : 12'd4) : (ar - 1'd1);
-assign VIDEO_ARY = (!ar) ? (vert_view ? 12'd4 : 12'd3) : 12'd0;
+wire        art_fb;                // artwork framebuffer on HDMI: square canvas pixels
+wire        art_wait, art_avail;
+wire [11:0] art_cw, art_ch;
+assign VIDEO_ARX = (!ar) ? (art_fb ? art_cw : vert_view ? 12'd3 : 12'd4) : (ar - 1'd1);
+assign VIDEO_ARY = (!ar) ? (art_fb ? art_ch : vert_view ? 12'd4 : 12'd3) : 12'd0;
 
 // Status bits: the old core was "A.INVADERS", so none of its saved settings load here
 `include "build_id.v"
@@ -164,9 +167,17 @@ localparam CONF_STR = {
 	"P1O[34:31],V Position (CRT),0,+1,+2,+3,+4,+5,+6,+7,-8,-7,-6,-5,-4,-3,-2,-1;",
 	"-;",
 	"P2,Game Options;",
-	"P2ON,Overlay,On,Off;",
+	"h1P2ON,Overlay,On,Off;",
 	"P2OO,Crosshair,On,Off;",
 	"P2OPQ,Trackball Speed,Normal,Fast,Slow;",
+	"H1P2-;",
+	"H1P2-,Artwork (MAME layout views);",
+	"H1P2O[55:52],View,Off,View 1,View 2,View 3,View 4,View 5,View 6,View 7,View 8,View 9,View 10,View 11,View 12,View 13,View 14,View 15;",
+	"H1P2O[56],Backdrop,On,Off;",
+	"H1P2ON,Overlay,On,Off;",
+	"H1P2O[57],Bezel,On,Off;",
+	"H1P2O[59],Side Art,On,Off;",
+	"H1P2O[58],Zoom to Screen,Off,On;",
 	"-;",
 	"P5,Game Audio;",
 	"P5O[37:35],Timing Caps,Factory,-10%,-20%,-30%,+10%,+20%,+30%;",
@@ -204,7 +215,7 @@ hps_io #(.CONF_STR(CONF_STR)) hps_io
 
 	.buttons(buttons),
 	.status(status),
-	.status_menumask({direct_video}),
+	.status_menumask({~art_avail, direct_video}),
 
 	.ioctl_download(ioctl_download),
 	.ioctl_upload(ioctl_upload),
@@ -214,6 +225,7 @@ hps_io #(.CONF_STR(CONF_STR)) hps_io
 	.ioctl_dout(ioctl_dout),
 	.ioctl_din(ioctl_din),
 	.ioctl_index(ioctl_index),
+	.ioctl_wait(art_wait),
 
 	.joystick_0(joystick_0),
 	.joystick_1(joystick_1),
@@ -516,13 +528,42 @@ wire ce_pix;
 wire b8_hs, b8_vs, b8_hb, b8_vb, b8_ce;
 wire [7:0] b8_r, b8_g, b8_b;
 wire z_hs, z_vs, z_hb, z_vb, z_ce, z_on;
-assign {hs, vs, hblank, vblank, ce_pix} = zac ? {z_hs, z_vs, z_hb, z_vb, z_ce} : {b8_hs, b8_vs, b8_hb, b8_vb, b8_ce};
+wire bd_hs, bd_vs, bd_hbl, bd_vbl;
+assign {bd_hs, bd_vs, bd_hbl, bd_vbl, ce_pix} = zac ? {z_hs, z_vs, z_hb, z_vb, z_ce} : {b8_hs, b8_vs, b8_hb, b8_vb, b8_ce};
 wire [7:0] z_r, z_g, z_b;
 wire [7:0] b8_snd1;
 wire [31:0] b8_lat;                 // sound latches 4-1
 assign b8_lat[7:0] = b8_snd1;
 assign an_sel = an_cfg[96][7] ? b8_lat[{an_cfg[96][5:4], an_cfg[96][2:0]}] : b8_snd1[1];
-assign {r, g, b} = zac ? {z_r, z_g, z_b} : {b8_r, b8_g, b8_b};
+wire [23:0] bd_rgb = zac ? {z_r, z_g, z_b} : {b8_r, b8_g, b8_b};
+
+// MAME artwork (ioctl index 6, OSD Game Options): native composite on the core video (one pixel late),
+// full view through the DDR3 framebuffer on HDMI. The in-core colour overlay is off while artwork draws
+// (the view's own overlay replaces it); the OSD Overlay option switches the artwork overlays.
+wire        art_run, art_ddr;
+wire [31:0] art_fb_base;
+wire  [7:0] art_burstcnt, art_be;
+wire [28:0] art_addr;
+wire [63:0] art_din;
+wire        art_rd, art_we, art_clk;
+artwork #(.IDX(8'd6)) artwork
+(
+	.clk(CLK_40M),
+	.sel(status[55:52]), .layer_off({status[57], status[23], status[56]}), .side_off(status[59]), .zoom(status[58]),
+	.crt_flip(status[22]), .hdmi_flip(status[11]), .avail(art_avail),
+	.ioctl_download(ioctl_download), .ioctl_index(ioctl_index), .ioctl_wr(ioctl_wr),
+	.ioctl_addr(ioctl_addr), .ioctl_dout(ioctl_dout), .ioctl_wait(art_wait),
+	.ce_pix(ce_pix),
+	.hs_in(bd_hs), .vs_in(bd_vs), .hblank_in(bd_hbl), .vblank_in(bd_vbl), .rgb_in(bd_rgb),
+	.hs_out(hs), .vs_out(vs), .hblank_out(hblank), .vblank_out(vblank), .rgb_out({r, g, b}),
+	.running(art_run), .ddr_owner(art_ddr), .canvas_w(art_cw), .canvas_h(art_ch),
+	.fb_base(art_fb_base), .fb_vbl(FB_VBL),
+	.DDRAM_CLK(art_clk), .DDRAM_BUSY(DDRAM_BUSY), .DDRAM_BURSTCNT(art_burstcnt), .DDRAM_ADDR(art_addr),
+	.DDRAM_DOUT(DDRAM_DOUT), .DDRAM_DOUT_READY(DDRAM_DOUT_READY), .DDRAM_RD(art_rd),
+	.DDRAM_DIN(art_din), .DDRAM_BE(art_be), .DDRAM_WE(art_we)
+);
+// vertical game, Orientation Horz (rotated monitor): HDMI keeps the core picture, with the native composite
+assign art_fb = art_run & ~direct_video & ~(game_vert & status[12]);
 
 // discrete sound engine: the set's sound board program arrives as MRA index 5 (tools/dsnd_boards.py)
 reg ds_on_r = 1'b0;
@@ -550,7 +591,37 @@ dsnd_engine dsnd
 wire rotate_ccw = ~game_flags[7];  // ROT270 sets rotate CCW, ROT90 sets CW
 wire no_rotate  = ~game_vert | status[12] | direct_video;
 wire flip       = status[11];
-screen_rotate screen_rotate(.*);
+wire        sr_fb_en, sr_clk, sr_rd, sr_we;
+wire  [4:0] sr_fb_format;
+wire [11:0] sr_fb_w, sr_fb_h;
+wire [31:0] sr_fb_base;
+wire [13:0] sr_fb_stride;
+wire  [7:0] sr_burstcnt, sr_be;
+wire [28:0] sr_addr;
+wire [63:0] sr_din;
+screen_rotate screen_rotate
+(
+	.*,
+	.FB_EN(sr_fb_en), .FB_FORMAT(sr_fb_format), .FB_WIDTH(sr_fb_w), .FB_HEIGHT(sr_fb_h),
+	.FB_BASE(sr_fb_base), .FB_STRIDE(sr_fb_stride),
+	.DDRAM_CLK(sr_clk), .DDRAM_BURSTCNT(sr_burstcnt), .DDRAM_ADDR(sr_addr), .DDRAM_DIN(sr_din),
+	.DDRAM_BE(sr_be), .DDRAM_WE(sr_we), .DDRAM_RD(sr_rd)
+);
+
+// the artwork takes the framebuffer while it draws, and DDR3 while it loads or draws
+assign FB_EN     = art_fb | sr_fb_en;
+assign FB_FORMAT = art_fb ? 5'b00110  : sr_fb_format;
+assign FB_WIDTH  = art_fb ? art_cw    : sr_fb_w;
+assign FB_HEIGHT = art_fb ? art_ch    : sr_fb_h;
+assign FB_BASE   = art_fb ? art_fb_base : sr_fb_base;
+assign FB_STRIDE = art_fb ? 14'd8192  : sr_fb_stride;
+assign DDRAM_CLK      = CLK_40M;
+assign DDRAM_BURSTCNT = art_ddr ? art_burstcnt : sr_burstcnt;
+assign DDRAM_ADDR     = art_ddr ? art_addr : sr_addr;
+assign DDRAM_DIN      = art_ddr ? art_din : sr_din;
+assign DDRAM_BE       = art_ddr ? art_be : sr_be;
+assign DDRAM_WE       = art_ddr ? art_we : sr_we;
+assign DDRAM_RD       = art_ddr ? art_rd : sr_rd;
 
 arcade_video #(720,24) arcade_video                 // Zaccaria: 720 master clocks per visible line
 (
@@ -597,7 +668,7 @@ mw8080_board board
 	.h_adj(status[30:27]),
 	.v_adj(status[34:31]),
 	.snd_tweak({status[45:44], status[43:41], status[40:38], status[37:35]}),
-	.ov_en(~status[23]),
+	.ov_en(~status[23] & ~art_run),
 	.ov_tab(ov_tab),
 
 	.ce_pix(b8_ce),
@@ -641,7 +712,7 @@ zac1b1120_board zboard
 	.h_adj(status[30:27]),
 	.v_adj(status[34:31]),
 	.snd_tweak({status[48:46], status[45:44], status[43:41], status[40:38], status[37:35]}),
-	.ov_en(~status[23]),
+	.ov_en(~status[23] & ~art_run),
 	.ov_tab(ov_tab),
 
 	.ce_pix(z_ce),
