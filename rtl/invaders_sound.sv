@@ -1,6 +1,6 @@
 //============================================================================
 //
-//  Space Invaders sound board (Midway A084-90700-B000 / Taito L-shaped)
+//  Space Invaders sound board (Midway A084-90700-B000 / Taito L-shaped / invad2ct / Taito PV / CV)
 //  Copyright (C) 2026 Rodimus
 //
 //  Circuit model after MAME invaders_discrete (Derrick Renaud) and the MAME
@@ -22,7 +22,8 @@ module invaders_sound
     input              [7:0] p1,             // port 3
     input              [7:0] p2,             // port 5
     input                    v16,            // 16V: the bonus base's "480 Hz"
-    input                    taito,          // Taito L-shaped sound board values (else Midway)
+    input                    v8,             // 8V: "960 Hz" (Taito PV)
+    input              [2:0] board,          // value set: 0 Midway, 1 Taito L-shaped, 2 / 3 invad2ct board 1 / 2, 4 / 5 Taito PV / CV
     input             [10:0] tweak,          // Game Audio: {aged caps, oscillator, filter, timing} settings
     output reg signed [15:0] out = 16'sd0
 );
@@ -33,7 +34,7 @@ module invaders_sound
 // Game Audio (OSD, per game): capacitor groups scale the rate constants that depend on them. tweak = {oscillator,
 // filter, timing} index: 0 Factory, 1-3 = -10 / -20 / -30 %, 4-6 = +10 / +20 / +30 % capacitance (rate x 1 / C).
 // A sequential scaler rebuilds kr[] after reset or a settings change; Factory reproduces the constants exactly.
-localparam int NK = 56;
+localparam int NK = 57;
 localparam int K_SH_ENV_UP    = 0;
 localparam int K_SH_ENV_DN    = 1;
 localparam int K_BN_KC        = 2;
@@ -90,8 +91,9 @@ localparam int K_EX_RC1       = 52;
 localparam int K_EX_RC2       = 53;
 localparam int K_MX_C11       = 54;
 localparam int K_MX_C44       = 55;
-localparam logic [2*NK-1:0] KG = 112'b0101010101010110101010101010101010101010101010101010101010101010101010100000000000000000000000000000000000000000;      // 0 timing, 1 filter, 2 oscillator
-localparam logic [NK-1:0]   KC = 56'b11111110001100111111111111111111100011100110011111111100;        // 1 = RC coefficient, capped at 1.0
+localparam int K_MX_LP        = 56;
+localparam logic [2*NK-1:0] KG = 114'b010101010101010110101010101010101010101010101010101010101010101010101010100000000000000000000000000000000000000000;      // 0 timing, 1 filter, 2 oscillator
+localparam logic [NK-1:0]   KC = 57'b111111110001100111111111111111111100011100110011111111100;        // 1 = RC coefficient, capped at 1.0
 wire  signed [35:0] kb [NK];
 assign kb[0] = SH_ENV_UP;
 assign kb[1] = SH_ENV_DN;
@@ -149,9 +151,10 @@ assign kb[52] = EX_RC1;
 assign kb[53] = EX_RC2;
 assign kb[54] = MX_C11;
 assign kb[55] = MX_C44;
+assign kb[56] = MX_LP;
 logic signed [35:0] kr [NK];
 logic  [6:0] ks = 7'd0;
-logic [11:0] tw_d = 12'hFFF;
+logic [13:0] tw_d = 14'h3FFF;
 logic        krun = 1'b1;
 
 function automatic [16:0] aged_f(input [1:0] i);   // Aged Caps Off / Light / Heavy: capacitance x 1, 0.85, 0.7
@@ -167,8 +170,8 @@ function automatic [16:0] cap_f(input [2:0] i);
 endfunction
 
 always @(posedge clk) begin
-    if (reset || {taito, tweak} != tw_d) begin
-        tw_d <= {taito, tweak};
+    if (reset || {board, tweak} != tw_d) begin
+        tw_d <= {board, tweak};
         ks   <= 7'd0;
         krun <= 1'b1;
     end else if (krun) begin : scale
@@ -230,7 +233,7 @@ reg              fl_ff = 1'b1, bn_ff = 1'b1;
 reg  signed [35:0] ex_vc = 0, ex_rc1 = 0, ex_rc2 = 0, ms_cr = 0, ms_vc = 0;
 reg  signed [35:0] sn_slf = 0, sn_vco = 0;
 reg              sn_slf_ff = 1'b0, sn_vco_ff = 1'b0;
-reg  signed [35:0] mx_c11 = 0, mx_c44 = 0, mx_amp = 0;
+reg  signed [35:0] mx_c11 = 0, mx_c44 = 0, mx_lp = 0, mx_amp = 0;
 
 integer n;
 initial begin
@@ -252,7 +255,7 @@ wire signed [35:0] os_t = (k == 2'd0 ? s_p1[3] : k == 2'd1 ? s_p1[2] : s_p1[1]) 
 wire signed [35:0] os_e1c = k == 2'd0 ? kr[K_IH_E1C] : k == 2'd1 ? kr[K_EX_E1C] : kr[K_MS_E1C];
 wire signed [35:0] os_e1d = k == 2'd0 ? kr[K_IH_E1D] : k == 2'd1 ? kr[K_EX_E1D] : kr[K_MS_E1D];
 
-localparam S_START = 6'd0,  S_OSC = 6'd1,  S_OS = 6'd20, S_IH = 6'd28, S_EX = 6'd31, S_MS = 6'd38,
+localparam S_START = 6'd0,  S_OSC = 6'd1,  S_OS = 6'd20, S_LP = 6'd26, S_IH = 6'd28, S_EX = 6'd31, S_MS = 6'd38,
            S_MX = 6'd50;
 
 always @(posedge clk) begin
@@ -264,12 +267,12 @@ always @(posedge clk) begin
         osc_ff <= 2'b11; vco_ff <= 3'b100; os_on <= 3'b000;
         sh_env <= 0; ih_env <= 0; ms_env <= 0; fl_v <= 0; fl_rc1 <= 0; fl_rc2 <= 0; bn_v <= 0;
         fl_ff <= 1'b1; bn_ff <= 1'b1; ex_vc <= 0; ex_rc1 <= 0; ex_rc2 <= 0; ms_cr <= 0; ms_vc <= 0;
-        sn_slf <= 0; sn_vco <= 0; sn_slf_ff <= 1'b0; sn_vco_ff <= 1'b0; mx_c11 <= 0; mx_c44 <= 0; mx_amp <= 0;
+        sn_slf <= 0; sn_vco <= 0; sn_slf_ff <= 1'b0; sn_vco_ff <= 1'b0; mx_c11 <= 0; mx_c44 <= 0; mx_lp <= 0; mx_amp <= 0;
         out <= 16'sd0;
     end
     else begin
         if (go && !pause) begin
-            s_p1 <= p1; s_p2 <= p2; s_v16 <= v16;
+            s_p1 <= p1; s_p2 <= p2; s_v16 <= BN_8V ? v8 : v16;
             st <= S_START;
         end
         else case (st)
@@ -529,12 +532,21 @@ always @(posedge clk) begin
                 st <= 6'd18;
             end
             6'd18: st <= 6'd19;
-            // C44 couples the bus into the amp, then the first LM3900 stage runs into its rails
+            // C44 couples the bus into the amp; C37 low-pass (invad2ct board 2, else exactly 1.0)
             6'd19: begin : mx19
-                reg signed [35:0] c, x;
+                reg signed [35:0] c;
                 c = mx_c44 + mq;
                 mx_c44 <= c;
-                x = clamp(v - c, MX_VLO, MX_VHI);
+                ma <= v - c - mx_lp; mb <= board == 3'd3 ? kr[K_MX_LP] : 36'sd268435456;
+                st <= S_LP;
+            end
+            S_LP: st <= S_LP + 6'd1;
+            // the first LM3900 stage runs into its rails
+            S_LP + 6'd1: begin : mxlp
+                reg signed [35:0] y, x;
+                y = mx_lp + mq;
+                mx_lp <= y;
+                x = clamp(y, MX_VLO, MX_VHI);
                 v <= x;
                 ma <= x - mx_amp; mb <= kr[K_MX_CAMP];
                 st <= S_MX + 6'd9;

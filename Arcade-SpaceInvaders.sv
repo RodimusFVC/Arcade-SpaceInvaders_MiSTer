@@ -102,7 +102,7 @@ assign BUTTONS = 0;
 // MRA index 1:
 //   byte 0      board variant (see rtl/mw8080_board.sv)
 //   byte 1      flags: [4] vertical, [7] vertical is ROT90
-//   byte 2      sound board: [0] Taito L-shaped (else Midway)
+//   byte 2      sound board values [2:0]: 0 Midway, 1 Taito L-shaped, 2 invad2ct board 1, 4 Taito PV, 5 Taito CV
 //   byte 3      ROM decode: [0] A8/A9 swapped, [1] A0/A3/A9 inverted, [2] nibble bproms (rtl/mw8080_board.sv)
 //   bytes 4-11  DIP switch bytes 0-7 at their MRA defaults (MiSTer sends index 254 only for MRAs with a <dip>)
 //   bytes 12-15 colour mode, colour flags, sound map, board flags (rtl/mw8080_board.sv)
@@ -574,6 +574,7 @@ end
 assign ds_on = ds_on_r;
 
 // sources: 7-6 Game Audio, 5 misc {coin (IN1 D3 inverted, maze), VBLANK}, 4 = IN0 as the CPU reads it (maze), 3-0 latches
+// (8080bw boards: 1 / 2 = sound ports 1 / 2, 3 = port 0 / polaris port 2, 4 = last shift-data write, ozmawars port 4)
 wire [63:0] ds_src = {status[48:46], status[45:44], status[43:41], 2'd0, status[40:35], 6'd0, ~in_port[1][3], vblank, in_port[0], b8_lat};
 
 dsnd_engine dsnd
@@ -652,7 +653,7 @@ mw8080_board board
 	.in2(in_port[2]),
 	.in3(in_port[3]),
 	.cocktail(1'b0),
-	.taito_snd(snd_flags[0]),
+	.snd_board(snd_flags[2:0]),
 	.rom_dec(rom_dec[2:0]),
 	.gun_x(gun_x),
 	.gun_y(gun_y),

@@ -969,6 +969,320 @@ class Board(Prog):
             self.op("SUB", out + "_amp")
         self.op("ST", out)
 
+    def jump(self):
+        """unconditional forward skip (CMPI INT_MIN: F = 1); land() it like a skip"""
+        self.op("CMPI", imm=-(1 << 31))
+        return self.skip_if(True)
+
+    def op_amp_norton_cap(self, out, inp1, r2, r3, r4, c, vP, v_on=12.0, vN=0.0, g="T"):
+        """DST_OP_AMP, DISC_OP_AMP_IS_NORTON with a cap and no r1: i = max(0, (in1 - VBE) / r2) - (vP - VBE) / r3;
+        r4: exponential charge toward i x r4 (tau r4 C), else linear (i / C); clamped vN .. vP - VBE.
+        inp1 = (source, bit) at v_on / 0 V (INPUTX_LOGIC) or a register"""
+        vmax = vP - VBE
+        ifix = vmax / r3 if r3 else 0.0
+        if r4:
+            self.kreg(out + "_k", rc_exp(r4 * c), g)
+            if isinstance(inp1, tuple):
+                self.op("BIT", 0, self.src(*inp1))
+                self.op("LDI", imm=q((max(0.0, -VBE) / r2 - ifix) * r4))
+                self.op("LDIF", imm=q((max(0.0, v_on - VBE) / r2 - ifix) * r4))
+            else:
+                self.load(inp1)
+                self.op("ADDI", imm=q(-VBE))
+                self.op("MAXI", imm=0)
+                self.op("MULI", imm=q(r4 / r2))
+                self.op("ADDI", imm=q(-ifix * r4))
+            self.op("RCM", out, self.r(out + "_k"))
+        else:
+            self.kreg(out + "_ka", 1.0 / (r2 * FS * c), g, clamp=False)
+            self.kreg(out + "_kb", ifix / (FS * c), g, clamp=False)
+            if isinstance(inp1, tuple):
+                self.op("BIT", 0, self.src(*inp1))
+                self.op("LDI", imm=0)
+                self.op("LDIF", imm=q(max(0.0, v_on - VBE)))
+            else:
+                self.load(inp1)
+                self.op("ADDI", imm=q(-VBE))
+                self.op("MAXI", imm=0)
+            self.op("MUL", out + "_ka")
+            self.op("SUB", out + "_kb")
+            self.op("ADD", out)
+        self.op("MAXI", imm=q(vN))
+        self.op("MINI", imm=q(vmax))
+        self.op("ST", out)
+
+    def op_amp_1sht_norton(self, out, trig, v_trig, r1, r2, r3, r4, r5, c1, c2, vP, vN=0.0, g="T"):
+        """DST_OP_AMP_1SHT, DISC_OP_AMP_1SHT_1 | NORTON. trig = (source, bit) at v_trig / 0 V. Currents are kept
+        x r2 (volts). out = vP - VBE while the trigger current (edge through c2 + feedback through r5) beats c1's
+        current through r3 + the r1 bias; c1 charges toward the r3 / r4 divider, discharges through r4 or the diode"""
+        vmax = vP - VBE
+        self.kreg(out + "_k2", rc_exp(r2 * c2), g)
+        self.kreg(out + "_kc", rc_exp(par(r3, r4) * c1), g)
+        self.kreg(out + "_kd", rc_exp(r4 * c1), g)
+        self.op("BIT", 0, self.src(*trig))
+        self.op("LDI", imm=0)
+        self.op("LDIF", imm=q(v_trig))
+        self.op("ST", out + "_tv")
+        self.op("SUB", out + "_c2")
+        self.op("MACI", out, imm=q(r2 / r5))          # i_pos x r2, with the previous output
+        self.op("ST", out + "_ip")
+        self.op("LD", out + "_tv")
+        self.op("RCM", out + "_c2", self.r(out + "_k2"))
+        self.op("LD", out + "_c1")
+        self.op("ADDI", imm=q(-VBE))
+        self.op("MAXI", imm=0)
+        self.op("MULI", imm=q(r2 / r3))
+        self.op("ADDI", imm=q(r2 * vmax / r1))        # i_neg x r2
+        self.op("SUB", out + "_ip")
+        self.op("CMPI", imm=0)                        # F = i_neg >= i_pos -> low
+        self.op("LDI", imm=q(vmax))
+        self.op("LDIF", imm=q(vN))
+        self.op("ST", out)
+        self.op("CMP", out + "_c1")                   # F = out >= c1: charge
+        at = self.skip_if(True)
+        self.op("ADDI", imm=q(0.6))                   # discharge: diode clamp at out + 0.6, else through r4
+        self.op("CMP", out + "_c1")
+        self.op("STNF", out + "_c1")
+        at2 = self.skip_if(False)
+        self.op("LD", out)
+        self.op("RCM", out + "_c1", self.r(out + "_kd"))
+        self.land(at2)
+        at3 = self.jump()
+        self.land(at)
+        self.op("ADDI", imm=q(-VBE))                  # charge toward (out - VBE) r3 / (r3 + r4) + VBE
+        self.op("MULI", imm=q(r3 / (r3 + r4)))
+        self.op("ADDI", imm=q(VBE))
+        self.op("RCM", out + "_c1", self.r(out + "_kc"))
+        self.land(at3)
+
+    def op_amp_vco3_norton_exact(self, out, vmod1, r1, r2, r3, r4, r5, c, vP, vmod2=None, r6=0, r7=0, g="O",
+                                 vm1_gain=1.0, vm1_max=None, vm2_max=None, rcp=False):
+        """DSS_OP_AMP_OSC VCO_3 | NORTON, OUT_SQW, linear charge, with MAME's exact overshoot carry (RCP of the rate
+        at each threshold crossing) and its output rule (two toggles in a sample: high if it was discharging).
+        Discharge current = r7 bias + max(0, vm1_gain x vmod1 - VBE) / r1 + (vmod2 - VBE) / r6, charge =
+        (vP - 2 VBE) / r2 - discharge. A phase that can last under one sample gets the second toggle (asserted from
+        the largest rates, Game Audio -30 % included). out = vP - VBE while charging; out_v = the cap, out_ch = 1
+        while charging (power-up: charging from 0 V). rcp=True: the reciprocals come from out_r0 / out_r1 (refreshed
+        elsewhere: slowly varying vmod), out_d0 / out_d1 then hold the rates for that"""
+        vh = vP - VBE
+        i1 = vh / r5
+        tl = (i1 - VBE / r4) * r3 + VBE
+        th = (i1 + (vP - 2 * VBE) / r4) * r3 + VBE
+        vm1, vm2 = (vh if vm1_max is None else vm1_max), (vh if vm2_max is None else vm2_max)   # largest vmods
+        ifix = vh / r7 if r7 else 0.0
+        dmax = ifix + max(0.0, vm1 * vm1_gain - VBE) / r1 + ((vm2 - VBE) / r6 if r6 else 0.0)
+        dmin = ifix + (-VBE / r6 if r6 else 0.0)
+        it = (vP - 2 * VBE) / r2
+        assert dmax < it, "charge current must stay positive"
+        fast = 1 / 0.7 / (FS * c)                     # V per sample per A at Game Audio -30 %
+        short_d = (th - tl) / (dmax * fast) <= 1.0
+        short_c = (th - tl) / ((it - dmin) * fast) <= 1.0
+        assert not (short_d and short_c), "both phases under a sample: more toggles needed"
+        self.init(out + "_ch", 1.0)
+        self.kreg(out + "_ka", vm1_gain / (r1 * FS * c), g, clamp=False)
+        if ifix:
+            self.kreg(out + "_kf", ifix / (FS * c), g, clamp=False)
+        self.kreg(out + "_kt", it / (FS * c), g, clamp=False)
+        if vmod2 is not None:
+            self.kreg(out + "_k6", 1.0 / (r6 * FS * c), g, clamp=False)
+        if vmod2 is not None:
+            self.load(vmod2)
+            self.op("ADDI", imm=q(-VBE))
+            self.op("MUL", out + "_k6")
+            self.op("ST", out + "_d0")
+        self.load(vmod1)
+        self.op("ADDI", imm=q(-VBE / vm1_gain))
+        self.op("MAXI", imm=0)
+        self.op("MUL", out + "_ka")
+        if ifix:
+            self.op("ADD", out + "_kf")
+        if vmod2 is not None:
+            self.op("ADD", out + "_d0")
+        self.op("ST", out + "_d0")                    # discharge step (V / sample)
+        self.op("LD", out + "_kt")
+        self.op("SUB", out + "_d0")
+        self.op("ST", out + "_d1")                    # charge step
+        ends = []
+
+        def cross_d():                                # acc = rem = (tl - v) / d0
+            self.op("LDI", imm=q(tl)); self.op("SUB", out + "_v")
+            if rcp:
+                self.op("MUL", out + "_r0")
+            else:
+                self.op("ST", out + "_ov"); self.op("LD", out + "_d0"); self.op("RCP"); self.op("MUL", out + "_ov")
+
+        def cross_c():                                # acc = v - th -> rem = (v - th) / d1
+            self.op("ADDI", imm=q(-th))
+            if rcp:
+                self.op("MUL", out + "_r1")
+            else:
+                self.op("ST", out + "_ov"); self.op("LD", out + "_d1"); self.op("RCP"); self.op("MUL", out + "_ov")
+
+        def term(ch, o):                              # final state, output; jump to the end
+            if ch is not None:
+                self.op("LDI", imm=ONE if ch else 0); self.op("ST", out + "_ch")
+            self.op("LDI", imm=q(o)); self.op("ST", out)
+            ends.append(self.jump())
+
+        self.op("LD", out + "_ch")
+        self.op("CMPI", imm=q(0.5))
+        at_c = self.skip_if(True)
+        # start discharging
+        self.op("LD", out + "_v"); self.op("SUB", out + "_d0"); self.op("ST", out + "_v")
+        self.op("CMPI", imm=q(tl))
+        at = self.skip_if(False)
+        term(None, 0.0)                               # no toggle
+        self.land(at)
+        cross_d()
+        self.op("MUL", out + "_d1"); self.op("ADDI", imm=q(tl)); self.op("ST", out + "_v")     # charge the rest
+        if short_c:
+            self.op("CMPI", imm=q(th) + 1)
+            at = self.skip_if(True)
+            term(True, vh)
+            self.land(at)
+            cross_c()
+            self.op("MUL", out + "_d0"); self.op("ST", out + "_ov")                           # discharge the rest
+            self.op("LDI", imm=q(th)); self.op("SUB", out + "_ov"); self.op("ST", out + "_v")
+            term(False, vh)                           # two toggles, was discharging: high
+        else:
+            term(True, vh)
+        self.land(at_c)
+        # start charging
+        self.op("LD", out + "_v"); self.op("ADD", out + "_d1"); self.op("ST", out + "_v")
+        self.op("CMPI", imm=q(th) + 1)
+        at = self.skip_if(True)
+        term(None, vh)
+        self.land(at)
+        cross_c()
+        self.op("MUL", out + "_d0"); self.op("ST", out + "_ov")                               # discharge the rest
+        self.op("LDI", imm=q(th)); self.op("SUB", out + "_ov"); self.op("ST", out + "_v")
+        if short_d:
+            self.op("CMPI", imm=q(tl))
+            at = self.skip_if(False)
+            term(False, 0.0)
+            self.land(at)
+            cross_d()
+            self.op("MUL", out + "_d1"); self.op("ADDI", imm=q(tl)); self.op("ST", out + "_v")
+            term(True, 0.0)                           # two toggles, was charging: low
+        else:
+            term(False, 0.0)
+        del self.code[-2:]                            # the last jump (CMPI, SKF) would land right here
+        ends.pop()
+        for e in ends:
+            self.land(e)
+
+    def op_amp_norton_sqw(self, out, sqw, v_sq, inp1, r1, r2, r3, r4, vP, vN=0.0):
+        """op_amp_norton (DST_OP_AMP Norton, no cap) for IN0 = a square wave that is exactly 0 or v_sq and IN1 >= 0:
+        out = r4 x ((in1 - VBE) / r2 - in0 term - (vP - VBE) / r3), clamped (IN1's max(0, ..) only matters where the
+        result clamps to vN = 0 anyway)"""
+        vmax = vP - VBE
+        assert vN == 0.0
+        g2 = r4 / r2
+        self.load(sqw)
+        self.op("MULI", imm=q(-(v_sq - VBE) * r4 / r1 / v_sq / g2))
+        self.op("ADD", inp1)
+        if g2 != 1.0:
+            self.op("MULI", imm=q(g2))
+        self.op("ADDI", imm=q(-VBE * g2 - r4 * vmax / r3))
+        self.op("MAXI", imm=0)
+        self.op("MINI", imm=q(vmax))
+        self.op("ST", out)
+
+    def ne555_astable2(self, outs, en, parts, level, g="O"):
+        """DSD_555_ASTBL x n sharing one RESET (no CV, no fast-charge diode), outputs ANDed (DISCRETE_LOGIC_AND with
+        the enable) at `level`: exact phase timers, high (r1 + r2) C ln 2 (ln 3 on the first cycle out of reset: the
+        cap starts at 0 V), low r2 C ln 2. en = (source, bit): low = RESET. parts = [(r1, r2, c)]; outs[0] = the
+        AND, outs[k]_p the phases"""
+        U = 0.01                                      # timer unit: 10 ms
+        o = outs[0]
+        self.kreg(o + "_dt", 1.0 / (FS * U), g, clamp=False)
+        tm = [((r1 + r2) * c * math.log(2.0) / U, r2 * c * math.log(2.0) / U, (r1 + r2) * c * math.log(3.0) / U)
+              for r1, r2, c in parts]
+        self.op("BIT", 0, self.src(*en))
+        at = self.skip_if(True)
+        for k, (th, tl, t1) in enumerate(tm):         # reset: phase -(first high - high): high for the first cycle
+            self.op("LDI", imm=q(th - t1))
+            self.op("ST", f"{o}_p{k}")
+        self.op("LDI", imm=0)
+        self.op("ST", o)
+        at2 = self.jump()
+        self.land(at)
+        for k, (th, tl, t1) in enumerate(tm):         # phase 0 .. high + low, high while below the high time
+            p = f"{o}_p{k}"
+            self.op("LD", p)
+            self.op("ADD", o + "_dt")
+            self.op("CMPI", imm=q(th + tl))
+            self.op("ADDI", imm=q(-(th + tl)))
+            self.op("STF", p)
+            self.op("ADDI", imm=q(th + tl))
+            self.op("STNF", p)
+        for k, (th, tl, t1) in enumerate(tm):
+            self.op("LD", f"{o}_p{k}")
+            self.op("CMPI", imm=q(th))
+            if k == 0:
+                self.op("LDI", imm=q(level))
+                self.op("LDIF", imm=0)
+                self.op("ST", o)
+            else:
+                self.op("LDI", imm=0)
+                self.op("STF", o)
+        self.land(at2)
+
+    def sn76477_slf_vco(self, out, inhibit, slf_res, slf_cap, vco_res, vco_cap, amp_res, fb_res, scale=1.0, g="O"):
+        """SN76477 as MAME sn76477_device (measured formulas): SLF triangle 0.33 .. 2.37 V sweeps the VCO top (VCO
+        mode 1), mixer = VCO, envelope one-shot with no one-shot parts (attack instant, full level after the first
+        enable), pitch 5 V (50 % duty). inhibit = (source, bit): high = ENABLE pin high (silent, out 0).
+        out = MAME's stream value x scale. Rate registers carry the flip-flops (negative = discharging); the VCO cap
+        is kept 0.35 V down (its top = the SLF voltage)"""
+        slf_lo, slf_hi, vco_lo, dv = 0.33, 2.37, 0.33, 0.35
+        rng = slf_hi - slf_lo
+        up = rng / (0.5885 * slf_res * slf_cap + 0.001300) / FS
+        dn = rng / (0.5413 * slf_res * slf_cap + 0.001343) / FS
+        st = 0.64 * 2 * (slf_hi + dv - vco_lo) / (vco_res * vco_cap) / FS
+        cp = 3.818 * (fb_res / amp_res) + 0.03       # centre to peak
+        hi = min(2.57 + cp * 1.00, 3.51)              # gain tables at the 4.44 V A/D cap
+        lo = max(2.57 + cp * -0.85, 0.715)
+        to_fs = lambda v: ((v - 0.715) / (2.57 - 0.715) - 1.0) * scale
+        self.init(out + "_s", slf_lo)                 # rates power up 0: the low-limit test starts both charging
+        self.init(out + "_v", vco_lo - dv)
+        self.kreg(out + "_up", up, g, clamp=False)
+        self.kreg(out + "_dn", -dn, g, clamp=False)
+        self.kreg(out + "_st", st, g, clamp=False)
+        self.kreg(out + "_sn", -st, g, clamp=False)
+        self.op("LD", out + "_s")                     # SLF
+        self.op("ADD", out + "_sr")
+        self.op("MINI", imm=q(slf_hi))
+        self.op("MAXI", imm=q(slf_lo))
+        self.op("ST", out + "_s")
+        self.op("CMPI", imm=q(slf_hi))
+        self.op("LD", out + "_dn")
+        self.op("STF", out + "_sr")
+        self.op("LD", out + "_s")
+        self.op("CMPI", imm=q(slf_lo) + 1)
+        self.op("LD", out + "_up")
+        self.op("STNF", out + "_sr")
+        self.op("LD", out + "_v")                     # VCO: up to the SLF voltage, down to the low limit
+        self.op("ADD", out + "_vr")
+        self.op("CMP", out + "_s")
+        self.op("LDF", out + "_s")
+        self.op("MAXI", imm=q(vco_lo - dv))
+        self.op("ST", out + "_v")
+        self.op("CMP", out + "_s")
+        self.op("LD", out + "_sn")
+        self.op("STF", out + "_vr")
+        self.op("LD", out + "_v")
+        self.op("CMPI", imm=q(vco_lo - dv) + 1)
+        self.op("LD", out + "_st")
+        self.op("STNF", out + "_vr")
+        self.op("LD", out + "_vr")                    # output: VCO flip-flop high (discharging) -> + peak
+        self.op("CMPI", imm=0)
+        self.op("LDI", imm=q(to_fs(hi)))
+        self.op("LDIF", imm=q(to_fs(lo)))
+        self.op("ST", out)
+        self.op("BIT", 0, self.src(*inhibit))
+        self.op("LDI", imm=0)
+        self.op("STF", out)
+
     def output(self, src, scale):
         """OUT: src volts * scale, 1.0 = full scale"""
         self.load(src)
@@ -979,7 +1293,9 @@ class Board(Prog):
         """wrap: init block guarded by M[255], body, END"""
         body = self.code
         self.code = []
-        self.inits.append(("_glast", -1.0))
+        tweak = bool(self.groups or self.kcode or self.music)    # no Game Audio settings used: no change block
+        if tweak:
+            self.inits.append(("_glast", -1.0))
         if self.inits:
             self.op("LD", 255)
             self.op("CMPI", imm=1)
@@ -990,33 +1306,34 @@ class Board(Prog):
             self.op("LDI", imm=1)
             self.op("ST", 255)
             self.land(at)
-        # Game Audio settings changed (or first sample: _glast powers up as -1)? -> group factors + scaled rates
-        self.op("LDLM", 0, self.src(6, 0), imm=0xFF)
-        self.op("ST", "_t")
-        self.op("LDLM", 0, self.src(7, 0), imm=0xFF | (8 << 8))
-        self.op("ADD", "_t")
-        self.op("ST", "_key")
-        self.op("SUB", "_glast")
-        self.op("ABS")
-        self.op("CMPI", imm=1)
-        at = self.skip_if(False)
-        for g in sorted(self.groups):
-            src, mask, sh = self.GROUP_SRC[g]
-            self.chain("_f" + g, src, mask, sh, [1.0 / sc for sc in self.SCALES])
-        aged = sorted(self.groups & {"T", "F"})
-        if aged:                                      # Aged Caps (src7 bits 4:3) on the timing / coupling caps
-            self.chain("_fA", 7, 0x18, 13, [1.0 / a for a in self.AGED])
-            for g in aged:
-                self.op("LD", "_f" + g)
-                self.op("MUL", "_fA")
-                self.op("ST", "_f" + g)
-        if self.music:                                # Music Volume (src7 bits 7:5)
-            self.chain("_fM", 7, 0xE0, 11, self.MUSIC)
-        self.code += self.kcode
-        self.op("LD", "_key")
-        self.op("ST", "_glast")
-        self.op("END")                                # a settings change costs one (silent) sample
-        self.land(at)
+        if tweak:
+            # Game Audio settings changed (or first sample: _glast powers up as -1)? -> group factors + scaled rates
+            self.op("LDLM", 0, self.src(6, 0), imm=0xFF)
+            self.op("ST", "_t")
+            self.op("LDLM", 0, self.src(7, 0), imm=0xFF | (8 << 8))
+            self.op("ADD", "_t")
+            self.op("ST", "_key")
+            self.op("SUB", "_glast")
+            self.op("ABS")
+            self.op("CMPI", imm=1)
+            at = self.skip_if(False)
+            for g in sorted(self.groups):
+                src, mask, sh = self.GROUP_SRC[g]
+                self.chain("_f" + g, src, mask, sh, [1.0 / sc for sc in self.SCALES])
+            aged = sorted(self.groups & {"T", "F"})
+            if aged:                                  # Aged Caps (src7 bits 4:3) on the timing / coupling caps
+                self.chain("_fA", 7, 0x18, 13, [1.0 / a for a in self.AGED])
+                for g in aged:
+                    self.op("LD", "_f" + g)
+                    self.op("MUL", "_fA")
+                    self.op("ST", "_f" + g)
+            if self.music:                            # Music Volume (src7 bits 7:5)
+                self.chain("_fM", 7, 0xE0, 11, self.MUSIC)
+            self.code += self.kcode
+            self.op("LD", "_key")
+            self.op("ST", "_glast")
+            self.op("END")                            # a settings change costs one (silent) sample
+            self.land(at)
         self.code += body
         self.op("END")
         worst = self.worst_path()
@@ -1033,7 +1350,8 @@ class Board(Prog):
                 L[i] = 1
             elif o in (OPS["SKF"], OPS["SKNF"]):
                 j = i + 1 + imm
-                L[i] = 1 + max(L[i + 1], L[j] if j < n else 0)
+                always = o == OPS["SKF"] and i and self.code[i - 1][0] == OPS["CMPI"] and self.code[i - 1][3] == 1 << 31
+                L[i] = 1 + (L[j] if always else max(L[i + 1], L[j] if j < n else 0))   # CMPI INT_MIN; SKF = jump
             else:
                 L[i] = COST.get(o, 1) + L[i + 1]
         return L[0]

@@ -45,7 +45,7 @@
 //   table-driven I/O (io_tab = MRA index 1 bytes 48-63, tools/gen_mra.py FAMILY4)
 // f3 (MRA index 1 bytes 12-15, family 3 colour boards, tools/gen_mra.py FAMILY3): [7:0] colour mode, [15:8] colour
 //   flags, [23:16] sound map, [24] no watchdog, [26:25] variant 20 watchdog (255 frames / 2.97 s / 1.1 s / none),
-//   [27] variant 20 decodes A3 (ports 8-15 open)
+//   [27] variant 20 decodes A3 (ports 8-15 open); sound map 10 = invrvnge sound board (M6802 + AY-3-8910)
 // rom_dec (MRA index 1 byte 3): [0] ROM A8/A9 swapped (attackfc), [1] ROM A0/A3/A9 inverted (vortex),
 //   [2] 4-bit bproms: low nibbles at the CPU address, high nibbles 0x10000 above (spaceattbp)
 
@@ -61,7 +61,7 @@ module mw8080_board
     input  logic  [7:0] in2,
     input  logic  [7:0] in3,
     input  logic        cocktail,
-    input  logic        taito_snd,      // Taito L-shaped sound board (else Midway)
+    input  logic  [2:0] snd_board,      // sound board values (rtl/invaders_sound.sv `board`): 0 Midway, 1 Taito L, 4 PV ...
     input  logic  [2:0] rom_dec,
     input  logic  [7:0] gun_x,          // light gun: bitmap pixel 0-255
     input  logic  [7:0] gun_y,          //            picture row 0-223
@@ -92,7 +92,7 @@ module mw8080_board
 
     output logic  [7:0] snd1,
     output logic  [7:0] snd2,
-    output logic [15:0] snd34,          // variant 20 sound latches {4, 3}
+    output logic [15:0] snd34,          // engine latches {4, 3}: variant 20 latches 3 / 4, else {port 4, port 0}
     output logic signed [15:0] audio,
     output logic signed [15:0] audio_r,
 
@@ -163,6 +163,7 @@ wire [8:0] vcnt = {cnt_e7, cnt_e6};
 // ---------------------------------------------------------------- CPU
 
 wire v_sfl = variant == 8'd21;        // sflush: MC6800 main CPU, memory-mapped I/O
+wire v_irv = f3[23:16] == 8'd10;      // invrvnge: M6802 sound CPU + AY-3-8910 (sound map 10)
 wire        sfl_vb = v_sfl & ~pause;              // sflush CPU on the second video RAM port (hiscore while paused)
 logic [7:0] vram_qb, sram_qa;
 
@@ -201,33 +202,38 @@ T8080se #(.Mode(2), .T2Write(1)) u_cpu
 );
 
 // sflush: MC6800 (jt680x, 6800 microcode) at E = 1.5 MHz as MAME, cen = 4 x E = 6 MHz (39.936 MHz x 375 / 2496).
+// invrvnge: the same instance is the M6802 sound CPU (4 MHz crystal, E = 1 MHz), cen = 4 MHz (x 250 / 2496).
 // A bus cycle spans 4 cen: each write is latched on every cen while wr is high and committed once, a clock after
 // the cycle ends (one pulse per write, final data), at the latched address.
+wire  [11:0] m68_inc = v_irv ? 12'd250 : 12'd375;
 logic [11:0] m68_acc = 12'd0;
 logic        m68_tick = 1'b0;
 always_ff @(posedge clk) begin
-    m68_tick <= m68_acc >= 12'd2121;
-    m68_acc  <= m68_acc >= 12'd2121 ? m68_acc - 12'd2121 : m68_acc + 12'd375;
+    m68_tick <= m68_acc >= 12'd2496 - m68_inc;
+    m68_acc  <= m68_acc >= 12'd2496 - m68_inc ? m68_acc + m68_inc - 12'd2496 : m68_acc + m68_inc;
 end
-wire         m68_cen = m68_tick & v_sfl & ~pause;
+wire         m68_on  = v_sfl | v_irv;
+wire         m68_cen = m68_tick & m68_on & ~pause;
 wire         m68_wr;
 wire  [15:0] m68_a;
 wire   [7:0] m68_do;
 logic        m68_irq = 1'b0;
+logic  [7:0] irv_di;
+logic        irv_nmi;
 
 jt680x u_m68
 (
-    .rst(~rst_n | ~v_sfl),
+    .rst(~rst_n | ~m68_on),
     .clk(clk),
     .cen(m68_cen),
     .wr(m68_wr),
     .addr(m68_a),
-    .din(cpu_di),
+    .din(v_irv ? irv_di : cpu_di),
     .dout(m68_do),
     .ext_halt(1'b0),
     .ba(),
-    .irq(m68_irq),
-    .nmi(1'b0),
+    .irq(m68_irq & v_sfl),
+    .nmi(irv_nmi & v_irv),
     .irq_icf(1'b0),
     .irq_ocf(1'b0),
     .irq_tof(1'b0),
@@ -241,7 +247,7 @@ logic  [7:0] wl_d = 8'd0, cmt_d = 8'd0;
 logic        wpend = 1'b0, sfl_wr = 1'b0;
 always_ff @(posedge clk) begin
     sfl_wr <= 1'b0;
-    if (!rst_n || !v_sfl)
+    if (!rst_n || !m68_on)
         wpend <= 1'b0;
     else if (m68_cen) begin
         if (wpend && (!m68_wr || m68_a != wl_a)) begin
@@ -390,7 +396,8 @@ wire        rom_dl = ioctl_wr0 && ioctl_addr < 25'h20000;
 dpram_dc #(.widthad_a(17)) u_rom
 (
     .clock_a(clk),
-    .address_a(reset ? ioctl_addr[16:0] : rom_ra | 17'h10000),   // download port; at run time the high-nibble chip
+    .address_a(reset ? ioctl_addr[16:0] : v_irv ? irv_ra : rom_ra | 17'h10000),   // download port; at run time the
+                                                                 // high-nibble chip, or the invrvnge sound ROMs
     .data_a(ioctl_dout),
     .wren_a(rom_dl),
     .q_a(rom_hi),
@@ -593,7 +600,9 @@ wire  out_wr = ce & out_strobe & ~out_d;
 logic [7:0] wd_cnt = 8'd0;
 logic [7:0] snd0 = 8'd0;               // extra sound / music latch (port 0, polaris port 2)
 logic [7:0] snd3 = 8'd0, snd4 = 8'd0;  // variant 20 sound latches 3 / 4
-assign snd34 = {snd4, snd3};
+// discrete engine latches 3 / 4: variant 20 its own latches; the 8080bw boards the port 0 latch (polaris port 2) and
+// the last shift-data port (port 4) write (ozmawars stage sounds)
+assign snd34 = v_tab ? {snd4, snd3} : {shift_data[15:8], snd0};
 // spcenctr (MAME spcenctr_state::io_w): A2-A0 0 /BRITE (D3), 1 sound P1 / P2 / P3 by A4 A3 (A6 low), 3 trench slope
 // [A7 A6 A4 A3], 4 trench centre, 7 trench width
 logic       sc_bright = 1'b0;
@@ -645,6 +654,10 @@ always_ff @(posedge clk) begin
             if (tab_wr[4])             snd2 <= cpu_do;
             if (tab_wr[5])             snd3 <= cpu_do;
             if (tab_wr[6])             snd4 <= cpu_do;
+            if (f3[27] && cpu_a[3]) begin                // A3 boards (bowler): port 15 = latch 3, ports 8 / 9 / 10 strobes
+                if (cpu_a[2:0] == 3'd7) snd3 <= cpu_do;  // toggle latch 4 bits 0 / 1 / 2 (data ignored)
+                if (cpu_a[2:0] <= 3'd2) snd4[{1'b0, cpu_a[1:0]}] <= ~snd4[{1'b0, cpu_a[1:0]}];
+            end
             if (v_spc)
                 case (cpu_a[2:0])
                     3'd0: sc_bright <= ~cpu_do[3];
@@ -1122,7 +1135,8 @@ always_comb begin
     // family 3: MAME's sample handlers mapped onto the board's voices (invaders samples: 0 missile, 1 explosion,
     // 2 invader hit, 3 saucer hit, 4-7 fleet, 8 bonus)
     case (smap)
-        8'd1, 8'd7: begin sp1 = 8'd0; sp2 = 8'd0; end                              // silent / lrescue (tune only)
+        8'd1: begin sp1 = 8'd0; sp2 = 8'd0; end                                       // silent
+        8'd7: begin sp1 = snd1; sp2 = {3'b000, snd2[4], 1'b0, snd2[2:0]}; end         // lrescue: bit 3 = tune speaker
         8'd2: begin sp1 = {2'b00, snd1[5], snd1[4], snd1[0] | snd2[4], snd1[2], snd1[1], 1'b0};     // ballbomb
                     sp2 = {4'b0000, snd1[3] | snd2[0], 2'b00, snd2[2]}; end
         8'd3: begin sp1 = {2'b00, snd1[5], 1'b0, snd1[3] | snd2[1], snd1[1], snd2[0] | snd2[3], 1'b0};  // indianbt
@@ -1161,6 +1175,95 @@ always_ff @(posedge clk) begin
     end
 end
 
+// invrvnge sound board (MAME invrvnge_state::sound_map): M6802 (u_m68) with its 128 bytes of internal RAM at
+// 0000-007F; A001 AY data read, A002 AY data write, A003 AY address write; ROM C000-C7FF and E000-E7FF, each
+// mirrored to 2000 bytes (index 0 0x8000 / 0xA000), D3 / D4 swapped (MAME init_invrvnge), decoded on the read path.
+// The AY is clocked by E; its port A reads the port 3 latch >> 1 (the CPU polls it). A 4040 on E drives NMI:
+// MAME toggles the line at E / 256, so NMI edges come at E / 512 = 1953 Hz (MAME's comment names Q8 = E / 256).
+localparam IRV_NMI_BIT = 8;                               // counter bit on E: 8 = MAME's 1953 Hz, 7 = 3906 Hz
+wire  [16:0] irv_ra = {2'b01, m68_a[13], 3'b000, m68_a[10:0]};
+wire   [7:0] irv_rom = {rom_hi[7:5], rom_hi[3], rom_hi[4], rom_hi[2:0]};
+logic  [7:0] irv_ram_q, ay_dout;
+logic  [3:0] ay_reg = 4'd0;
+logic        ay_sel = 1'b0;                               // address latch upper nibble 0 = chip selected
+logic  [1:0] irv_e = 2'd0;
+logic  [8:0] irv_div = 9'd0;
+wire         irv_ecen = m68_cen & (irv_e == 2'd3);        // E (1 MHz)
+wire         irv_ram_we = sfl_wr & v_irv & (cmt_a[15:7] == 9'd0);
+wire         ay_wr = sfl_wr & v_irv & (cmt_a == 16'hA002) & ay_sel;
+
+always_ff @(posedge clk) begin
+    if (!rst_n || !v_irv) begin
+        irv_e   <= 2'd0;
+        irv_div <= 9'd0;
+        ay_reg  <= 4'd0;
+        ay_sel  <= 1'b0;
+    end else begin
+        if (m68_cen) irv_e <= irv_e + 2'd1;
+        if (irv_ecen) irv_div <= irv_div + 9'd1;
+        if (sfl_wr && cmt_a == 16'hA003) begin
+            ay_reg <= cmt_d[3:0];
+            ay_sel <= cmt_d[7:4] == 4'd0;
+        end
+    end
+end
+assign irv_nmi = irv_div[IRV_NMI_BIT];
+
+always_comb begin
+    if (m68_a[15:7] == 9'd0)       irv_di = irv_ram_q;
+    else if (m68_a == 16'hA001)    irv_di = ay_dout;
+    else if (m68_a[15:14] == 2'b11) irv_di = irv_rom;
+    else                           irv_di = 8'h00;
+end
+
+dpram_dc #(.widthad_a(7)) u_irv_ram
+(
+    .clock_a(clk),
+    .address_a(irv_ram_we ? cmt_a[6:0] : m68_a[6:0]),
+    .data_a(cmt_d),
+    .wren_a(irv_ram_we),
+    .q_a(irv_ram_q),
+    .byteena_a(1'b1),
+
+    .clock_b(clk),
+    .address_b(7'd0),
+    .data_b(8'd0),
+    .wren_b(1'b0),
+    .q_b(),
+    .byteena_b(1'b1)
+);
+
+wire [9:0] ay_snd;
+jt49 u_ay
+(
+    .rst_n(rst_n & v_irv),
+    .clk(clk),
+    .clk_en(irv_ecen),
+    .addr(ay_reg),
+    .cs_n(~ay_wr),
+    .wr_n(~ay_wr),
+    .din(cmt_d),
+    .sel(1'b1),
+    .dout(ay_dout),
+    .sound(ay_snd),
+    .A(),
+    .B(),
+    .C(),
+    .sample(),
+    .IOA_in({1'b0, snd1[7:1]}),
+    .IOA_out(),
+    .IOB_in(8'hFF),
+    .IOB_out()
+);
+
+// AY output: DC removed by a 1-pole high pass (4.9 Hz), gain set against MAME (route 0.75)
+localparam IRV_GAIN = 24;
+logic signed [26:0] irv_dc = 27'sd0;                     // tau = 2^15 E = 33 ms (4.9 Hz)
+wire  signed [11:0] irv_x  = $signed({2'b00, ay_snd}) - $signed(irv_dc[26:15]);
+always_ff @(posedge clk) if (irv_ecen) irv_dc <= irv_dc + {{15{irv_x[11]}}, irv_x};
+wire  signed [17:0] irv_y  = irv_x * IRV_GAIN;
+wire  signed [15:0] irv_snd = irv_y > 18'sd32767 ? 16'sd32767 : irv_y < -18'sd32768 ? -16'sd32768 : 16'(irv_y);
+
 logic signed [15:0] board_snd;
 invaders_sound u_sound
 (
@@ -1170,7 +1273,8 @@ invaders_sound u_sound
     .p1(sp1),
     .p2(sp2),
     .v16(cnt_e7[0]),
-    .taito(taito_snd),
+    .v8(cnt_e6[3]),
+    .board(smap == 8'd9 ? 3'd2 : snd_board),            // invad2ct board 1, else the set's board (MRA index 1 byte 2)
     .tweak(snd_tweak),
     .out(board_snd)
 );
@@ -1185,7 +1289,8 @@ invaders_sound u_sound2
     .p1(snd3),
     .p2(snd4),
     .v16(cnt_e7[0]),
-    .taito(taito_snd),
+    .v8(cnt_e6[3]),
+    .board(3'd3),                                        // invad2ct board 2 values
     .tweak(snd_tweak),
     .out(board2_snd)
 );
@@ -1196,7 +1301,7 @@ assign audio_r = smap == 8'd9 ? board2_snd : audio;
 wire tune_bit = (variant == 8'd3 || smap == 8'd8) ? snd1[4] : smap == 8'd7 ? snd2[3] & snd1[5] :
                 smap == 8'd5 ? snd2[0] : 1'b0;
 wire signed [16:0] tune = tune_bit ? 17'sd6000 : 17'sd0;
-wire signed [16:0] mix  = board_snd + tune;
+wire signed [16:0] mix  = (v_irv ? irv_snd : board_snd) + tune;
 assign audio = mix > 17'sd32767 ? 16'sd32767 : 16'(mix);
 
 endmodule

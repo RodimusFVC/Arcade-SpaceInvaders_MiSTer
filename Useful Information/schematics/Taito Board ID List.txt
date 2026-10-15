@@ -1,0 +1,739 @@
+Taito Board ID List
+V4.3	 Jun 7, 2001
+
+Sorted By ROM Number
+====================
+Prom Stickers     Board Number         Game             Notes
+-------------     ------------         ----             -----
+??                M6100130A            Nunchackun
+067               M6100654A            Xexex  Konami 352898B
+1-13              M6100047A            Ninjakun (1984) (UPL84003A)
+1-17              M6100168A            SRD Mission (1986) CVG-48C
+1-17              M6100213A            Darkmist (1986 Seibu)
+21J                                    Double Dragon
+A03                                    Water Ski
+A04                                    Chak N Pop (1984)
+A11,PR                                 Pit'n Run (1984)
+A14               M4300003R            Sea Fighter Poseidon (1984)
+                  K1100040A            cpu
+                  K1100041A            video
+A20                                    Kick Start
+A21               M6100023A            Gyrodyne (1984)
+A22               M43000011            Buggy Challenge
+                  K1100078 cpu
+                  K1100037 video
+                  K1100038
+A24               M4300018A            Birdie King (1982)
+A26               J1100149B            Ben Bero Beh (1984)
+A35               M6100070A            Samurai (1987)
+A37               M4300029A            Return of the Invaders (1985)
+A45               M4300034B            Fairyland Story
+                  K1100117A
+                  K1100119A
+                  K1100118A
+A47               GX-551               Tiger Heli
+A50               M4300037B            N.Y. Captor (1986)
+                  K1100159A CPU
+                  K1100126A SND
+                  K1100125A VID
+A54               M4300040A            Legend of Kage (1985)
+A62                                    Halley's Comet
+A64               M4300051B            LSA Squad
+                  K1100168B(cpu)
+                  K1100153B(video) 
+A67               M4300056B            Big Event Golf (1986)
+                  K1100215A CPU
+                  K1100156A SND
+                  K1100165A VID
+A68               K1100151B            Get Star (1986)
+A71                                    Scramble Formation
+A71                                    Tokio
+A75                                    Arkanoid (1986)
+A77               M6100186A            Alcon (1986)
+A78-05..20                             Bubble Bobble (1986)
+A80,A97                                Cycle Shooting (1986)
+A85                                    Kiki Kaikai (1986)
+A96                                    Darius (1994)
+AA1-01..12                             Front Line (1983)
+AA8-04..17                             Bio Attack (1983)
+AC#/AC#/AA        M6100032A            The Great Swordsman 
+AC4                                    High Way Race (1983)
+AD6, DM           M43000010            Birdie King 2
+AG01-AG06         AG070002 (cpu)       Astro Fighter
+                  AG070001 (game)
+AP                AA017809C (cpu)      Alpine Ski (1982)
+                  AA017810C (video)
+      RHN00001    AA017808C (game)
+B                                      Legend of Kage (1985)
+B02                                    Sky Shark (1987)
+B02                                    Flying Shark (Japanese revision)
+B03                                    Super Qix (1987)
+B04                                    Rastan (1987)
+B06               M6100305A            Extermination (1987)
+B08               K1100250A            Arkanoid:Revenge of Doh (1987)
+B14               K1100273A            Top Speed (1987)
+B20               M4300189A            Operation Wolf (1987)
+B22               K1100277A            Rainbow Islands
+B25               M6100286B            Pyros (1987) <Toaplan>
+B30                                    Kyukyoku Tiger (Japanese revision)
+B31               M4300086H            Ninja Warriors (1987)
+                  K1100325A  CPU
+                  K1100312A  Video
+                  K1100313A  Sound
+B33               K1100351A            Continental Circuit (1988)
+B35               M6100309B            Kageki (1988)
+B41                                    Bonze Adventure
+B42               J1100147A            Kurikinton
+                  K1100349A
+B44               K1100332A            Chuka Taisen (1988)
+B45               M6100335A            Rally Bike (1986) TP-012
+B52                                    Chase HQ (1988)
+B56               K1100371A            Record Breaker (1988) H system
+B61               K1100390A            Superman (1988)
+B62                                    Top Landing (1993)
+B62,C45           M4300186A            Air Inferno (1991)
+                  K1100586A CPU
+                  K1100576A Video
+B65                                    Truxton
+B67                                    Operation Thunderbolt (1989)
+B73               M6100391A            Heavy Unit (1988) Kaneko
+B82                                    Final Blow (1989)
+B93               K1100485A            Rambo III
+B95               M4300131A            Don Koko Don (Jul,1989)
+B96               K1100440A            Plotting (1989) L System
+B99               K1100470A            Crime City (1989)
+BA3, EA                                Elevator Action (two Taito revs) (1983)
+BO                                     Super Qix
+C04                                    Volfied
+C09               M4300140A            Special Criminal Investigation (1989)
+                  K1100492A(cpu)
+                  K1100491A(vid)
+C11                                    Mega Blast 
+C16                                    Violence Fight (1989)
+C20                                    Puzznic (1989) L System
+C21                                    Cadash (1989)
+C32               K1100537A            World Grand Prix (1989)
+C38                                    Camel Try (1989)
+C41                                    Quiz Torimonochou (1990)
+C43               K1100541A            Battle Shark (1990)
+C47                                    American Horseshoes (L System)
+C49               K1100593A            Liquid Kids (1990)
+C57                                    Space Gun (1990)
+C63               K1100610A            Palamedes (1990) L System
+C71                                    Gun Frontier
+C74               K1100638B            Growl (Feb/1991)
+C80               K11T0647A            Hat Trick Hero (1990)
+CC                                     Crazy Climber (1980)
+CL                                     Crazy Balloon (1980)
+CS01-CS11                              Colony 7 (1981)
+D1-D10                                 Mr Do (1982)
+D26               K11X0622A            Mini Vaders (1993)
+D28               K11E0714A            Dead Connection (1992) 4player.
+D46               K11E0740A            Super Chase (1993)
+D49               K11E0776A            Super Cup Finals (1993)
+D53                                    Primetime Fighters
+D67               M43E0288             Under Fire (1993)
+D89                                    Space Invaders DX (1994, Japanese rev)
+DE                                     Space Cyclone
+DF                D75 (top),  D71F(A)  Defender
+DM                                     Birdie King 2
+DP                                     Sub Hunter
+EA                                     Elevator Action
+EB01-15           AA017805 (cpu)       Space Seeker
+                  LE070003 (snd)
+                  AA017804 (vid)
+FL                                     Front Line (1983)
+FS                                     Flying Shark (1987)
+GE01-GE05         AA017768 (cpu)       Astro Zone (1980)
+GR,GM             GM070007 (game)      Grand Champion (1981)
+KM                                     Kamikaze III (1980)
+KN                                     Jungle King (1982)
+KNxxa                                  Jungle Hunt (1982)
+KS                                     Kram (1982)
+LK                LKN00003             Qix (2 board, 2732 eproms)
+LP12-LP18         AA017768 (cpu)       Lupin III (1980)
+LR                CVN00004 (cpu)       Lunar Rescue (1979)
+                  AA017756A (rom)
+                  CVD70005 (game)
+LS01-LS06         LS070014 (cpu)       Stratovox (1980)
+                  LS070013 (game)
+M                                      Mania Challenge (1986)
+MR1-MR8           MRK00001 (sound)     Alca Meteor
+MW01-MW06                              Ozma Wars 
+MY1-MY11                               Moon Shuttle (Nichibutsu)
+N                                      Renegade (1986)
+O15                                    Zero Wing
+PE1-PE9           PA070001 (cpu)       Port Man
+                  PA070002 (vid)
+PS01-PS06         AA017768 (cpu)       Polaris (1980)
+                  PS070001 (game)
+RY                                     Typhoon Gal (1985)
+UV01-UV10                              Space Invaders PT2 (1979) (2708's)
+PV01-PV05 PVN00004 PVN00005 PVN00003   Space Invaders PT2 (1979)
+          PV070010 AA017757 AA017765A
+QB or C#          M6100153C            Gladiator (1988)
+QQ                                     Qix ('81)
+                  08-00007-001         Qix              Power Supply
+                  08-00001-001         Qix              Video Processor
+                  08-00002-001         Qix              Data/Sound Processor
+                  08-00003-001         Qix              ROM I/O P.C.
+QU                                     Qix
+QX                                     Qix
+R                                      Cross Shooter (prototype PCB, Japanese)
+RFT                                    Ring Fighter
+RH16-27                                Alpine Ski
+RT13-22           RTNxxxx              Space Chaser (1979)
+SD                                     Space Dungeon(1982)
+SS, 122-136       ZD1, ZD2             Zarzon (1981)
+TF01-TF04         AF017765 (cpu)       Field Goal (1979)
+                  AF070006 (sound)
+TN01-09                                Balloon Bomber (1980)
+TP-024            M6100693A            Tatsujin II/Truxton II (Toaplan) (1992)
+TP-026            M6100701A            Fix Eight (Toaplan) (1992)
+TS,A10            M4200364A            Tin Star (1983)
+UA2               M6100326A            Twin Eagle (1988)
+UE2	              M6100430A            U.S. Classic Golf (1989)
+UK                M6100439A            Arbalester (1989) (Seta)
+UN01..16                               Time Tunnel (1982)
+WW8..14           WW070001             Wild Western (1982)
+YY                                     Electric Yo Yo
+ZA03-ZA10                              Zoo Keeper (1983)
+ZV03-ZV10                              Zoo Keeper (1983)
+
+===================
+Sorted By Game Name
+===================
+
+Prom Stickers     Board Number         Game             Notes
+-------------     ------------         ----             -----
+B62,C45           M4300186A            Air Inferno (1991)
+                  K1100586A CPU
+                  K1100576A Video
+MR1-MR8           MRK00001 (sound)     Alca Meteor
+A77               M6100186A            Alcon (1986)
+RH16-27                                Alpine Ski
+AP                AA017809C (cpu)      Alpine Ski (1982)
+                  AA017810C (video)
+      RHN00001    AA017808C (game)
+C47                                    American Horseshoes (L system)
+UK                M6100439A            Arbalester (1989) (Seta)
+A75                                    Arkanoid (1986)
+B08               K1100250A            Arkanoid:Revenge of Doh (1987)
+AG01-AG06         AG070002 (cpu)       Astro Fighter
+                  AG070001 (game)
+GE01-GE05         AA017768 (cpu)       Astro Zone (1980)
+TN01-09                                Balloon Bomber (1980)
+C43               K1100541A            Battle Shark (1990)
+A26               J1100149B            Ben Bero Beh (1984)
+A67               M4300056B            Big Event Golf (1986)
+                  K1100215A CPU
+                  K1100156A SND
+                  K1100165A VID
+AA8-04..17                             Bio Attack (1983)
+A24               M4300018A            Birdie King (198?)
+AD6, DM           M43000010            Birdie King 2
+B41                                    Bonze Adventure
+A78-05..20                             Bubble Bobble (1986)
+A22               M43000011            Buggy Challenge
+                  K1100078 cpu
+                  K1100037 video
+                  K1100038
+C21                                    Cadash (1989)
+C38                                    Camel Try (1989)
+A04                                    Chak N Pop (1984)
+B52                                    Chase HQ (1988)
+B44               K1100332A            Chuka Taisen (1988)
+CS01-CS11                              Colony 7 (1981)
+B33               K1100351A            Continental Circuit (1988)
+CL                                     Crazy Balloon (1980)
+CC                                     Crazy Climber (1980)
+B99               K1100470A            Crime City (1989)
+R                                      Cross Shooter (prototype PCB, Japanese)
+A80,A97                                Cycle Shooting (1986)
+A96                                    Darius (1994)
+1-17              M6100213A            Darkmist (1986 Seibu)
+D28               K11E0714A            Dead Connection (1992) 4player.
+DF                D75 (top),  D71F(A)  Defender
+B95               M4300131A            Don Koko Don (Jul,1989)
+21J                                    Double Dragon
+YY                                     Electric Yo Yo
+BA3, EA                                Elevator Action (two Taito revs) (1983)
+B06               M6100305A            Extermination (1987)
+A45               M4300034B            Fairyland Story
+                  K1100117A
+                  K1100119A
+                  K1100118A
+TF01-TF04         AF017765 (cpu)       Field Goal (1979)
+                  AF070006 (sound)
+B82                                    Final Blow (1989)
+TP-026            M6100701A            Fix Eight (Toaplan) (1992)
+FS                                     Flying Shark (1987)
+B02                                    Flying Shark (Japanese revision)
+FL                                     Front Line (1983)
+AA1-01..12                             Front Line (1983)
+A68               K1100151B            Get Star (1986)
+QB or C#          M6100153C            Gladiator (1988)
+GR,GM             GM070007 (game)      Grand Champion (1981)
+C74               K1100638B            Growl (Feb/1991)
+C71                                    Gun Frontier
+A21               M6100023A            Gyrodyne (1984)
+A62                                    Halley's Comet
+C80               K11T0647A            Hat Trick Hero (1990)
+B73               M6100391A            Heavy Unit (1988) Kaneko
+AC4                                    High Way Race (1983)
+KNxxa                                  Jungle Hunt (1982)
+KN                                     Jungle King (1982)
+B35               M6100309B            Kageki (1988)
+KM                                     Kamikaze III (1980)
+A20                                    Kick Start
+A85                                    Kiki Kaikai (1986)
+KS                                     Kram (1982)
+B42               J1100147A            Kurikinton
+                  K1100349A
+B30                                    Kyukyoku Tiger (Japanese revision)
+A54               M4300040A            Legend of Kage (1985)
+B                                      Legend of Kage (1985)
+C49               K1100593A            Liquid Kids (1990)
+A64               M4300051B            LSA Squad
+                  K1100168B(cpu)
+                  K1100153B(video) 
+LR                                     Lunar Rescue (1979)
+RE21-RE26         CV700005
+                  AA017756A(prom)
+                  AA017757(cpu)
+
+LP12-LP18         AA017768 (cpu)       Lupin III (1980)
+M                                      Mania Challenge (1986)
+C11                                    Mega Blast 
+D26               K11X0622A            Mini Vaders (1993)
+D28               K11E0714A            Dead Connection (1992) 4player.
+MY1-MY11                               Moon Shuttle
+D1-D10                                 Mr Do (1982)
+1-13              M6100047A            Ninjakun (1984) (UPL84003A)
+B31               M4300086H            Ninja Warriors (1987)
+                  K1100325A  CPU
+                  K1100312A  Video
+                  K1100313A  Sound
+??                M6100130A            Nunchackun
+A50               M4300037B            N.Y. Captor (1986)
+                  K1100159A CPU
+                  K1100126A SND
+                  K1100125A VID
+B67                                    Operation Thunderbolt (1989)
+B20                                    Operation Wolf (1987)
+MW01-MW06                              Ozma Wars
+C63               K1100610A            Palamedes (1990)
+A11,PR                                 Pit'n Run (1984)
+B96               K1100440A            Plotting (1989)
+PS01-PS06         AA017768 (cpu)       Polaris (1980)
+                  PS070001 (game)
+PE1-PE9           PA070001 (cpu)       Port Man
+                  PA070002 (vid)
+D53                                    Primetime Fighters
+C20                                    Puzznic (1989)
+B25               M6100286B            Pyros (1987) Toaplan
+LK                LKN00003             Qix (2 board, 2732 eproms)
+QQ                                     Qix ('81)
+                  08-00007-001         Qix              Power Supply
+                  08-00001-001         Qix              Video Processor
+                  08-00002-001         Qix              Data/Sound Processor
+                  08-00003-001         Qix              ROM I/O P.C.
+B22               K1100277A            Rainbow Islands
+B45               M6100335A            Rally Bike (1986) TP-012
+B93               K1100485A            Rambo III
+B04                                    Rastan (1987)
+B56               K1100371A            Record Breaker (1988) H system
+N                                      Renegade (1986)
+A37               M4300029A            Return of the Invaders (1985)
+RFT                                    Ring Fighter
+A35               M6100070A            Samurai (1987)
+A71                                    Scramble Formation
+A14               M4300003R            Sea Fighter Poseidon (1984)
+                  K1100040A            cpu
+                  K1100041A            video
+B02                                    Sky Shark (1987)
+RT13-22           RTNxxxx              Space Chaser (1979)
+DE                                     Space Cyclone
+C57                                    Space Gun (1990)
+D89                                    Space Invaders DX (1994, Japanese rev)
+UV10-UV10                              Space Invaders PT2 (1979) (2708's)
+PV01-PV05   PVN00004 PVN00005 PVN00003 Space Invaders PT2 (1979)
+            PV070010 AA017757 AA017765A
+EB01-15           AA017805 (cpu)       Space Seeker
+                  LE070003 (snd)
+                  AA017804 (vid)
+C09               M4300140A            Special Criminal Investigation (1989)
+                  K1100492A(cpu)
+                  K1100491A(vid)
+1-17              M6100168A            SRD Mission (1986) CVG-48C
+DP                                     Sub Hunter
+LS01-LS06         LS070014 (cpu)       Stratovox (1980)
+                  LS070013 (game)
+D46               K11E0740A            Super Chase (1993)
+D49               K11E0776A            Super Cup Finals (1993)
+B61               K1100390A            Superman (1988)
+BO                                     Super Qix
+B03                                    Super Qix (1987)
+TP-24             M6100693A            Tatsujin II/Truxton II (Toaplan) (1992)
+AC#/AC#/AA        M6100032A            The Great Swordsman 
+A47               GX-551               Tiger Heli
+UN01..16                               Time Tunnel (1982)
+TS,A10-12         M4200364A            Tin Star (1983)
+A71                                    Tokio
+B62                                    Top Landing (1993)
+B14               K1100273A            Top Speed (1987)
+UA2               M6100326A            Twin Eagle (1988)
+B65                                    Truxton
+RY                                     Typhoon Gal (1985)
+D67               M43E0288             Under Fire (1993)
+UE2		  M6100430A	       U.S. Classic Golf (1989)
+C16                                    Violence Fight (1989)
+C04                                    Volfied
+A03                                    Water Ski
+WW8..14           WW070001             Wild Western (1982)
+C32               K1100537A            World Grand Prix (1989)
+067               M6100654A            Xexex  Konami 352898B
+SS, 122-136       ZD1, ZD2             Zarzon (1981)
+O15                                    Zero Wing
+ZA03-ZA10                              Zoo Keeper (1983)
+ZV03-ZV10                              Zoo Keeper (1983)
+
+------------------------------------------------------------------------------------------
+
+                  TAITO BOARD LIST - Vixen, Antiriad & Raine Team
+
+- This list is mainly to identify all Taito hardware, each Taito machine has an ordered
+  number from 1983 onwards. It is not a list of dumped Taito romsets, some of these are
+  undumped.
+- Probably other Taito hardware is also numbered this way.
+- Please send any extra info to  or .
+- Thanks to J-Rom, araCORN, Raven, malcor, David Jorge, Al Kossow, Soren Svendsen
+  for information.
+
+This list has been hugely ipmroved by vixen! Thanks!! :)
+
+The change of the title that differs by country wrote to the same line. 
+It distinguished it as the different game, in the case that there is an obvious new version. 
+
+Product listing of TAITO begins from here.
+----+-------------------------------------+-------+------+--------------------------------
+--- | Phoenix                             | Taito | 1980 | ....... ....... ....... .......
+--- | Space Invaders Part 2               | Taito | 1980 | ....... ....... ....... .......
+----+-------------------------------------+-------+------+--------------------------------
+
+Note:
+Gladiator / Great Gurianos  JPN ver name "Oh-gon no Shiro(The Golden Castle)"
+Renegade                    JPN ver name "Kunio-Kun"
+
+----+-------------------------------------+-------+------+--------------------------------
+A03 | Water Ski                           | Taito | 1983 | ....... ....... ....... .......
+A04 | Chack'n Pop                         | Taito | 1983 | ....Z80 .M68705 .AY8910 .AY8910
+A10 | The Tin Star                        | Taito | 1984 | ....... ....... ....... .......
+A23 | Rumba Ramba                         | Taito | 1984 | ....... ....... ....... .......
+A24 | Birdie King 3                       | Taito | 1984 | ....... ....... ....... .......
+A26 | Ben-Bero-Beh                        | Taito | 1984 | ....... ....... ....... .......
+A30 | 40-0 / Fourty-Love                  | Taito | 1985 | ....... ....... ....... .......
+A34 | Metal Soldier Issac II              | Taito | 1985 | ..Z80x2 ...... YM2149x2 MSM5232
+A35 | Samurai / Samurai Nippon-Ichi       |Kaneko | 1985 | ....... ....... ....... .......
+A37 | Return of The Invaders              |  UPL  | 1985 | ....... ....... ....... .......
+A38 | Yuke-Yuke Yamaguchi-Kun             |Kaneko | 1985 | ....... ....... ....... .......
+A39 | Wyvern F-0                          | Taito | 1985 | ....... ....... ....... .......
+A44 | Space-Battleship Yamato             | Taito | 1985 | ....... ....... .YM2203 .......
+A45 | Fairyland Story                     | Taito | 1985 | ..Z80x2 .M68705 MSM5232 .......
+A47 | Tiger Heli                          |Toaplan| 1985 | ....... ....... ....... .......
+A52 | Onna Sanshiro                       | Taito | 1985 | ..Z80x2 .M68705 MSM5232 .......
+A54 | Legend of Kage                      | Taito | 1985 | ....Z80 ....... .YM2203 .......
+A62 | Halley's Comet                      | Taito | 1986 | ....... ....... ....... .......
+A64 | Land Sea Air Squad                  | Taito | 1986 | ....... ....... ....... .......
+A67 | Big Event Golf                      | Taito | 1986 | ....... ....... ....... .......
+A71 | Scramble Formation / Tokio          | Taito | 1986 | ..Z80x2 ....Z80 .YM2203 .......
+A72 | The 26th Z                          |  WP   | 1986 | ....... ....... ....... .......
+A75 | Arkanoid                            | Taito | 1986 | ....Z80 ....... ....... .......
+A76 | Alcon / Slap Fight                  |Toaplan| 1986 | ....Z80 ....... .AY8910 .AY8910
+A77 | Alcon / Slap Fight (JAMMA PCB)      |Toaplan| 1986 | ....Z80 ....... .AY8910 .AY8910
+A78 | Bubble Bobble                       | Taito | 1986 | ..Z80x2 ....Z80 .M68705 .YM2203
+A85 | Kiki Kaikai                         | Taito | 1986 | ....Z80 ....Z80 .M68705 .YM2203
+A87 | Kick & Run                          | Taito | 1986 | ....Z80 ....Z80 .YM2203 .......
+A96 | Darius / Darius EX                  | Taito | 1986 | MC68000 MC68000 ....Z80 .YM2203
+A98 | Plump Pop                           | Taito | 1987 | ....Z80 ....Z80 .YM2203 .......
+----+-------------------------------------+-------+------+--------------------------------
+
+----+-------------------------------------+-------+------+--------------------------------
+B02 | Flying Shark/Hishou Zame/Sky Shark  |Toaplan| 1987 | MC68000 ....Z80 .YM3812 .......
+B03 | Super Qix                           |Kaneko | 1987 | ....Z80 ....... ....... .......
+B04 | Rastan / Rastan Saga                | Taito | 1987 | MC68000 ....Z80 .YM2151 MSM5205
+B06 | Extermination                       | Taito | 1987 | ....Z80 ....Z80 .YM2203 .......
+B08 | Arkanoid 2 / Revenge of Doh         | Taito | 1987 | ....Z80 ....Z80 .YM2203 .......
+B12 | Exzisus (???)                       | Taito | 1987 | ....Z80 ....Z80 .M68705 .YM2151
+B14 | Top Speed / Full Throttle           | Taito | 1987 | MC68000 MC68000 ....Z80 .......
+B19 | Dr.Toppel Adventure                 |Kaneko | 1987 | ....Z80 ....Z80 .YM2203 .......
+B20 | Operation Wolf                      | Taito | 1987 | MC68000 ....Z80 .C-CHIP .YM2151
+B22 | Rainbow Islands / EX                | Taito | 1987 | MC68000 ....Z80 .C-CHIP .YM2151
+B23 | Exzisus (???)                       | Taito | 1987 | ....Z80 ....Z80 .M68705 .YM2151
+B25 | Pyros / The Forest of Wardona       |Toaplan| 1987 | ....... ....... ....... .......
+B30 | Twin Cobra / Kyukyoku Tiger         |Toaplan| 1987 | MC68000 ....Z80 .YM3812 .......
+B31 | Ninja Warriors                      | Taito | 1987 | MC68000 MC68000 ....Z80 .YM2610
+B33 | Continental Circus / Co. Circuit    | Taito | 1989 | MC68000 MC68000 ....Z80 .YM2610
+B35 | Kageki                              | Taito | 1988 | ....Z80 ....Z80 .YM2203 .YM3906
+B36 | Raimais                             | Taito | 1988 | ....Z80 ....Z80 .YM2610 .......
+B41 | Bonze Adventure / Jigoku Meguri     | Taito | 1988 | MC68000 ....Z80 .C-CHIP .YM2610
+B42 | Kuri Kinton                         | Taito | 1988 | ....Z80 ....Z80 .YM2203 .......
+B44 | Chuka Taisen                        | Taito | 1988 | ....Z80 ....Z80 .YM2203 .......
+B50 | Kabuki Z                            |Kaneko | 1988 | ....Z80 ....Z80 .YM2203 .......
+B51 | Syvalion                            | Taito | 1988 | MC68000 ....Z80 .YM2610 .......
+B52 | Chase H.Q.                          | Taito | 1988 | MC68000 MC68000 ....Z80 .YM2610
+B53 | The New Zealand Story               | Taito | 1988 | ....Z80 ....Z80 .YM2203 .......
+B56 | Record Breaker / Go for the Gold    | Taito | 1988 | MC68000 ....Z80 .YM2610 .......
+B61 | Superman                            | Taito | 1988 | MC68000 ....Z80 .C-CHIP .YM2610
+B62 | Top Landing                         | Taito | 1988 | MC68000 ....Z80 .YM2610 .......
+B65 | Truxton / Tatsujin                  |Toaplan| 1988 | MC68000 ....Z80 .YM3812 .......
+B67 | Operation Thunderbolt               | Taito | 1989 | MC68000 ....Z80 .YM2610 .......
+B70 | Fighting Hawk                       | Taito | 1989 | ....Z80 ....Z80 .YM2203 .......
+B72 | Master of Weapons                   | Taito | 1989 | MC68000 ....Z80 .YM2610 .......
+B73 | Heavy Unit                          |Kaneko | 1988 | ....Z80 ....Z80 .YM2203 .......
+B77 | Aqua Jack                           | Taito | 1989 | MC68000 MC68000 ....Z80 .YM2610
+B81 | Rastan Saga 2 / Nastar Warrior      | Taito | 1989 | MC68000 ....Z80 .YM2610 .......
+B82 | Final Blow                          | Taito | 1989 | MC68000 ....Z80 .YM2610 .......
+B87 | Twin Hawk / Daisenpu                |Toaplan| 1989 | MC68000 ....Z80 .YM2151 .......
+B90 | Hellfire                            |Toaplan| 1989 | MC68000 ....Z80 .YM3812 .......
+B91 | Night Striker                       | Taito | 1989 | MC68000 MC68000 ....Z80 .YM2610
+B93 | Rambo 3                             | Taito | 1989 | MC68000 ....Z80 .YM2610 .......
+B95 | Don Doko Don                        | Taito | 1989 | MC68000 ....Z80 .YM2610 .......
+B96 | Plotting / Flipull                  | Taito | 1989 | ....Z80 .YM2203 ....... .......
+B97 | Insector X                          | Taito | 1989 | ....Z80 ....Z80 .YM2203 .......
+B99 | Crime City                          | Taito | 1989 | MC68000 ....Z80 .YM2610 .......
+----+-------------------------------------+-------+------+--------------------------------
+
+----+-------------------------------------+-------+------+--------------------------------
+C01 | Champion Wrestler                   | Taito | 1989 | ....Z80 ....Z80 ....Z80 .YM2203
+C02 | Dynamite League                     | Taito | 1989 | MC68000 ....Z80 .YM2610 .......
+C04 | Volfied                             | Taito | 1989 | MC68000 ....Z80 .C-CHIP .YM2610
+C07 | Darius 2 / Darius 2 Dual Screen     | Taito | 1989 | MC68000 MC68000 ....Z80 .YM2610
+C09 | Chase HQ 2: Special Criminal Inv.   | Taito | 1989 | MC68000 MC68000 ....Z80 .YM2610
+C11 | Mega Blast                          | Taito | 1989 | MC68000 ....Z80 .C-CHIP .YM2610
+C12 | Taito Tetris                        | Taito | 1989 | MC68000 ....Z80 .YM2610 .......
+C16 | Violence Fight                      | Taito | 1989 | MC68000 ....Z80 .YM2203 ..M6295
+C17 | Maze of Flott                       | Taito | 1989 | MC68000 ....Z80 .YM2151 MSM5205
+C20 | Puzznic                             | Taito | 1989 | ....Z80 .M68705 .YM2203 .......
+C21 | Cadash                              | Taito | 1989 | MC68000 ....Z80 .YM2151 .......
+C28 | Thunder Fox                         | Taito | 1989 | MC68000 ....Z80 .YM2610 .......
+C32 | World Grand Prix                    | Taito | 1989 | MC68000 ....Z80 .YM2610 .......
+C34 | Battle Shark                        | Taito | 1989 | MC68000 ....Z80 .YM2610 .......
+C38 | Camel Try                           | Taito | 1990 | MC68000 ....Z80 .YM2610 .......
+C41 | Quiz Torimonochou (JPN Quiz)        | Taito | 1989 | MC68000 ....Z80 .YM2610 .......
+C43 | Ashura Blaster                      | Visco | 1990 | MC68000 ....Z80 .YM2610 .......
+C45 | Air Inferno                         | Taito | 1990 | MC68000 ....Z80 .YM2610 .......
+C47 | American Horseshoes                 | Taito | 1990 | ....Z80 .YM2203 ....... .......
+C49 | Liquid Kids                         | Taito | 1990 | MC68000 ....Z80 .YM2610 .......
+C53 | Quiz HQ (JPN Quiz)                  | Taito | 1990 | ....... ....... ....... .......
+C57 | Space Gun                           | Taito | 1990 | MC68000 MC68000 .YM2610 .......
+C59 | Hit the Ice                         | Bally | 1990 | MC68000 ....Z80 .YM2203 ..M6295
+C63 | Palamedes                           | Taito | 1990 | ....Z80 .YM2203 ....... .......
+C64 | Super Space Invaders 91 / MJ12 / 4  | Taito | 1990 | MC68000 ....Z80 .YM2610 .......
+C69 | Sonic Blast Man                     | Taito | 1990 | ....... ....... ....... .......
+C71 | Gun Frontier                        | Taito | 1990 | MC68000 ....Z80 .YM2610 .......
+C73 | W.G.P.2                             | Taito | 1990 | ....... ....... ....... .......
+C74 | Growl / Runark                      | Taito | 1990 | MC68000 ....Z80 .YM2610 .......
+C77 | Mahjong Quest                       | Taito?| 1990 | MC68000 ....Z80 .YM2610 .......
+C80 | Hat Trick Hero / Football Champ     | Taito | 1990 | MC68000 ....Z80 .YM2610 .......
+C81 | Ah Eikou no Koushien                | Taito | 1990 | MC68000 ....Z80 .YM2610 .......
+C83 | Yu-yu no Quiz de Go!Go! (JPN Quiz)  | Taito | 1990 | MC68000 ....Z80 .YM2610 .......
+C85 | Ninja Kids                          | Taito | 1991 | MC68000 ....Z80 .YM2610 .......
+C91 | Solitary Fighter                    | Taito | 1991 | ....... ....... ....... .......
+C92 | Quiz Quest (JPN Quiz)               | Taito | 1991 | MC68000 ....Z80 .YM2610 .......
+C98 | Pulirula                            | Taito | 1991 | MC68000 ....Z80 .YM2610 .......
+----+-------------------------------------+-------+------+--------------------------------
+
+----+-------------------------------------+-------+------+--------------------------------
+D12 | Metal Black / Gun Frontier 2        | Taito | 1991 | MC68000 ....Z80 .YM2610 .......
+D19 | Quiz Chikyu Bouei-Gun (JPN Quiz)    | Taito | 1991 | MC68000 ....Z80 .YM2610 .......
+D20 | Yes/No Mind Chart                   | Taito | 1992 | MC68000 ....Z80 .YM2610 .......
+D21 | Ring Rage                           | Taito | 1992 | MC68020 MC68000 ENSONIQ .......
+D24 | Warrior Blade                       | Taito | 1992 | MC68000 MC68000 ....Z80 .YM2610
+D26 | Mini Invaders (Test PCB)            | Taito | 1992 | ....... ....... ....... .......
+D27 | Gun Buster                          | Taito | 1992 | ....... ....... ....... .......
+D28 | Dead Connection                     | Taito | 1992 | MC68000 ....Z80 .YM2610 .......
+D29 | Arabian Magic                       | Taito | 1992 | MC68020 MC68000 ENSONIQ .......
+D34 | Riding Fight                        | Taito | 1992 | MC68020 MC68000 ENSONIQ .......
+D39 | Dinorex                             | Taito | 1992 | MC68000 ....Z80 .YM2610 .......
+D40 | Grid Seeker: Project Stormhammer    | Taito | 1992 | MC68020 MC68000 ENSONIQ .......
+D46 | Super Chase / Speed Chase           | Taito | 1992 | MC68020 MC60000 MC68000 ENSONIQ
+D48 | Quiz Life Theater (JPN Quiz)        | Taito | 1992 | MC68000 ....Z80 .YM2610 .......
+D49 | Hat Trick Hero 93/Taito Cup Finals  | Taito | 1992 | MC68020 MC68000 ENSONIQ .......
+D53 | Top Ranking Stars/Primetime Fighters| Taito | 1992 | MC68000 MC68000 MC68000 .......
+D55 | Quiz Crayon Shin-Chan (JPN Quiz)    | Taito | 1992 | MC68000 ....Z80 .YM2610 .......
+D63 | Crayon Shin-Chan 2 (not Quiz!)      | Taito | 1992 | MC68000 ....Z80 .YM2610 .......
+D66 | Gun Lock / Ray Force                | Taito | 1993 | MC68020 MC68000 ENSONIQ .......
+D67 | Under Fire                          | Taito | 1993 | MC68020 MC68000 ENSONIQ .......
+D68 | Super Cup Finals                    | Taito | 1993 | MC68020 MC68000 ENSONIQ .......
+D69 | Light Bringer                       | Taito | 1993 | MC68020 MC68000 ENSONIQ .......
+D55 | Quiz Show by Sho-bai (JPN Quiz)     | Taito | 1993 | MC68000 ....Z80 .YM2610 .......
+D77 | Base Board F3-System                | Taito | 1994 | MC68020 MC68000 ENSONIQ .......
+D78 | International Cup 94                | Taito | 1994 | MC68020 MC68000 ENSONIQ .......
+D84 | Kaiser Knuckle / Global Champion    | Taito | 1994 | MC68020 MC68000 ENSONIQ .......
+D87 | Darius Gaiden                       | Taito | 1994 | MC68020 MC68000 ENSONIQ .......
+D89 | Space Invaders DX (Single PCB)      | Taito | 1994 | MC68000 ....Z80 .YM2610 .......
+D90 | Bubble Symphony                     | Taito | 1994 | MC68020 MC68000 ENSONIQ .......
+D93 | Space Invaders DX                   | Taito | 1994 | MC68020 MC68000 ENSONIQ .......
+D94 | Hat Trick Hero 95 / Power Goal      | Taito | 1995 | MC68020 MC68000 ENSONIQ .......
+D95 | Quiz Theater: 3 Stories             | Taito | 1995 | MC68020 MC68000 ENSONIQ .......
+----+-------------------------------------+-------+------+--------------------------------
+
+----+-------------------------------------+-------+------+--------------------------------
+E02 | Elevator Action Returns             | Taito | 1995 | MC68020 MC68000 ENSONIQ .......
+E06 | Space Invaders 95 / Attkan Beda     | Taito | 1995 | MC68020 MC68000 ENSONIQ .......
+E08 | Moriguchi Hiroko Quiz Woo! Hoo!     | Taito | 1995 | MC68020 MC68000 ENSONIQ .......
+E10 | Puzzle Bobble 2 / 2 EX              | Taito | 1995 | MC68020 MC68000 ENSONIQ .......
+E11 | Gekirindan                          | Taito | 1995 | MC68020 MC68000 ENSONIQ .......
+E15 | Twin Cobra 2 / Kyukyoku Tiger 2     |Takumi | 1995 | MC68020 MC68000 ENSONIQ .......
+E21 | Bubble Memories                     | Taito | 1995 | MC68020 MC68000 ENSONIQ .......
+E22 | Psychic Force                       | Taito | 1996 | .R3000? ....Z80 .YM2610 .......
+E22 | Psychic Force EX                    | Taito | 1996 | .R3000? ....Z80 .YM2610 .......
+E23 | Side By Side                        | Taito | 1996 | ....... ....... ....... .......
+E24 | Raystorm                            | Taito | 1996 | .R3000? ....... ...ZOOM .......
+E25 | Fighters' Impact                    | Taito | 1996 | .R3000? ....... ...ZOOM .......
+E25 | Fighters' Impact A                  | Taito | 1996 | .R3000? ....... ...ZOOM .......
+E28 | Cleopatra's Fortune                 | Taito | 1996 | MC68020 MC68000 ENSONIQ .......
+E29 | Puzzle Bobble 3                     | Taito | 1996 | MC68020 MC68000 ENSONIQ .......
+E32 | Magical Date                        | Taito | 1996 | .R3000? ....Z80 .YM2610 .......
+E32 | Magical Date EX                     | Taito | 1997 | .R3000? ....Z80 .YM2610 .......
+E36 | Arkanoid Returns                    | Taito | 1997 | MC68020 MC68000 ENSONIQ .......
+E39 | G Darius                            | Taito | 1997 | .R3000? ....... ...ZOOM .......
+E39 | G Darius ver.2                      | Taito | 1997 | .R3000? ....... ...ZOOM .......
+E40 | Kirameki Star Road                  | Taito | 1997 | MC68020 MC68000 ENSONIQ .......
+E46 | Puchi Carat                         | Taito | 1997 | MC68020 MC68000 ENSONIQ .......
+E49 | Puzzle Bobble 4                     | Taito | 1997 | MC68020 MC68000 ENSONIQ .......
+E51 | Pop'n Pop                           | Taito | 1997 | MC68020 MC68000 ENSONIQ .......
+E61 | Landmaker                           | Taito | 1998 | MC68020 MC68000 ENSONIQ .......
+----+-------------------------------------+-------+------+--------------------------------
+
+SETA GAMES - TAITO LICENSED [hardware by Seta]
+
+----+-------------------------------------+-------+------+--------------------------------
+UA0 | Thundercade / Special Force UAG     | Seta  | 1987 | ....... ....... ....... .......
+UA2 | Twin Eagle                          | Seta  | 1988 | ....... ....... ....... .......
+UAE | U.S. Classic Golf                   | Seta  | 1989 | ....... ....... ....... .......
+UA? | CAL.50                              | Seta  | 1989 | ....... ....... ....... .......
+----+-------------------------------------+-------+------+--------------------------------
+
+Information Needed on these:
+
+----+-------------------------------------+-------+------+--------------------------------
+??? | B-Rap Boys                          |Kaneko | 1991 | ....... ....... ....... .......
+??? | Challenge Hitter                    | Taito | 19xx | ....... ....... ....... .......
+??? | Chaos Heat                          | Taito | 1998 | ....... ....... ....... .......
+??? | Chase Bombers                       | Taito | 199x | ....... ....... ....... .......
+??? | Dangerous Curves                    | Taito | 199x | ....... ....... ....... .......
+??? | Dark Mist                           | Seibu | 1986 | ..T5182 ....Z80 .YM2151 .......
+??? | Densha de Go!                       | Taito | 199x | ....... ....... ....... .......
+??? | Densha de Go! EX                    | Taito | 199x | ....... ....... ....... .......
+??? | Densha de Go! 2                     | Taito | 199x | ....... ....... ....... .......
+??? | Densha de Go! 2 EX                  | Taito | 199x | ....... ....... ....... .......
+??? | Double Axle                         | Taito | 19xx | ....... ....... ....... .......
+??? | Electric Yo-Yo                      | Taito | 198x | ....... ....... ....... .......
+??? | Enforce                             | Taito | 1988 | ....... ....... ....... .......
+??? | Galactic Storm                      | Taito | 1992 | ....... ....... ....... .......
+??? | Get Star                            |Toaplan| 1986 | ....... ....... ....... .......
+??? | Gyrodine                            |Toapla?| 1984 | ....... ....... ....... .......
+??? | Hot Smash                           | Taito | 1987 | ....... ....... ....... .......
+??? | Landing Gear                        | Taito | 1995 | ....... ....... ....... .......
+??? | Midnight Landing                    | Taito | 1987 | ....... ....... ....... .......
+??? | New York Captor / Cycle Shooting    | Taito | 1985 | ....... ....... ....... .......
+??? | Parasol Stars (Prototype TG16)      | Taito | 199x | ....... ....... ....... .......
+??? | Power Wheels                        | Taito | 19xx | ....... ....... ....... .......
+??? | Racing Beat                         | Taito | 19xx | ....... ....... ....... .......
+??? | Rally Bike                          |Toaplan| 1988 | MC68000 ....Z80 .YM3812 .......
+??? | Revenge of Daikaiju                 | Taito?| 1986 | ....... ....... ....... .......
+??? | S.R.D.Mission                       | Taito | 1986 | ....... ....... ....... .......
+??? | Storming Party                      | Taito | 1986 | ....Z80 .YM2203 ....... .......
+??? | Super Dead Heat                     | Taito | 1985 | ....... ....... ....... .......
+??? | Super Dead Heat 2                   | Taito | 1986 | ....... ....... ....... .......
+??? | Super Football Champ.               | Taito | 1996 | ....... ....... ....... .......
+??? | Super Ground Effects                | Taito | 1992 | ....... ....... ....... .......
+??? | The First Funky Fighter             |East.T | 1993 | ....... ....... ....... .......
+??? | Touch Down Pass                     | Taito | 19xx | ....... ....... ....... .......
+??? | Van Allen Belt                      | Taito | 1985 | ....... ....... ....... .......
+A?? | Buggy Challenge                     | Taito | 1984 | ..Z80x3 .AY8910 .AY8910 .......
+A?? | Gladiator / Great Gurianos          | Taito | 1986 | ....Z80 ....... ....... .......
+A?? | Great Swordsman                     | Taito | 1984 | ....Z80 ....... ....... .......
+A?? | Renegade                            |Technos| 1986 | ....... ....... ....... .......
+A?? | The Athlete / Dai Undokai           | Taito | 1984 | ....... ....... ....... .......
+A80?| Violent Shooting                    | Taito | 1986 | ....... ....... ....... .......
+B?? | Asuka & Asuka                       | Taito?| 1988 | MC68000 ....Z80 .YM2151 .......
+D?? | Cachat                              | Taito | 1993 | Z80.... .YM2203 ....... .......
+D?? | Euro Football Champ 92              | Taito | 1992 | MC68000 ....Z80 .YM2610 .......
+D?? | Operation Wolf 3                    | Taito | 1994 | MC68000 ....Z80 .YM2610 .......
+E?? | Twin Qix                            | Taito | 1995 | MC68020 MC68000 ENSONIQ .......
+E?? | Side By Side 2                      | Taito | 1998 | ....... ....... ....... .......
+E?? | Ray Crysis                          | Taito | 1998 | ....... ....... ....... .......
+E?? | Operation Tiger                     | Taito | 1998 | ....... ....... ....... .......
+E?? | Psychic Force 2012                  | Taito | 1998 | ....... ....... ....... .......
+----+-------------------------------------+-------+------+--------------------------------
+
+------------
+F2 Board Set
+------------
+
+F2 Motherboard ( Big ) K1100432A, J1100183A
+               (Small) K1100608A, J1100242A
+
+Apr.1989 Final Blow (B82, M4300123A, K1100433A)
+Jul.1989 Don Doko Don (B95, M4300131A, K1100454A, J1100195A)
+Oct.1989 Mega Blast (C11)
+Feb.1990 Quiz Torimonochou (C41, K1100554A)
+Apr.1990 Cameltry (C38, M4300167A, K1100556A)
+Jul.1990 Quiz H.Q. (C53, K1100594A)
+Aug.1990 Thunder Fox (C28, M4300181A, K1100580A)
+Sep.1990 Liquid Kids/Mizubaku Daibouken (C49, K1100593A)
+Nov.1990 MJ-12/Super Space Invaders (C64, M4300195A, K1100616A,J1100248A)
+Jan.1991 Gun Frontier (C71, M4300199A, K1100625A, K1100629A(overseas))
+
+Feb.1991 Growl/Runark (C74, M4300210A, K1100639A)
+Mar.1991 Hat Trick Hero/Euro Football Championship (C80, K11J0646A)
+Mar.1991 Yuu-yu no Quiz de Go!Go! (C83, K11J0652A)
+Apr.1991 Ah Eikou no Koshien (C81, M43J0214A, K11J654A)
+Apr.1991 Ninja Kids (C85, M43J0217A, K11J0659A)
+May.1991 Mahjong Quest (C77, K1100637A, K1100637B)
+Jul.1991 Quiz Quest (C92, K11J0678A)
+Sep.1991 Metal Black (D12)
+Oct.1991 Drift Out (Visco) (M43X0241A, K11X0695A)
+Nov.1991 PuLiRuLa (C98, M43J0225A, K11J0672A)
+Feb.1992 Quiz Chikyu Boueigun (D19, K11J0705A)
+Jul.1992 Dead Connection (D28, K11J0715A)
+Nov.1992 Dinorex (D39, K11J0254A)
+Mar.1993 Quiz Jinsei Gekijou (D48, M43J0262A, K11J0742A)
+Aug.1993 Quiz Crayon Shinchan (D55, K11J0758A)
+Dec.1993 Crayon Shinchan Orato Asobo (D63, M43J0276A, K11J0779A)
+
+Mar.1992 Yes.No. Shinri Tokimeki Chart (Fortune teller) (D20, K11J0706B)
+
+
+Revision History
+----------------
+1.0 Mar 20,1998  Initial Release
+1.1              Add Arkanoid, Jungle Hunt, Jungle King, Mr Do
+1.2              Add Operation Wolf, The Great Swordsman, Wild Western
+1.4 Mar 30,1998  Add Qix board info, Dead Connection
+1.5 Apr  3,1998  Add numeric ROM list
+1.6 Apr  4,1998  Add Birdie King
+1.7 Apr 12,1998  Add board info for Space Seeker
+1.8 Apr 23,1998  Add Moon Shuttle
+1.9 May 19,1998  Add Crazy Balloon, Defender, board info for Alpine Ski
+2.1 Aug 18,1998  Add Ozma Wars
+2.2 Oct  2,1998  Add Return of the Invaders
+2.3 Oct 30,1998  Add Port Man
+2.4 Dec 15,1998  Add Chak N Pop
+2.5 Dec 22,1998  Add U.S. Classic Golf
+2.6 Dec 23,1998  Add Extermination, Battle Shark, correct Top Speed
+2.7 Dec 28,1998  Add Volfied, Violence Fight
+2.8 Jan 20,1999  Add Ninjakun
+2.9 Feb  2,1999  Add Gyrodyne
+3.0 Feb  9,1999  Add Record Breaker
+3.1 Mar  9,1999  Add Grand Champion
+3.2 Apr 26,1999  Add Camel Try
+3.3 May 25,1999  Add Typhoon Gal, Super Chase, Rally Bike
+3.4 Jun 15,1999  Add N.Y. Captor
+3.5 Jul 14,1999  Add Highway Race
+3.6 Jul 31,1999  Add Special Criminal Investigation
+4.2 Feb 17,2000  Add Get Star
+4.3 Jun 7, 2001  Add the Raine game list

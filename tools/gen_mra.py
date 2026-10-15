@@ -53,7 +53,8 @@ SUPPORTED = {
 #   colour flags: [2:0] background pen, [3] inverted colour RAM, [4] RGB palette (else RBG), [5] port 3 bit 2 =
 #     screen red, [7:6] PROM half: 0 first, 1 port 5 bit 5, 2 inverted port 5 bit 5, 3 port 5 bit 6
 #   sound map: 0 invaders board bits, 1 silent, 2 ballbomb, 3 indianbt, 4 indianbtbr, 5 schasercv, 6 rollingc,
-#     7 lrescue (tune speaker only), 8 spcewarla
+#     7 lrescue (invaders board slots, port 5 bit 3 = tune speaker), 8 spcewarla, 10 invrvnge (M6802 + AY-3-8910;
+#     its audiocpu ROMs at index 0 0x8000 (C000) / 0xA000 (E000), AUDIOCPU_REGIONS)
 #   board flags: [0] no watchdog, [5] port 5 bit 4 = screen red (invrvnge)
 FAMILY3 = {
     "invadpt2":   (0, 1, 0x60, 0, 0),
@@ -64,7 +65,7 @@ FAMILY3 = {
     "lrescue":    (0, 1, 0x20, 7, 1),
     "lrescuem2":  (1, 1, 0x20, 7, 1),
     "escmars":    (0, 0, 0x00, 7, 1),
-    "ozmawars":   (1, 1, 0x60, 1, 0),
+    "ozmawars":   (1, 1, 0x60, 0, 0),        # sound bits = invaders board (Taito PV values); port 4 stage loops not modelled
     "ballbomb":   (0, 1, 0x22, 2, 1),
     "polaris":    (14, 4, 0x00, 1, 0),
     "schaser":    (0, 3, 0x00, 1, 0),
@@ -80,12 +81,16 @@ FAMILY3 = {
     "mraker":     (2, 5, 0x00, 1, 1),
     "cane":       (18, 0, 0x00, 1, 0),
     "orbite":     (19, 2, 0x10, 1, 0),
-    "invrvnge":   (0, 1, 0x00, 1, 0x20),     # Zenitone: port 5 bit 4 screen red; 6802 + AY sound not yet (silent)
+    "invrvnge":   (0, 1, 0x00, 10, 0x20),    # Zenitone: port 5 bit 4 screen red; sound board M6802 + AY-3-8910
     "sflush":     (21, 3, 0x00, 1, 0x01),    # MC6800 main CPU, colour RAM at A000, pen 0 blue; MAME: no sound
 }
 for _m, _c in FAMILY3.items():
     SUPPORTED[("8080bw.cpp", _m, "empty_init")] = _c[0]
 SUPPORTED[("8080bw.cpp", "invrvnge", "init_invrvnge")] = 0      # init only decrypts the sound CPU ROM
+
+
+# family 3 machines whose sound CPU ROM loads into index 0 (rtl/mw8080_board.sv u_rom port A)
+AUDIOCPU_REGIONS = {"invrvnge": (-0x4000, 0x10000)}       # C000 -> 0x8000, E000 -> 0xA000
 
 
 def family3(g):
@@ -157,6 +162,22 @@ NAME_OVERRIDE = {"invaders": "Space Invaders"}
 F_VERT, F_ROT90 = 0x10, 0x80
 S_TAITO = 0x01                                          # index 1 byte 2: Taito L-shaped sound board
 TAITO_SOUND_DRIVERS = {"8080bw.cpp"}                   # Taito SV/TV sets and their bootlegs; mw8080bw.cpp = Midway
+# index 1 byte 2 = sound board values (rtl/invaders_sound.sv `board`): 0 Midway, 1 Taito L-shaped, 2 invad2ct board 1,
+# 4 Taito PV, 5 Taito CV. Per 8080bw.cpp machine config, then per set (tools/snd_consts.py RTL_BOARDS).
+SND_BOARD_MACHINE = {"invadpt2": 4, "lrescue": 4, "lrescuem2": 4, "escmars": 4, "ozmawars": 4}
+SND_BOARD_SET = {"sicv": 5, "sicv1": 5,                 # CV board (CVR00002)
+                 "invaddlx": 2}                         # Deluxe: A082-90700-A000 = invad2ct board 1, mono
+
+
+def snd_board(g):
+    if g["drv"] not in TAITO_SOUND_DRIVERS:
+        return 0
+    return SND_BOARD_SET.get(g["name"], SND_BOARD_MACHINE.get(g["machine"], S_TAITO))
+
+
+def dsnd_key(g):
+    """Engine program key (tools/dsnd_boards.py BOARDS): mw8080bw.cpp machine name, 8080bw.cpp "8080bw:<machine>"."""
+    return g["machine"] if g["drv"] == "mw8080bw.cpp" else f'8080bw:{g["machine"]}' if g["drv"] == "8080bw.cpp" else None
 
 # port order on the board: DIP bytes 0-3 and input map bytes 16-47
 PORTS = ["IN0", "IN1", "IN2", "IN3"]
@@ -1003,7 +1024,7 @@ def analog_bytes(g):
 def config_bytes(g, idle, imap):
     """MRA index 1: variant, flags, sound board, ROM decode, idle levels (bytes 4-11), input map, overlay."""
     flags = (F_VERT if g["rot"] in ("ROT90", "ROT270") else 0) | (F_ROT90 if g["rot"] == "ROT90" else 0)
-    sflags = S_TAITO if g["drv"] in TAITO_SOUND_DRIVERS else 0
+    sflags = snd_board(g)
     assert len(idle) <= 8, g["name"]
     # the idle levels repeat <switches default>: MiSTer sends DIP bytes (index 254) only when an MRA has a <dip>
     dec = ROM_DECODE.get(g["init"], 0) | (0x04 if g["name"] in NIBBLE_SETS else 0)
@@ -1054,7 +1075,8 @@ def mra(g, games, segs, build_inputs):
                           for n, b, i, v in dips)
     cfg = config_bytes(g, idle, imap)
     cfg_rows = "\n".join("            " + " ".join(f"{b:02X}" for b in cfg[i:i + 16]) for i in range(0, len(cfg), 16))
-    ds = dsnd_boards.program(g["machine"]) if g["drv"] == "mw8080bw.cpp" else None
+    key = dsnd_key(g)
+    ds = dsnd_boards.program(key) if key else None
     ds_block = "" if ds is None else (
         f"\n    <!-- Index 5: sound board program for the discrete sound engine (tools/dsnd_boards.py) -->\n"
         f"    <rom index=\"5\">\n        <part>\n"
@@ -1169,6 +1191,9 @@ def rom_segments(g, src):
         if f3[1] == 4:
             ignored.discard("user1")
             regions["user1"] = (0x20800, 0x100)
+        if g["machine"] in AUDIOCPU_REGIONS:
+            ignored.discard("audiocpu")
+            regions["audiocpu"] = AUDIOCPU_REGIONS[g["machine"]]
     return place(parse_roms(src, g["name"]), g["name"], frozenset(ignored), regions)
 
 

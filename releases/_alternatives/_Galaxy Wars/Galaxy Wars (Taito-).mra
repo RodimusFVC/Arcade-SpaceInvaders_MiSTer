@@ -50,7 +50,7 @@
     <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
     <rom index="1">
         <part>
-            00 10 01 00 40 89 01 FF 00 00 00 00 01 60 00 00
+            00 10 04 00 40 89 01 FF 00 00 00 00 01 60 00 00
             00 00 00 00 00 00 00 00 11 14 13 00 05 03 04 00
             00 00 00 00 05 03 04 00 00 00 00 00 00 00 00 00
             00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00

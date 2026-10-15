@@ -4,7 +4,16 @@ Circuit descriptions follow MAME src/mame/midw8080/mw8080bw_a.cpp (Derrick Renau
 board, and the board schematics where it does not. program(machine) -> MRA index 5 bytes, or None.
 Engine sources: LATCH1-4 = the board's sound latches 1-4 (FAMILY4 S1-S4 in tools/gen_mra.py), MISC bit 0 = VBLANK.
 """
-from dsnd import (Board, LATCH1, LATCH2, LATCH3, LATCH4, FN_NONE, FN_TRG0, FN_TRG1, FN_TRG2, q, ONE, FS)
+from dsnd import (Board, LATCH1, LATCH2, LATCH3, LATCH4, FN_NONE, FN_TRG0, FN_TRG1, FN_TRG2, q, ONE, FS, rc_exp)
+from dsnd_gunfight import gunfight
+from dsnd_spcenctr import spcenctr
+from dsnd_zzzap import zzzap, lagunar
+from dsnd_blueshrk import blueshrk
+from dsnd_phantom2 import phantom2
+from dsnd_m4 import m4
+from dsnd_seawolf import seawolf
+from dsnd_maze import maze as maze_hw     # schematic-validated 2026-10-14; maze() below = MAME version
+from dsnd_boothill import boothill as boothill_hw     # schematic-validated 2026-10-14; boothill() below = MAME version
 
 K, M_, U = 1e3, 1e6, 1e-6
 OUT_SCALE = 11000 * 0.25 / 32768          # MAME: DISCRETE_OUTPUT gain x the 0.25 route, 16-bit full scale
@@ -415,9 +424,85 @@ def maze():
     return b.finish()
 
 
-BOARDS = {"clowns": clowns, "dogpatch": dogpatch, "boothill": boothill, "tornbase": tornbase, "desertgu": desertgu,
-          "bowler": bowler, "shuffle": shuffle, "dplay": dplay, "checkmat": checkmat, "maze": maze,
-          "spacwalk": spacwalk}
+def spcenctr_mame():
+    """Space Encounters as MAME models it (reference for comparisons; the board program is dsnd_spcenctr.spcenctr,
+    from the schematic): P1 = S1 (D0 sound on, D2 crash), P2 = S2 (D4 explosion, D5 player shot), P3 = S3 (D1 enemy
+    ship shot, D4 bonus, D5 SN76477 enable, active low). Discrete out 20000 x route 0.45, SN76477 0.20."""
+    b = Board("spcenctr_mame")
+    b.lfsr_noise("noise", 7515, 12.0, 6.0)
+    # enemy ship shot: Norton integrator (E1) sweeps a Norton VCO; D1 amp, Norton band pass, R116 / C104 high pass
+    b.op_amp_norton_cap("es_e", (LATCH3, 1), 510 * K, 2.2 * M_, 2.2 * M_, 0.1 * U, 12)
+    b.op_amp_vco3_norton_exact("es_o", "es_e", 560 * K, 7.5 * K, 22 * K, 47 * K, 100 * K, 0.0022 * U, 12)
+    b.op_amp_norton_sqw("es_d", "es_o", 11.5, "es_e", 100 * K, 100 * K, 2.7 * M_, 100 * K, 12)
+    b.op_amp_filt_bp1m_norton("es_f", "es_d", 100 * K, 4.3 * M_, 2.2 * M_, 0.001 * U, 0.001 * U, 12, r2=10 * K)
+    b.crfilter("es", "es_f", 1.8 * K, 0.1 * U)
+    # player shot: Norton one-shot -> ramp (E1, C502) less the D502 drop; filtered noise + ramp drive a Norton VCO,
+    # C1 amp, VCA
+    b.op_amp_1sht_norton("ps_1", (LATCH2, 5), 12.0, 4.7 * M_, 100 * K, 1 * M_, 1 * M_, 2.2 * M_, 1 * U, 470e-12, 12)
+    b.op_amp_norton_cap("ps_e", "ps_1", 10 * K, 1.5 * M_, 0, 0.22 * U, 12)
+    b.op("LD", "ps_e"); b.op("ADDI", imm=q(-0.5)); b.op("MAXI", imm=0); b.op("MINI", imm=q(12)); b.op("ST", "ps_r")
+    b.crfilter("ps_n", "noise", 1 * M_ + 330 * K, 0.1 * U)           # x R509 / (R507 + R509) folded into the VCO
+    b.op_amp_vco3_norton_exact("ps_o", "ps_n", 1 / (1 / (1 * M_) + 1 / (330 * K)) + 1.5 * M_, 1 * M_, 560 * K,
+                               2.7 * M_, 1 * M_, 330e-12, 12, vmod2="ps_r", r6=4.7 * M_, r7=3.3 * M_,
+                               vm1_gain=330 / 1330, vm1_max=12, vm2_max=11.5)
+    b.op_amp_norton_sqw("ps_a", "ps_o", 11.5, "ps_r", 560 * K, 470 * K, 2.7 * M_, 560 * K, 12)
+    b.tvca("ps", dict(r1=2.7 * M_, r2=560 * K, r4=560 * K, r5=1 * K, r7=560 * K, c1=1 * U, v1=12, vP=12,
+                      f2=FN_TRG0), trig=(("bit", LATCH2, 5), 0, 0), inp=("ps_a", 0.0))
+    # crash: noise VCA, band pass around the 6.8 V filter DC (SPICE-derived in MAME), clamped
+    b.tvca("cr_v", dict(r1=2.7 * M_, r2=470 * K, r4=470 * K, r5=1 * K, r7=470 * K, c1=2.2 * U, v1=5, vP=12,
+                        f2=FN_TRG0), trig=(("bit", LATCH1, 2), 0, 0), inp=("noise", 0.0))
+    b.op("LD", "cr_v"); b.op("ADDI", imm=q(-6.8)); b.op("ST", "cr_c")
+    b.filter2("cr_f", "cr_c", 130, 1.0 / 8, "bp")
+    b.op("LD", "cr_f"); b.op("MULI", imm=q(6)); b.op("ADDI", imm=q(6.8)); b.op("MAXI", imm=0)
+    b.op("MINI", imm=q(12 - 0.5)); b.op("ST", "cr")
+    # explosion: noise VCA, two RC low passes
+    b.tvca("ex_v", dict(r1=2.7 * M_, r2=680 * K, r4=680 * K, r5=1 * K, r7=680 * K, c1=2.2 * U, v1=12, vP=12,
+                        f2=FN_TRG0), trig=(("bit", LATCH2, 4), 0, 0), inp=("noise", 0.0))
+    b.rcfilter("ex_f", "ex_v", 1.8 * K, 0.22 * U)
+    b.rcfilter("ex", "ex_f", 1.8 * K + 3.6 * K, 0.22 * U)
+    # bonus: two 555s held in reset by the enable, ANDed (TTL level)
+    b.ne555_astable2(("bn",), (LATCH3, 4), [(1 * K, 27 * K, 0.047 * U), (100 * K, 47 * K, 1 * U)], 3.4)
+    # SN76477 (P3 D5 = its ENABLE pin, high = off), MAME route 0.20
+    b.sn76477_slf_vco("sn", (LATCH3, 5), 150 * K, 1 * U, 56 * K, 0.047 * U, 56 * K, 10 * K, scale=0.20)
+    # resistor mixer (MAME DISC_MIXER_IS_RESISTOR), weights x the output scale; screech / wind inputs are 0 V
+    os = 20000 * 0.45 / 32768                         # DISCRETE_OUTPUT 20000, MAME route 0.45
+    rs = [15 * K, 15 * K, 22 * K, 3.6 * K, 1.8 * K + 3.6 * K + 4.7 * K, 27 * K, 27 * K]
+    w = [os / r / sum(1 / x for x in rs) for r in rs]
+    for src, k, c, g in (("ps", 1, 0.001 * U, None), ("cr", 3, 1 * U, "F")):   # input coupling caps: high pass
+        b.kreg(f"mix_k{k}", rc_exp(rs[k] * c), g)    # C505 (15 us, k 0.75) fixed: a scaled k clamps at 1.0 = silence
+        b.op("LD", src); b.op("RCM", f"mix_hp{k}", b.r(f"mix_k{k}")); b.op("LD", src); b.op("SUB", f"mix_hp{k}")
+        if k == 1:
+            b.op("ST", "mix_t1")
+    b.op("MULI", imm=q(w[3]))
+    b.op("MACI", "mix_t1", imm=q(w[1]))
+    b.op("MACI", "es", imm=q(w[0]))
+    b.op("MACI", "ex", imm=q(w[4]))
+    b.op("MACI", "bn", imm=q(w[5]))
+    b.op("ST", "mix_s")
+    b.kreg("mix_ka", rc_exp(100 * K * 1 * U), "F")    # C900 (cAmp)
+    b.op("RCM", "mix_amp", b.r("mix_ka"))
+    b.op("LD", "mix_s")
+    b.op("SUB", "mix_amp")
+    b.op("ADD", "sn")
+    b.op("BIT", 1, b.src(LATCH1, 0))                  # D0 low mutes the board (MAME system_mute)
+    b.op("LDIF", imm=0)
+    b.op("OUT")
+    return b.finish()
+
+
+from dsnd_desertgu import desertgu as desertgu_hw     # imported here (it uses helpers above); schematic-validated 2026-10-14 (+ bottle / creature / Road Runner / beep-beep)
+from dsnd_dplay import dplay as dplay_hw     # schematic-validated 2026-10-15; dplay() above = MAME version
+from dsnd_clowns import clowns as _clowns_sch     # schematic-validated 2026-10-15 (+ springboard miss); clowns() above = MAME version
+clowns_hw = lambda: _clowns_sch(out_gain=0.72)      # K1 amp's real swing at max R605 (MAME's rF overstates it 3x)
+from dsnd_tornbase import tornbase as tornbase_hw     # schematic-validated 2026-10-15 (+ siren / whistle / cheer, LM380 tone network); tornbase() above = MAME version
+from dsnd_bowler import bowler as bowler_hw     # schematic 2026-10-15: all six sounds; pin hits / burst / chimes need ports 8-10 / 15 routed (Taito batch task g)
+from dsnd_polaris import polaris     # 8080bw.cpp (Taito), from MAME polaris_discrete 2026-10-15; music needs LATCH3 = port-0 latch (Taito batch RTL)
+from dsnd_schaser import schaser, crashrd     # 8080bw.cpp (Taito), from MAME 2026-10-15 (exact SN76477 noise)
+from dsnd_cane import cane     # 8080bw.cpp prototype, from MAME CANE_AUDIO 2026-10-15; SN uses the port-selected mixer (MAME's is stuck: bug)
+from dsnd_gmissile import gmissile as gmissile_hw     # schematic 2026-10-15: 8 voices + pan ladders + summers (MAME: 2 samples only)
+BOARDS = {"clowns": clowns_hw, "dogpatch": dogpatch, "boothill": boothill_hw, "tornbase": tornbase_hw, "desertgu": desertgu_hw,
+          "bowler": bowler_hw, "shuffle": shuffle, "dplay": dplay_hw, "checkmat": checkmat, "maze": maze_hw,
+          "spacwalk": spacwalk, "gunfight": gunfight, "spcenctr": spcenctr, "zzzap": zzzap, "lagunar": lagunar, "blueshrk": blueshrk, "phantom2": phantom2, "m4": m4, "seawolf": seawolf, "8080bw:polaris": polaris, "8080bw:schaser": schaser, "8080bw:crashrd": crashrd, "8080bw:cane": cane, "gmissile": gmissile_hw}
 
 
 def program(machine):
