@@ -89,7 +89,7 @@ for _m, _c in FAMILY3.items():
 SUPPORTED[("8080bw.cpp", "invrvnge", "init_invrvnge")] = 0      # init only decrypts the sound CPU ROM
 
 
-# family 3 machines whose sound CPU ROM loads into index 0 (rtl/mw8080_board.sv u_rom port A)
+# family 3 machines whose sound CPU ROM loads into index 0 (shared ROM block rom0 port A, Arcade-SpaceInvaders.sv)
 AUDIOCPU_REGIONS = {"invrvnge": (-0x4000, 0x10000)}       # C000 -> 0x8000, E000 -> 0xA000
 
 
@@ -696,6 +696,75 @@ def parse_hiscores(path):
     return out
 
 
+# hiscore.v (Arcade-SpaceInvaders.sv: CFG_LENGTHWIDTH 2, max 16 entries / 256 bytes) header after START_WAIT: CHECK_WAIT
+# 00FF, CHECK_HOLD 2, WRITE_HOLD 2, WRITE_REPEATCOUNT 1, WRITE_REPEATWAIT 1111, PAUSEPAD 0, CHANGEMASK 0 (as Galaxian)
+HISCORE_HEADER_TAIL = "00 FF 00 02 00 02 00 01 11 11 00 00"
+HISCORES = parse_hiscores(HISCORE_DAT) if HISCORE_DAT.exists() else {}
+# the hiscore port is video RAM port B (mw8080_board, 2000-3FFF): RAM outside it, or the Zaccaria board (no port) = none
+HISCORE_SKIP = {"darthvdr", "shuttlei", "skylove"}
+HISCORE_DRV_SKIP = {"zac1b1120.cpp"}
+# START_WAIT = table init frame + 2, measured in MAME (tools/hs_measure.py, 2026-10-16): last work RAM change, not before
+# the boot write burst ends; attract redraws of the video RAM digits and live counters ignored. Core boots in step with MAME
+HISCORE_INIT_FRAME = {"280zzzap": 1, "alieninv": 0, "alieninvp2": 0, "attackfc": 12, "ballbomb": 8, "blueshrk": 0,
+                      "blueshrkmr": 0, "blueshrkmr2": 0, "bowler": 0, "clowns": 1, "clowns1": 1, "cosmicin": 0,
+                      "cosmicm2": 0, "cosmicmo": 0, "cosmo": 10, "crashrd": 28, "desertgu": 1, "desterth": 11,
+                      "escmars": 12, "galactic": 0, "galmonst": 0, "galxwars": 0, "galxwars2": 0, "galxwarst": 0,
+                      "galxwarst2": 0, "indianbt": 0, "indianbtbr": 0, "intruder": 22, "invaddlx": 0, "invader4": 0,
+                      "invaderl": 0, "invadernc": 0, "invaders": 0, "invadersem": 0, "invadpt2": 0, "invadpt2a": 0,
+                      "invadpt2br": 0, "invadrmr": 0, "invasion": 0, "invasiona": 0, "invasiona2": 0, "invasionb": 0,
+                      "invasionrz": 0, "invrvnge": 0, "invrvngea": 0, "invrvngeb": 0, "invrvngedu": 0,
+                      "invrvngegw": 0, "jspecter": 0, "jspecter2": 0, "lagunar": 1, "laser": 16, "lrescue": 11,
+                      "lrescuem": 11, "lrescuem2": 11, "lupin3": 7, "mlander": 0, "moonbase": 0, "moonbasea": 0,
+                      "ozmawars": 9, "ozmawars2": 9, "ozmawarsmr": 9, "polaris": 0, "polarisa": 0, "polarisb": 0,
+                      "polarisbr": 0, "polariso": 0, "resclunar": 33, "rollingc": 1, "schaser": 28, "schasera": 28,
+                      "schaserb": 28, "schaserc": 28, "schasercv": 0, "searthie": 0, "searthin": 0, "searthina": 0,
+                      "seawolf": 7, "seawolfo": 7, "sicv": 0, "sicv1": 0, "sinvemag": 0, "sinvzen": 0, "sisv": 0,
+                      "sisv2": 0, "sisv3": 0, "sitv": 0, "sitv1": 0, "solfight": 9, "spaceat2": 0, "spaceatt": 0,
+                      "spaceatt2k": 0, "spaceattbp": 0, "spacecom": 0, "spaceph": 9, "spacerng": 0, "spacewr3": 8,
+                      "spacmiss": 0, "spceking": 0, "spcenctr": 6, "spcewarl": 16, "spcewarla": 8, "spcewars": 8,
+                      "spclaser": 22, "starw": 0, "starw1": 0, "steelwkr": 0, "superinv": 0, "supinvsion": 0,
+                      "swipeout": 8, "ultrainv": 0, "yosakdon": 8, "yosakdona": 8}
+HISCORE_UNMEASURED, HISCORE_REJECTED = [], []
+CLK_HZ, FRAME_HZ = 39_936_000, 39_936_000 / 8 / 320 / 262      # hiscore clock (CLK_40M), MW8080 frame
+
+
+def hiscore_xml(g):
+    lines = HISCORES.get(g["name"])
+    if not lines or g["name"] in HISCORE_SKIP or g["drv"] in HISCORE_DRV_SKIP:
+        return ""
+    ents = []
+    for line in lines:
+        f = line.split(",")
+        a, n = int(f[2], 16), int(f[3], 16)
+        if f[0] != "@:maincpu" or f[1] != "program" or not 0x2000 <= a < a + n <= 0x4000:
+            HISCORE_REJECTED.append(g["name"])
+            return ""
+        ents.append((a, n, int(f[4], 16), int(f[5], 16)))
+    total = sum(n for _, n, _, _ in ents)
+    if len(ents) > 16 or total > 256:
+        HISCORE_REJECTED.append(g["name"])
+        return ""
+    ref = next((k for k in (g["name"], g["parent"]) if k in HISCORE_INIT_FRAME and HISCORES.get(k) == lines), None)
+    if ref is None:
+        HISCORE_UNMEASURED.append(g["name"])        # tools/hs_measure.py <set>, then add it above
+        return ""
+    wait = round((HISCORE_INIT_FRAME[ref] + 2) / FRAME_HZ * CLK_HZ)
+    header = " ".join(f"{b:02X}" for b in wait.to_bytes(4, "big")) + " " + HISCORE_HEADER_TAIL
+    rows = "\n".join(f"            00 00 {a >> 8:02X} {a & 0xFF:02X} {n >> 8:02X} {n & 0xFF:02X} {s:02X} {e:02X}"
+                     for a, n, s, e in ents)
+    return f"""
+    <!-- Index 3: hiscore config (MAME hiscore.dat), index 4: saved scores -->
+    <rom index="3" md5="none">
+        <part>
+            {header}
+{rows}
+        </part>
+    </rom>
+    <rom index="4"></rom>
+    <nvram index="4" size="{total}"></nvram>
+"""
+
+
 def board_cfg(g):
     return SUPPORTED.get((g["drv"], g["machine"], g["init"]))
 
@@ -1127,7 +1196,7 @@ def mra(g, games, segs, build_inputs):
 {cfg_rows}
         </part>
     </rom>
-{ds_block}{art_xml(art, g["rot"]) if art else ""}
+{hiscore_xml(g)}{ds_block}{art_xml(art, g["rot"]) if art else ""}
     <remark>{remark(g)}</remark>
     <mratimestamp>20260930000000</mratimestamp>
 </misterromdescription>
@@ -1219,6 +1288,10 @@ def main():
                 if wanted:
                     raise
                 print(f"SKIPPED {name}: {e}")
+    if HISCORE_UNMEASURED:
+        print("hiscore not measured yet (no entry written):", " ".join(HISCORE_UNMEASURED))
+    if HISCORE_REJECTED:
+        print("hiscore.dat entry outside the hiscore port / limits (no entry written):", " ".join(HISCORE_REJECTED))
     missing = wanted - set(all_games)
     if missing:
         raise SystemExit(f"unknown sets: {sorted(missing)}")

@@ -62,6 +62,18 @@
         </part>
     </rom>
 
+    <!-- Index 3: hiscore config (MAME hiscore.dat), index 4: saved scores -->
+    <rom index="3" md5="none">
+        <part>
+            00 85 0C 00 00 FF 00 02 00 02 00 01 11 11 00 00
+            00 00 20 DB 00 01 0A 0A
+            00 00 20 CF 00 0A 1B 1B
+            00 00 20 F4 00 02 00 05
+        </part>
+    </rom>
+    <rom index="4"></rom>
+    <nvram index="4" size="13"></nvram>
+
     <!-- Index 6: MAME artwork, layout table (from default.lay) + PNGs from the artwork zip, as-is -->
     <!-- OSD Artwork: View 1 = Upright Artwork, View 2 = TLPU Artwork -->
     <rom index="6" md5="none" zip="/mame-artwork/lrescue.zip">

@@ -74,6 +74,11 @@ module mw8080_board
     input  logic  [7:0] ioctl_dout,
     input  logic        ioctl_wr0,
 
+    output logic [16:0] rom0_a,         // shared ROM block rom0 in the top (MRA index 0 0x00000-0x1FFFF): CPU program
+    input  logic  [7:0] rom0_d,
+    output logic [16:0] rom0b_a,        // its second read port: high-nibble chips (spaceattbp), invrvnge sound ROMs
+    input  logic  [7:0] rom0b_d,
+
     input  logic        crt_flip,
     input  logic signed [3:0] h_adj,   // CRT position: HSYNC moved 2 pixels per step
     input  logic signed [3:0] v_adj,   //               VSYNC moved 1 line per step
@@ -221,26 +226,33 @@ logic        m68_irq = 1'b0;
 logic  [7:0] irv_di;
 logic        irv_nmi;
 
-jt680x u_m68
+/////////////////////////////  Shared CPU / sound chip pool  /////////////////////////////
+
+// Only one of these sets runs at a time, so they share one MC6800 (rtl/chip_pool_pkg.sv). The 8080 (u_cpu above)
+// keeps its own pins: every other set uses it. rst is on the bus: the watchdog resets it, other sets hold it in reset.
+// m6800_0: Straight Flush main CPU (variant 21), Invader's Revenge sound CPU (sound map 10)
+chip_pool_pkg::m6800_i_t sfl_m6800_0_i, irv_m6800_0_i, m6800_0_i;
+chip_pool_pkg::m6800_o_t m6800_0_o;
+assign m6800_0_i = v_irv ? irv_m6800_0_i : sfl_m6800_0_i;
+
+assign sfl_m6800_0_i.rst = ~rst_n | ~v_sfl;  assign sfl_m6800_0_i.cen = m68_cen;  assign sfl_m6800_0_i.din = cpu_di;
+assign sfl_m6800_0_i.irq = m68_irq & v_sfl;  assign sfl_m6800_0_i.nmi = 1'b0;
+assign irv_m6800_0_i.rst = ~rst_n;           assign irv_m6800_0_i.cen = m68_cen;  assign irv_m6800_0_i.din = irv_di;
+assign irv_m6800_0_i.irq = 1'b0;             assign irv_m6800_0_i.nmi = irv_nmi;
+
+wire [15:0] m6800_0_a;
+wire  [7:0] m6800_0_do;
+wire        m6800_0_wr;
+
+jt680x m6800_0
 (
-    .rst(~rst_n | ~m68_on),
-    .clk(clk),
-    .cen(m68_cen),
-    .wr(m68_wr),
-    .addr(m68_a),
-    .din(v_irv ? irv_di : cpu_di),
-    .dout(m68_do),
-    .ext_halt(1'b0),
-    .ba(),
-    .irq(m68_irq & v_sfl),
-    .nmi(irv_nmi & v_irv),
-    .irq_icf(1'b0),
-    .irq_ocf(1'b0),
-    .irq_tof(1'b0),
-    .irq_sci(1'b0),
-    .irq_cmf(1'b0),
-    .irq2(1'b0)
+    .rst(m6800_0_i.rst), .clk(clk), .cen(m6800_0_i.cen), .wr(m6800_0_wr), .addr(m6800_0_a), .din(m6800_0_i.din),
+    .dout(m6800_0_do), .ext_halt(1'b0), .ba(), .irq(m6800_0_i.irq), .nmi(m6800_0_i.nmi),
+    .irq_icf(1'b0), .irq_ocf(1'b0), .irq_tof(1'b0), .irq_sci(1'b0), .irq_cmf(1'b0), .irq2(1'b0)
 );
+
+assign m6800_0_o.a = m6800_0_a;  assign m6800_0_o.dout = m6800_0_do;  assign m6800_0_o.wr = m6800_0_wr;
+assign m68_a = m6800_0_o.a;      assign m68_do = m6800_0_o.dout;      assign m68_wr = m6800_0_o.wr;
 
 logic [15:0] wl_a = 16'd0, cmt_a = 16'd0;
 logic  [7:0] wl_d = 8'd0, cmt_d = 8'd0;
@@ -391,25 +403,14 @@ wire [16:0] rom_ra = v_imul ? {im_i[16], im_i[15], im_i[11], im_i[12], im_i[13],
 wire  [7:0] rom_q = v_imul     ? {rom_raw[0], rom_raw[6], rom_raw[5], rom_raw[7], rom_raw[4], rom_raw[3], rom_raw[1], rom_raw[2]} :
                    rom_dec[2] ? {rom_hi[3:0], rom_raw[3:0]} :
                                 rom_raw;
-wire        rom_dl = ioctl_wr0 && ioctl_addr < 25'h20000;
+wire [16:0] irv_ra = {3'b010, m68_a[13], 2'b00, m68_a[10:0]};   // invrvnge sound ROM: C000 -> 0x8000, E000 -> 0xA000
 
-dpram_dc #(.widthad_a(17)) u_rom
-(
-    .clock_a(clk),
-    .address_a(reset ? ioctl_addr[16:0] : v_irv ? irv_ra : rom_ra | 17'h10000),   // download port; at run time the
-                                                                 // high-nibble chip, or the invrvnge sound ROMs
-    .data_a(ioctl_dout),
-    .wren_a(rom_dl),
-    .q_a(rom_hi),
-    .byteena_a(1'b1),
-
-    .clock_b(clk),
-    .address_b(rom_ra),
-    .data_b(8'd0),
-    .wren_b(1'b0),
-    .q_b(rom_raw),
-    .byteena_b(1'b1)
-);
+// the ROM is the shared block rom0 in the top (loaded there): port B = program, port A (the download port, a second
+// read port at run time) = the high-nibble chip, or the invrvnge sound ROMs
+assign rom0_a  = rom_ra;
+assign rom_raw = rom0_d;
+assign rom0b_a = v_irv ? irv_ra : rom_ra | 17'h10000;
+assign rom_hi  = rom0b_d;
 
 // ---------------------------------------------------------------- shifter (MB14241) and I/O
 
@@ -1175,13 +1176,12 @@ always_ff @(posedge clk) begin
     end
 end
 
-// invrvnge sound board (MAME invrvnge_state::sound_map): M6802 (u_m68) with its 128 bytes of internal RAM at
+// invrvnge sound board (MAME invrvnge_state::sound_map): M6802 (pool m6800_0) with its 128 bytes of internal RAM at
 // 0000-007F; A001 AY data read, A002 AY data write, A003 AY address write; ROM C000-C7FF and E000-E7FF, each
 // mirrored to 2000 bytes (index 0 0x8000 / 0xA000), D3 / D4 swapped (MAME init_invrvnge), decoded on the read path.
 // The AY is clocked by E; its port A reads the port 3 latch >> 1 (the CPU polls it). A 4040 on E drives NMI:
 // MAME toggles the line at E / 256, so NMI edges come at E / 512 = 1953 Hz (MAME's comment names Q8 = E / 256).
 localparam IRV_NMI_BIT = 8;                               // counter bit on E: 8 = MAME's 1953 Hz, 7 = 3906 Hz
-wire  [16:0] irv_ra = {2'b01, m68_a[13], 3'b000, m68_a[10:0]};
 wire   [7:0] irv_rom = {rom_hi[7:5], rom_hi[3], rom_hi[4], rom_hi[2:0]};
 logic  [7:0] irv_ram_q, ay_dout;
 logic  [3:0] ay_reg = 4'd0;
@@ -1256,8 +1256,9 @@ jt49 u_ay
     .IOB_out()
 );
 
-// AY output: DC removed by a 1-pole high pass (4.9 Hz), gain set against MAME (route 0.75)
-localparam IRV_GAIN = 24;
+// AY output: DC removed by a 1-pole high pass (4.9 Hz); gain = MAME's gameplay level (RMS 7563 over coin / start /
+// first wave, verilator/jt680x_timing + MAME tap 2026-10-15); 3 channels at full volume peak ~ +-26.7k
+localparam IRV_GAIN = 70;
 logic signed [26:0] irv_dc = 27'sd0;                     // tau = 2^15 E = 33 ms (4.9 Hz)
 wire  signed [11:0] irv_x  = $signed({2'b00, ay_snd}) - $signed(irv_dc[26:15]);
 always_ff @(posedge clk) if (irv_ecen) irv_dc <= irv_dc + {{15{irv_x[11]}}, irv_x};
@@ -1301,7 +1302,8 @@ assign audio_r = smap == 8'd9 ? board2_snd : audio;
 wire tune_bit = (variant == 8'd3 || smap == 8'd8) ? snd1[4] : smap == 8'd7 ? snd2[3] & snd1[5] :
                 smap == 8'd5 ? snd2[0] : 1'b0;
 wire signed [16:0] tune = tune_bit ? 17'sd6000 : 17'sd0;
-wire signed [16:0] mix  = (v_irv ? irv_snd : board_snd) + tune;
+wire signed [15:0] snd_src = v_irv ? irv_snd : board_snd;        // invrvnge: its own sound board
+wire signed [16:0] mix  = snd_src + tune;
 assign audio = mix > 17'sd32767 ? 16'sd32767 : 16'(mix);
 
 endmodule

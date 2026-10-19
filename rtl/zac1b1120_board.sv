@@ -28,7 +28,7 @@
 // one output pixel per master clock: 908 x 312 total, 720 x 256 visible (MAME set_raw). The character background
 // runs at master / 3 (240 visible pixels), the S2636 objects at master / 4 (227 PVI clocks per line). The S2650 runs
 // at master / 16 with one bus cycle per 3 of its clocks: one ack every 48 master clocks.
-// MRA index 0: program ROM 0000-17FF, character ROM (gfx1) at 2000-23FF.
+// MRA index 0: program ROM 0000-17FF, character ROM (gfx1) at 2000-23FF, read from the shared ROM block rom0 in the top.
 
 module zac1b1120_board
 (
@@ -42,9 +42,10 @@ module zac1b1120_board
     input  logic  [7:0] in2,            // 1E82
     input  logic  [7:0] in3,            // 1E85
 
-    input  logic [24:0] ioctl_addr,
-    input  logic  [7:0] ioctl_dout,
-    input  logic        ioctl_wr0,
+    output logic [16:0] rom0_a,         // shared ROM block rom0 in the top (MRA index 0, loaded there): program ROM
+    input  logic  [7:0] rom0_d,
+    output logic [16:0] rom0b_a,        // its second read port: character ROM
+    input  logic  [7:0] rom0b_d,
 
     input  logic signed [3:0] h_adj,   // CRT position: HSYNC moved 4 counts per step
     input  logic signed [3:0] v_adj,   //               VSYNC moved 1 line per step
@@ -164,19 +165,11 @@ logic [7:0] rom_q, gfx_q, vram_q, vram_vq, ram_q, pvi_q;
 logic [9:0] vram_va;
 logic [9:0] gfx_va;
 
-dpram_dc #(.widthad_a(13)) u_rom
-(
-    .clock_a(clk), .address_a(ioctl_addr[12:0]), .data_a(ioctl_dout),
-    .wren_a(ioctl_wr0 && ioctl_addr < 25'h1800), .q_a(), .byteena_a(1'b1),
-    .clock_b(clk), .address_b(ba), .data_b(8'd0), .wren_b(1'b0), .q_b(rom_q), .byteena_b(1'b1)
-);
-
-dpram_dc #(.widthad_a(10)) u_gfx
-(
-    .clock_a(clk), .address_a(ioctl_addr[9:0]), .data_a(ioctl_dout),
-    .wren_a(ioctl_wr0 && ioctl_addr[24:10] == 15'h0008), .q_a(), .byteena_a(1'b1),
-    .clock_b(clk), .address_b(gfx_va), .data_b(8'd0), .wren_b(1'b0), .q_b(gfx_q), .byteena_b(1'b1)
-);
+// program ROM (index 0 0000-17FF) on rom0 port B, character ROM (index 0 2000-23FF) on its second read port
+assign rom0_a  = {4'd0, ba};
+assign rom_q   = rom0_d;
+assign rom0b_a = {7'h08, gfx_va};
+assign gfx_q   = rom0b_d;
 
 dpram_dc #(.widthad_a(10)) u_vram
 (

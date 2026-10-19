@@ -639,6 +639,23 @@ arcade_video #(720,24) arcade_video                 // Zaccaria: 720 master cloc
 	.fx(status[18:16])
 );
 
+/////////////////////////////  Shared ROM blocks  /////////////////////////////
+
+// rom0: MRA index 0 0x00000-0x1FFFF (128K), stored as loaded for both boards (the variant arrives after the ROMs).
+// 8080 board: CPU program on port B; port A = high-nibble chips (spaceattbp) / invrvnge sound ROMs.
+// Zaccaria board: program ROM 0000-17FF on port B; port A = character ROM 2000-23FF.
+// Port A loads the block during download and is the second read port otherwise.
+wire        load_rom0 = ioctl_wr && ioctl_index == 8'd0 && ioctl_addr < 25'h20000;
+wire [16:0] b8_r0a, b8_r0b_a, z_r0a, z_r0b_a;
+wire  [7:0] rom0_d, rom0b_d;
+
+dpram_dc #(.widthad_a(17)) rom0
+(
+	.clock_a(CLK_40M), .address_a(load_rom0 ? ioctl_addr[16:0] : zac ? z_r0b_a : b8_r0b_a), .data_a(ioctl_dout),
+	.wren_a(load_rom0), .q_a(rom0b_d), .byteena_a(1'b1),
+	.clock_b(CLK_40M), .address_b(zac ? z_r0a : b8_r0a), .data_b(8'd0), .wren_b(1'b0), .q_b(rom0_d), .byteena_b(1'b1)
+);
+
 ///////////////                 Board                  ////////////////
 
 mw8080_board board
@@ -664,6 +681,11 @@ mw8080_board board
 	.ioctl_addr(ioctl_addr),
 	.ioctl_dout(ioctl_dout),
 	.ioctl_wr0(ioctl_wr & (ioctl_index == 8'd0)),
+
+	.rom0_a(b8_r0a),
+	.rom0_d(rom0_d),
+	.rom0b_a(b8_r0b_a),
+	.rom0b_d(rom0b_d),
 
 	.crt_flip(status[22]),
 	.h_adj(status[30:27]),
@@ -706,9 +728,10 @@ zac1b1120_board zboard
 	.in2(in_port[2]),
 	.in3(in_port[3]),
 
-	.ioctl_addr(ioctl_addr),
-	.ioctl_dout(ioctl_dout),
-	.ioctl_wr0(ioctl_wr & (ioctl_index == 8'd0)),
+	.rom0_a(z_r0a),
+	.rom0_d(rom0_d),
+	.rom0b_a(z_r0b_a),
+	.rom0b_d(rom0b_d),
 
 	.h_adj(status[30:27]),
 	.v_adj(status[34:31]),

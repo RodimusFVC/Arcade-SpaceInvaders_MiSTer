@@ -1,5 +1,6 @@
 set_global_assignment -name VHDL_INPUT_VERSION VHDL_2008
 
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/chip_pool_pkg.sv
 set_global_assignment -name SYSTEMVERILOG_FILE Arcade-SpaceInvaders.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/mw8080_board.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/invaders_sound.sv
