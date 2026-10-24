@@ -1,0 +1,196 @@
+<misterromdescription>
+    <name>Space Invaders (CV Version, Larger Roms)</name>
+    <region>World</region>
+    <homebrew>no</homebrew>
+    <bootleg>no</bootleg>
+    <version></version>
+    <alternative></alternative>
+    <platform></platform>
+    <series>Space Invaders / Space Invaders M</series>
+    <year>1979</year>
+    <manufacturer>Taito</manufacturer>
+    <category>Shooter</category>
+
+    <setname>sicv</setname>
+    <parent>invaders</parent>
+    <mameversion>0289</mameversion>
+    <rbf>SpaceInvaders</rbf>
+    <about></about>
+
+    <resolution>15kHz</resolution>
+    <rotation>vertical (ccw)</rotation>
+    <flip>yes</flip>
+
+    <players>2 (alternating)</players>
+    <joystick>2-way horizontal</joystick>
+    <special_controls></special_controls>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+
+    <switches default="FE,89,00,FF">
+        <dip name="Unknown" bits="0" ids="Off,On" values="1,0"/>
+        <dip name="Lives" bits="16,17" ids="3,4,5,6"/>
+        <dip name="Bonus Life" bits="19" ids="1000,1500" values="1,0"/>
+        <dip name="Coin Info" bits="23" ids="Off,On" values="1,0"/>
+    </switches>
+
+    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <rom index="0" md5="none" zip="sicv.zip|invaders.zip">
+        <part crc="3dfbe9e6" name="cv17.36"/>
+        <part crc="bc3c82bf" name="cv18.35"/>
+        <part crc="d202b41c" name="cv19.34"/>
+        <part crc="c74ee7b6" name="cv20.33"/>
+        <part repeat="0x1E000">00</part>
+        <part crc="037e16ac" name="cv01.1"/>
+        <part crc="8263da38" name="cv02.2"/>
+    </rom>
+
+    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <rom index="1">
+        <part>
+            00 10 05 00 FE 89 00 FF 00 00 00 00 01 60 00 00
+            00 00 00 00 00 00 00 00 11 14 13 00 05 03 04 00
+            00 00 15 00 05 03 04 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00
+        </part>
+    </rom>
+
+    <!-- Index 3: hiscore config (MAME hiscore.dat), index 4: saved scores -->
+    <rom index="3" md5="none">
+        <part>
+            00 14 78 00 00 FF 00 02 00 02 00 01 11 11 00 00
+            00 00 20 F4 00 02 00 00
+        </part>
+    </rom>
+    <rom index="4"></rom>
+    <nvram index="4" size="2"></nvram>
+
+    <!-- Index 6: MAME artwork, layout table (from default.lay) + PNGs from the artwork zip, as-is -->
+    <!-- OSD Artwork: View 1 = Upright Artwork Midway, View 2 = Upright Artwork Taito, View 3 = Cabaret Artwork, View 4 = Cocktail Inst JPN, View 5 = Cocktail Inst EURO, View 6 = Cocktail Inst US, View 7 = Cocktail Artwork Midway, View 8 = TLPU Artwork, View 9 = Art of Atari, View 10 = Hausjam Artwork -->
+    <rom index="6" md5="none" zip="/mame-artwork/invaders.zip">
+        <part>
+            41 57 0A 00 1B 00 04 01 E0 00 01 00 00 00 00 00 E2 03 34 05 30 01 36 01 80 01 00 02 00 49 0B 00
+            E2 03 F2 04 30 01 5C 01 80 01 00 02 0B 4C 0B 00 14 03 D2 03 CC 00 3E 00 80 01 00 02 16 5A 09 00
+            E6 04 80 02 B4 01 40 00 80 01 00 02 1F AD 04 00 EC 04 80 02 B6 01 40 00 80 01 00 02 23 39 04 00
+            DE 04 80 02 AE 01 40 00 80 01 00 02 27 59 04 00 B2 02 EC 03 98 00 F6 00 80 01 00 02 2B 48 07 00
+            88 03 00 02 04 01 00 00 80 01 00 02 32 09 02 00 64 03 5A 03 F0 00 52 01 80 01 00 02 34 2E 0A 00
+            A2 03 0E 02 10 01 06 00 80 01 00 02 3E 34 06 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 FF 44 FF 30 01 36 01 7F 01 00 02 FF FF 00 00 00 FF 44 FF 30 01 76 01 7F 01 3D 00 20 20 00 00
+            00 20 44 FF 30 01 A3 02 7F 01 6D 00 FF 20 00 00 00 20 44 FF 49 01 10 03 D0 00 26 00 FF 20 00 00
+            02 00 00 4C 4C 00 21 02 47 03 48 01 00 00 00 00 04 01 00 4C FF FF 23 01 E1 03 C6 01 00 00 00 00
+            02 02 02 FF FF FF 23 01 E1 03 C6 01 00 00 00 00 02 03 08 FF FF FF 00 00 E1 03 02 04 00 00 00 00
+            01 00 48 00 48 01 5E 03 23 00 0B 00 00 00 00 00 02 04 08 FF E8 01 BB 03 DC 00 0D 00 00 00 00 00
+            02 05 0C FF FF FF 0E 04 E1 03 25 01 00 00 00 00 00 FF 44 FF 30 01 5C 01 7F 01 00 02 FF FF 00 00
+            00 20 44 FF 30 01 C7 02 7F 01 6E 00 FF 20 00 00 00 20 44 FF 4B 01 35 03 CA 00 27 00 FF 20 00 00
+            00 55 44 FF 30 01 9B 01 7F 01 3E 00 00 55 00 00 02 06 00 4C 47 00 57 02 51 03 3D 01 00 00 00 00
+            04 07 00 4C FF FF 54 01 E1 03 C5 01 00 00 00 00 02 02 02 FF FF FF 54 01 E1 03 C5 01 00 00 00 00
+            02 08 08 FF FF FF FF FF E1 03 C8 03 00 00 00 00 02 09 0C FF FF FF D4 03 E1 03 1D 01 00 00 00 00
+            01 00 6C 00 7E 00 55 04 32 00 0C 00 00 00 00 00 02 0A 2C FF 7E 00 55 04 32 00 0C 00 00 00 00 00
+            00 0B 04 FF CC 00 3E 00 80 01 00 02 00 00 00 00 02 0B 04 1A CC 00 3E 00 80 01 00 02 00 00 00 00
+            02 0C 08 FF 00 00 00 00 14 03 8B 02 00 00 00 00 01 00 60 00 16 00 2B 01 92 00 B0 00 00 00 00 00
+            02 0D 28 FF 16 00 2B 01 92 00 B0 00 00 00 00 00 01 00 60 00 16 00 DF 01 92 00 29 00 00 00 00 00
+            02 0E 28 FF 16 00 DF 01 92 00 29 00 00 00 00 00 02 0F 08 FF 00 00 00 00 14 03 8B 02 00 00 00 00
+            02 10 0C FF 00 00 94 02 14 03 3E 01 00 00 00 00 00 0B 04 FF 83 01 00 00 E0 01 80 02 00 00 00 00
+            02 0B 08 1A 83 01 00 00 E0 01 80 02 00 00 00 00 02 11 28 FF 03 04 80 00 E3 00 80 01 00 00 00 00
+            02 11 28 FF 00 00 80 00 E3 00 80 01 00 00 00 00 00 0B 04 FF 85 01 00 00 E0 01 80 02 00 00 00 00
+            02 0B 08 1A 85 01 00 00 E0 01 80 02 00 00 00 00 02 12 28 FF 05 04 80 00 E6 00 80 01 00 00 00 00
+            02 12 28 FF FF FF 80 00 E6 00 80 01 00 00 00 00 00 0B 04 FF 7E 01 00 00 E0 01 80 02 00 00 00 00
+            02 0B 08 1A 7E 01 00 00 E0 01 80 02 00 00 00 00 02 13 28 FF FE 03 80 00 DE 00 80 01 00 00 00 00
+            02 13 28 FF FF FF 80 00 DF 00 80 01 00 00 00 00 02 80 48 FF 00 00 00 00 B2 02 97 00 80 80 00 00
+            02 80 48 FF 00 00 55 03 B2 02 97 00 80 80 00 00 02 14 08 FF 00 00 00 00 B2 02 EC 03 00 00 00 00
+            01 00 40 00 4D 01 67 03 23 00 0C 00 00 00 00 00 02 15 08 FF 4D 01 67 03 23 00 0C 00 00 00 00 00
+            01 00 40 00 41 01 75 00 23 00 0C 00 00 00 00 00 02 15 08 FF 41 01 75 00 23 00 0C 00 00 00 00 00
+            04 16 00 FF 00 00 00 00 88 03 00 02 00 00 00 00 01 17 02 FF 00 00 00 00 88 03 00 02 00 00 00 00
+            00 FF 44 FF F0 00 52 01 80 01 40 00 FF 00 00 00 00 FF 44 FF F0 00 92 01 80 01 3C 00 20 20 00 00
+            00 FF 44 FF F0 00 CE 01 80 01 51 00 80 00 00 00 00 00 44 FF F0 00 1F 02 80 01 4E 00 FF FF 00 00
+            00 FF 44 FF F0 00 6D 02 80 01 51 00 00 FF 00 00 00 20 44 FF F0 00 BE 02 80 01 6D 00 FF 20 00 00
+            00 FF 44 FF F0 00 2B 03 1A 00 27 00 FF 00 00 00 00 20 44 FF 0A 01 2B 03 D0 00 27 00 FF 20 00 00
+            00 FF 44 FF DA 01 2B 03 96 00 27 00 FF 00 00 00 01 18 00 4C FF FF 00 00 63 03 5A 03 00 00 00 00
+            00 FF 44 FF 10 01 06 00 80 01 00 02 FF FF 00 00 00 FF 44 FF 10 01 46 00 80 01 3C 00 20 20 00 00
+            00 20 44 FF 10 01 72 01 80 01 6D 00 FF 20 00 00 00 20 44 FF 2A 01 DF 01 D0 00 27 00 FF 20 00 00
+            01 19 00 99 FF FF FF FF A2 03 0D 02 00 00 00 00 02 1A 08 FF FF FF FF FF A2 03 0D 02 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+        </part>
+        <part>41 57 49 00</part>
+        <part name="invaders_moon_midway.png"/>
+        <part>41 57 49 01</part>
+        <part name="mask_m.png"/>
+        <part>41 57 49 02</part>
+        <part name="invaders_backdrop.png"/>
+        <part>41 57 49 03</part>
+        <part name="invaders_bezel_midway.png"/>
+        <part>41 57 49 04</part>
+        <part name="midway_1500.png"/>
+        <part>41 57 49 05</part>
+        <part name="invaders_cpo_midway.png"/>
+        <part>41 57 49 06</part>
+        <part name="invaders_moon_taito.png"/>
+        <part>41 57 49 07</part>
+        <part name="mask_t.png"/>
+        <part>41 57 49 08</part>
+        <part name="invaders_bezel_taito.png"/>
+        <part>41 57 49 09</part>
+        <part name="invaders_cpo_taito.png"/>
+        <part>41 57 49 0A</part>
+        <part name="taito_1500.png"/>
+        <part>41 57 49 0B</part>
+        <part name="invaders_overlay_cocktail.png"/>
+        <part>41 57 49 0C</part>
+        <part name="wood_cabaret.png"/>
+        <part>41 57 49 0D</part>
+        <part name="cabaret_1500.png"/>
+        <part>41 57 49 0E</part>
+        <part name="cabaret_3lives.png"/>
+        <part>41 57 49 0F</part>
+        <part name="invaders_bezel_cabaret.png"/>
+        <part>41 57 49 10</part>
+        <part name="invaders_cpo_cabaret.png"/>
+        <part>41 57 49 11</part>
+        <part name="invaders_inst_jpn.png"/>
+        <part>41 57 49 12</part>
+        <part name="invaders_inst_eur.png"/>
+        <part>41 57 49 13</part>
+        <part name="invaders_inst_usa.png"/>
+        <part>41 57 49 14</part>
+        <part name="invaders_cocktail_midway.png"/>
+        <part>41 57 49 15</part>
+        <part name="cktl_1500.png"/>
+        <part>41 57 49 16</part>
+        <part name="tl_mask_vertical.png"/>
+        <part>41 57 49 17</part>
+        <part name="invaders_bg.png"/>
+        <part>41 57 49 18</part>
+        <part name="invaders_atariart.png"/>
+        <part>41 57 49 19</part>
+        <part name="invadbd.png"/>
+        <part>41 57 49 1A</part>
+        <part name="invad169.png"/>
+    </rom>
+
+    <remark>Space Invaders (CV Version, Larger Roms) (Taito)</remark>
+    <mratimestamp>20260930000000</mratimestamp>
+</misterromdescription>

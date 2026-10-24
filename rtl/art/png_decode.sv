@@ -1,6 +1,6 @@
 //============================================================================
 //
-//  PNG decoder: 8-bit depth, non-interlaced, colour types 0 / 2 / 3 / 4 / 6 (+ tRNS for palette images)
+//  PNG decoder: non-interlaced; 8-bit colour types 0 / 2 / 3 / 4 / 6, 1 / 2 / 4-bit types 0 / 3 (+ tRNS for palette images)
 //  Copyright (C) 2026 Rodimus
 //
 //  Takes one or more PNG files back to back and emits each image's pixels in raster order as RGBA with x / y.
@@ -142,7 +142,12 @@ inflate inf
 // ---------------------------------------------------------------- unfilter
 
 wire  [2:0] bpp    = (ctype == 8'd2) ? 3'd3 : (ctype == 8'd6) ? 3'd4 : (ctype == 8'd4) ? 3'd2 : 3'd1;
-wire [15:0] stride = (bpp == 3'd3) ? width * 16'd3 : width << (bpp == 3'd4 ? 2 : bpp == 3'd2 ? 1 : 0);
+// 1 / 2 / 4-bit (grey / palette): several pixels per byte, MSB first, lines padded to a byte; filters work on bytes
+wire        sub    = depth < 8'd8 && (ctype == 8'd0 || ctype == 8'd3);
+wire  [1:0] dsh    = depth[2] ? 2'd2 : depth[1] ? 2'd1 : 2'd0;     // log2(depth)
+wire  [3:0] spb    = 4'd8 >> dsh;                                   // pixels per byte
+wire [15:0] stride = sub ? ((width << dsh) + 16'd7) >> 3 :
+                     (bpp == 3'd3) ? width * 16'd3 : width << (bpp == 3'd4 ? 2 : bpp == 3'd2 ? 1 : 0);
 
 reg  [14:0] lb_addr = 15'd0;
 reg   [7:0] lb_d = 8'd0;
@@ -151,11 +156,16 @@ wire  [7:0] lb_q;
 dpram_dc #(.widthad_a(15)) prev_line
 (
     .clock_a(clk), .address_a(lb_addr), .data_a(lb_d), .wren_a(lb_we), .q_a(lb_q),
-    .clock_b(clk), .address_b(15'd0), .q_b()
+    .clock_b(clk), .address_b(15'd0), .data_b('0), .wren_b(1'b0), .q_b()
 );
 
-localparam U_FILT = 2'd0, U_RD = 2'd1, U_CALC = 2'd2, U_EMIT = 2'd3;
-reg   [1:0] ust = U_FILT;
+localparam U_FILT = 3'd0, U_RD = 3'd1, U_CALC = 3'd2, U_EMIT = 3'd3, U_SUB = 3'd4;
+reg   [2:0] ust = U_FILT;
+reg   [7:0] sbyte = 8'd0;               // sub-byte pixels left in the current byte (top bits first)
+reg   [3:0] scnt = 4'd0;
+reg         slast = 1'b0;               // that byte ends the line
+wire  [7:0] sidx = sbyte >> (4'd8 - (4'd1 << dsh));               // next sub-byte pixel value
+wire  [7:0] sgrey = depth[2] ? {2{sidx[3:0]}} : depth[1] ? {4{sidx[1:0]}} : {8{sidx[0]}};
 reg   [2:0] filt = 3'd0;
 reg  [15:0] bx = 16'd0;                 // byte index within the line
 reg  [15:0] row = 16'd0;
@@ -164,6 +174,8 @@ reg  [31:0] pixb = 32'd0;               // bytes of the pixel being assembled
 reg   [2:0] pb = 3'd0;
 reg  [15:0] pxc = 16'd0;                // pixel index within the line
 reg         pal_pend = 1'b0;
+reg         pal_wait = 1'b0;          // 8-bit palette pixel: index registered, palette read this clock
+wire        pal_busy = pal_pend || pal_wait;
 reg   [7:0] pal_idx = 8'd0;
 
 wire  [7:0] fa = (bx < {13'd0, bpp}) ? 8'd0 : a4[8 * bpp - 1 -: 8];
@@ -178,20 +190,21 @@ wire  [8:0] avg   = ({1'b0, fa} + {1'b0, fb}) >> 1;
 wire  [7:0] pred  = (filt == 3'd1) ? fa : (filt == 3'd2) ? fb : (filt == 3'd3) ? avg[7:0] : (filt == 3'd4) ? paeth : 8'd0;
 wire  [7:0] recon = inf_out + pred;
 
-// palette read: the index is recon on the clock pal_pend is set, so the entry is on pal_q while pal_pend
-wire  [7:0] pal_ra = pal_pend ? pal_idx : recon;
+// palette read: 8-bit pixels register the index first (pal_wait: recon -> address was too long a path at 49 MHz);
+// sub-byte pixels address sidx (a register) directly. The entry is on pal_q while pal_pend.
+wire  [7:0] pal_ra = pal_busy ? pal_idx : sidx;
 dpram_dc #(.widthad_a(8), .width_a(24)) pal_rgb
 (
     .clock_a(clk), .address_a(pal_wa), .data_a(pal_wd), .wren_a(pal_we), .q_a(),
-    .clock_b(clk), .address_b(pal_ra), .q_b(pal_q)
+    .clock_b(clk), .address_b(pal_ra), .data_b('0), .wren_b(1'b0), .q_b(pal_q)
 );
 dpram_dc #(.widthad_a(8), .width_a(8)) pal_alpha
 (
     .clock_a(clk), .address_a(pal_wa), .data_a(pal_wd[7:0]), .wren_a(pal_awe), .q_a(),
-    .clock_b(clk), .address_b(pal_ra), .q_b(pal_aq)
+    .clock_b(clk), .address_b(pal_ra), .data_b('0), .wren_b(1'b0), .q_b(pal_aq)
 );
 
-always @* inf_out_ready = (ust == U_FILT) || (ust == U_CALC && !px_valid_hold && !pal_pend);
+always @* inf_out_ready = (ust == U_FILT) || (ust == U_CALC && !px_valid_hold && !pal_busy);
 
 reg px_valid_hold;
 always @* px_valid_hold = px_valid && !px_ready;
@@ -202,6 +215,7 @@ always @(posedge clk) begin
     if (px_valid && px_ready) px_valid <= 1'b0;
     if (img_start) begin ust <= U_FILT; row <= 16'd0; bx <= 16'd0; pb <= 3'd0; end
     // palette lookup finishing (one clock after the index)
+    if (pal_wait) begin pal_wait <= 1'b0; pal_pend <= 1'b1; end
     if (pal_pend) begin
         px_rgba  <= {pal_q, ({1'b0, pal_idx} < trns_n) ? pal_aq : 8'hFF};
         px_valid <= 1'b1;
@@ -210,12 +224,15 @@ always @(posedge clk) begin
     case (ust)
         U_FILT: if (inf_out_valid) begin filt <= inf_out[2:0]; bx <= 16'd0; pb <= 3'd0; pxc <= 16'd0; lb_addr <= 15'd0; ust <= U_RD; end
         U_RD:   ust <= U_CALC;                      // prior-line byte bx readable next clock
-        U_CALC: if (inf_out_valid && !px_valid_hold && !pal_pend) begin
+        U_CALC: if (inf_out_valid && !px_valid_hold && !pal_busy) begin
             lb_d  <= recon; lb_we <= 1'b1;          // overwrite the prior line in place
             a4    <= {a4[23:0], recon};
             c4    <= {c4[23:0], fb};
             pixb  <= {pixb[23:0], recon};
-            if (pb == bpp - 3'd1) begin             // pixel complete
+            if (sub) begin                          // unpack the byte's pixels, then finish the byte in U_SUB
+                sbyte <= recon; scnt <= 4'd0; slast <= bx + 16'd1 == stride;
+                ust   <= U_SUB;
+            end else if (pb == bpp - 3'd1) begin    // pixel complete
                 pb <= 3'd0;
                 px_x <= pxc; pxc <= pxc + 16'd1;
                 px_y <= row;
@@ -224,15 +241,34 @@ always @(posedge clk) begin
                     8'd6: begin px_rgba <= {pixb[23:0], recon}; px_valid <= 1'b1; end
                     8'd0: begin px_rgba <= {recon, recon, recon, 8'hFF}; px_valid <= 1'b1; end
                     8'd4: begin px_rgba <= {pixb[7:0], pixb[7:0], pixb[7:0], recon}; px_valid <= 1'b1; end
-                    default: begin pal_idx <= recon; pal_pend <= 1'b1; end
+                    default: begin pal_idx <= recon; pal_wait <= 1'b1; end
                 endcase
             end else pb <= pb + 3'd1;
-            if (bx + 16'd1 == stride) begin
+            if (!sub) begin
+                if (bx + 16'd1 == stride) begin
+                    row <= row + 16'd1;
+                    ust <= U_FILT;
+                    if (row + 16'd1 == height) img_done <= 1'b1;
+                end else begin
+                    bx <= bx + 16'd1;
+                    ust <= U_EMIT;
+                end
+            end
+        end
+        U_SUB: if (!px_valid_hold && !pal_busy) begin
+            if (scnt != spb && pxc != width) begin  // one pixel per clock; the line's padding bits are dropped
+                px_x  <= pxc; pxc <= pxc + 16'd1;
+                px_y  <= row;
+                sbyte <= sbyte << (4'd1 << dsh);
+                scnt  <= scnt + 4'd1;
+                if (ctype == 8'd0) begin px_rgba <= {sgrey, sgrey, sgrey, 8'hFF}; px_valid <= 1'b1; end
+                else begin pal_idx <= sidx; pal_pend <= 1'b1; end
+            end else if (slast) begin
                 row <= row + 16'd1;
                 ust <= U_FILT;
                 if (row + 16'd1 == height) img_done <= 1'b1;
             end else begin
-                bx <= bx + 16'd1;
+                bx  <= bx + 16'd1;
                 ust <= U_EMIT;
             end
         end

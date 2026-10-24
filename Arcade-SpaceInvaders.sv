@@ -44,7 +44,8 @@ wire        ioctl_upload_req;
 wire  [7:0] ioctl_din;
 wire        ioctl_wr;
 wire  [7:0] ioctl_index;
-wire [24:0] ioctl_addr;
+wire [26:0] ioctl_addr27;                                  // hps_io's full width: the artwork download can pass 32 MB
+wire [24:0] ioctl_addr = ioctl_addr27[24:0];
 wire  [7:0] ioctl_dout;
 wire [15:0] joystick_0, joystick_1, joystick_2, joystick_3;
 wire [15:0] joy_la0, joy_la1;   // analog sticks {Y, X}, signed, -Y = up
@@ -176,6 +177,7 @@ localparam CONF_STR = {
 	"H1P2O[56],Backdrop,On,Off;",
 	"H1P2ON,Overlay,On,Off;",
 	"H1P2O[57],Bezel,On,Off;",
+	"H1P2O[60],Control Panel,On,Off;",
 	"H1P2O[59],Side Art,On,Off;",
 	"H1P2O[58],Zoom to Screen,Off,On;",
 	"-;",
@@ -221,7 +223,7 @@ hps_io #(.CONF_STR(CONF_STR)) hps_io
 	.ioctl_upload(ioctl_upload),
 	.ioctl_upload_req(ioctl_upload_req),
 	.ioctl_wr(ioctl_wr),
-	.ioctl_addr(ioctl_addr),
+	.ioctl_addr(ioctl_addr27),
 	.ioctl_dout(ioctl_dout),
 	.ioctl_din(ioctl_din),
 	.ioctl_index(ioctl_index),
@@ -549,10 +551,10 @@ wire        art_rd, art_we, art_clk;
 artwork #(.IDX(8'd6)) artwork
 (
 	.clk(CLK_40M),
-	.sel(status[55:52]), .layer_off({status[57], status[23], status[56]}), .side_off(status[59]), .zoom(status[58]),
-	.crt_flip(status[22]), .hdmi_flip(status[11]), .avail(art_avail),
+	.sel(status[55:52]), .layer_off({status[60], status[57], status[23], status[56]}), .side_off(status[59]), .zoom(status[58]),
+	.crt_flip(status[22]), .hdmi_flip(status[11]), .turn(status[12]), .hdmi_w(HDMI_WIDTH), .hdmi_h(HDMI_HEIGHT), .avail(art_avail),
 	.ioctl_download(ioctl_download), .ioctl_index(ioctl_index), .ioctl_wr(ioctl_wr),
-	.ioctl_addr(ioctl_addr), .ioctl_dout(ioctl_dout), .ioctl_wait(art_wait),
+	.ioctl_addr(ioctl_addr27), .ioctl_dout(ioctl_dout), .ioctl_wait(art_wait),
 	.ce_pix(ce_pix),
 	.hs_in(bd_hs), .vs_in(bd_vs), .hblank_in(bd_hbl), .vblank_in(bd_vbl), .rgb_in(bd_rgb),
 	.hs_out(hs), .vs_out(vs), .hblank_out(hblank), .vblank_out(vblank), .rgb_out({r, g, b}),
@@ -562,8 +564,8 @@ artwork #(.IDX(8'd6)) artwork
 	.DDRAM_DOUT(DDRAM_DOUT), .DDRAM_DOUT_READY(DDRAM_DOUT_READY), .DDRAM_RD(art_rd),
 	.DDRAM_DIN(art_din), .DDRAM_BE(art_be), .DDRAM_WE(art_we)
 );
-// vertical game, Orientation Horz (rotated monitor): HDMI keeps the core picture, with the native composite
-assign art_fb = art_run & ~direct_video & ~(game_vert & status[12]);
+// Orientation Horz (rotated monitor): the artwork turns its own view, so it keeps the framebuffer
+assign art_fb = art_run & ~direct_video;
 
 // discrete sound engine: the set's sound board program arrives as MRA index 5 (tools/dsnd_boards.py)
 reg ds_on_r = 1'b0;
