@@ -4,7 +4,7 @@
 //  Copyright (C) 2026 Rodimus
 //
 //  Memory map, inputs and object placement follow MAME zaccaria/zac1b1120.cpp (Mike Coates); the S2636 PVI object
-//  logic follows MAME devices/machine/s2636.cpp (Vas Crabb). S2650 CPU core by DO (rtl/cpu/s2650).
+//  logic follows MAME devices/machine/s2636.cpp (Vas Crabb). S2650 CPU: s2650sv (rtl/rodimus/s2650sv), SystemVerilog translation of the core by DO.
 //
 //  Redistribution and use in source and synthesized forms, with or without
 //  modification, are permitted provided that the following conditions are met:
@@ -110,7 +110,7 @@ logic [5:0] cdiv = 6'd0;            // 48 master clocks per bus cycle
 always_ff @(posedge clk) if (mce) cdiv <= (cdiv == 6'd47) ? 6'd0 : cdiv + 6'd1;
 wire ack = mce & (cdiv == 6'd47) & ~pause;
 
-s2650_cpu u_cpu
+s2650sv_s2650_cpu u_cpu
 (
     .clk(clk),
     .reset(reset),

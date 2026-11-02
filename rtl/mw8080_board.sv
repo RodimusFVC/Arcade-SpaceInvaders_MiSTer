@@ -186,7 +186,7 @@ wire         i80_wr_n;
 `ifdef VERILATOR
 T8080se u_cpu
 `else
-T8080se #(.Mode(2), .T2Write(1)) u_cpu
+t80sv_T8080se #(.Mode(2), .T2Write(1)) u_cpu
 `endif
 (
     .RESET_n(rst_n & ~v_sfl),

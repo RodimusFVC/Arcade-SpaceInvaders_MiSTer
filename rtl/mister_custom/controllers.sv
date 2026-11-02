@@ -36,6 +36,8 @@
 //    ctl_toggle     pause input; ctl_coin_impulse / ctl_paddle / ctl_pedal: PAUSE_MODE
 //  The v2 settings that absorb the cores' remaining local blocks (keyboard tables, port builders, pause forms) are
 //  in verilator/controllers/lint_cfg.sv, each proven against the core's own block by tb_keyboard_v2 / tb_port_map_v2.
+//  v3 (2026-10-27). Same rule: a v2 instantiation behaves bit-identically (tb_v1v2 at defaults).
+//    ctl_ad_stick   HOLD = 1: a released D-pad / button keeps the offset (MAME PORT_CENTERDELTA(0), e.g. a throttle)
 //
 //  PAUSE. Every module with a counter, ramp, timer or latch takes `pause` (connect the core's pause_cpu; tie 0 or leave
 //  it unconnected to ignore pause). The v2 rule, with pause connected (and PAUSE_MODE = 1 where the module has it):
@@ -784,8 +786,11 @@ endmodule
 // Stick axis signed, + = right / down; inc = right / down, dec = left / up.
 // Pause: the D-pad offset (ramp and autocentre) freezes and continues on resume, so a D-pad released while paused
 //   recentres after resume; val keeps following the stick (level state). Same in v1.
+// HOLD (v3, default 0 = v2): 1 = no autocentre, a released D-pad / button leaves the offset where it is (MAME
+//   PORT_CENTERDELTA(0), e.g. Star Fire's throttle). The stick stays absolute: while it is outside +/-DZ it sets val
+//   and the offset returns to 0, as with HOLD = 0.
 //----------------------------------------------------------------------------
-module ctl_ad_stick #(parameter [6:0] DZ = 7'd4)
+module ctl_ad_stick #(parameter [6:0] DZ = 7'd4, parameter bit HOLD = 1'b0)
 (
     input        clk,
     input        reset,
@@ -819,7 +824,8 @@ function automatic signed [8:0] ramp(input signed [8:0] v, input up, input dn, i
     begin
         w  = {{2{v[8]}}, v};
         kk = $signed({3'd0, k});
-        n  = (up && !dn) ? w + kk : (dn && !up) ? w - kk : (w > kk) ? w - kk : (w < -kk) ? w + kk : 11'sd0;
+        n  = (up && !dn) ? w + kk : (dn && !up) ? w - kk : HOLD ? w :
+             (w > kk) ? w - kk : (w < -kk) ? w + kk : 11'sd0;
         ramp = (n > 11'sd128) ? 9'sd128 : (n < -11'sd128) ? -9'sd128 : n[8:0];
     end
 endfunction
