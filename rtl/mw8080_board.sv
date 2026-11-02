@@ -559,7 +559,12 @@ eeprom_93c46 u_eeprom
     .di(cpu_do[0]),
     .sk(cpu_do[4]),
     .cs(cpu_do[6]),
-    .dout(eep_do)
+    .dout(eep_do),
+    .ext_sel(1'b0),                     // no NVRAM save / load on this core: external port unused
+    .ext_addr(7'd0),
+    .ext_din(8'd0),
+    .ext_we(1'b0),
+    .ext_q()
 );
 
 // data in: INTA -> RST vector, INP -> ports, video RAM -> RAM register, work RAM, EEPROM, else ROM

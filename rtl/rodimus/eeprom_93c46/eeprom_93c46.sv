@@ -3,8 +3,8 @@
 //  93C46 serial EEPROM, 8-bit organisation (128 x 8)
 //  Copyright (C) 2026 Rodimus
 //
-//  Behaviour follows MAME eepromser.cpp / eeprom.cpp (eeprom_serial_93cxx_device):
-//  start bit, 2 opcode + 7 address bits, READ = dummy 0 then 8 data bits, WRITE / ERASE / ERAL / WRAL refused
+// Based on MAME eepromser.cpp, eeprom.cpp (Aaron Giles, BSD-3-Clause)
+//  Behaviour: start bit, 2 opcode + 7 address bits, READ = dummy 0 then 8 data bits, WRITE / ERASE / ERAL / WRAL refused
 //  while locked (EWDS state at reset), WRAL ANDs into the cells, busy 1.75 ms write / 1 ms erase / 8 ms all.
 //  DO reads READY while waiting for a start bit, the data bit while reading, otherwise 1 (pull-up).
 //
@@ -39,7 +39,13 @@ module eeprom_93c46
     input  logic       sk,
     input  logic       cs,
 
-    output logic       dout
+    output logic       dout,
+
+    input  logic       ext_sel,      // external access (CPU held / paused): NVRAM save / load of the cells
+    input  logic [6:0] ext_addr,
+    input  logic [7:0] ext_din,
+    input  logic       ext_we,
+    output logic [7:0] ext_q
 );
 
 localparam logic [2:0] S_RESET = 3'd0, S_START = 3'd1, S_CMD = 3'd2, S_READ = 3'd3, S_DATA = 3'd4, S_DONE = 3'd5;
@@ -66,15 +72,16 @@ logic  [7:0] q_n;                    // stored (inverted) cell at mem_ra
 logic  [6:0] mem_wa;
 logic  [7:0] mem_wd;
 logic        mem_we;
-wire   [6:0] mem_ra = sweep ? sw_a : addr;
+wire   [6:0] mem_ra = ext_sel ? ext_addr : sweep ? sw_a : addr;
 wire   [7:0] q = ~q_n;
+assign ext_q = q;
 
 dpram_dc #(.widthad_a(7)) u_mem
 (
     .clock_a(clk),
-    .address_a(mem_wa),
-    .data_a(mem_wd),
-    .wren_a(mem_we),
+    .address_a(ext_we ? ext_addr : mem_wa),
+    .data_a(ext_we ? ~ext_din : mem_wd),                // cells stored inverted; the file holds true data
+    .wren_a(ext_we | mem_we),
     .q_a(),
     .byteena_a(1'b1),
 

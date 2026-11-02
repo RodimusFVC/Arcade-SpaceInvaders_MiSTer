@@ -4,11 +4,9 @@ set_global_assignment -name SYSTEMVERILOG_FILE rtl/chip_pool_pkg.sv
 set_global_assignment -name SYSTEMVERILOG_FILE Arcade-SpaceInvaders.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/mw8080_board.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/invaders_sound.sv
-set_global_assignment -name SYSTEMVERILOG_FILE rtl/eeprom_93c46.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/rodimus/eeprom_93c46/eeprom_93c46.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/zac1b1120_board.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/zac_snd.sv
-# DSND-2026-11-02: rtl/dsnd_engine.sv replaced by the chips-repo engine (drop-in superset); original line:
-# set_global_assignment -name SYSTEMVERILOG_FILE rtl/dsnd_engine.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/rodimus/dsnd_engine/dsnd_engine.sv
 set_global_assignment -name VERILOG_FILE rtl/cpu/jt680x/jt680x.v
 set_global_assignment -name VERILOG_FILE rtl/cpu/jt680x/jt680x_ctrl.v
