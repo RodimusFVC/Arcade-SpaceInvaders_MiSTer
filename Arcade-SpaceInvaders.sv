@@ -73,14 +73,6 @@ assign HDMI_BLACKOUT = 0;
 assign HDMI_BOB_DEINT = 0;
 
 wire signed [15:0] audio, audio_r;     // audio_r: second sound board (invad2ct), else the same as audio
-wire signed [15:0] b8_audio, b8_audio_r;
-wire zac;                                   // board select (MRA variant 32 / 33): Zaccaria 1B1120
-wire  [7:0]        z_dslat, z_dsper;      // Zaccaria sound board on the dsnd engine: 1E80 latch, S2636 tone period,
-wire               z_dstone;              //   tone bit (tools/dsnd_zac.py source contract)
-wire signed [15:0] ds_audio;
-wire               ds_on;
-wire  [7:0]        b8_dsp1, b8_dsp2;      // invaders board program (index 1 byte 2 bit 3): the board's remapped p1 / p2
-wire signed [16:0] b8_tune;               //   and its tune speaker, which the engine path would otherwise bypass
 // Master Volume (Game Audio): the board's master pot, x 1 / 0.71 / 0.5 / 0.25 / 1.41 / 2, saturated
 wire [9:0] mvol = status[51:49] == 3'd1 ? 10'd181 : status[51:49] == 3'd2 ? 10'd128 : status[51:49] == 3'd3 ? 10'd64 :
                   status[51:49] == 3'd4 ? 10'd362 : status[51:49] == 3'd5 ? 10'd512 : 10'd256;
@@ -143,7 +135,6 @@ always @(posedge CLK_40M) begin
     end
 end
 
-assign zac = game_var >= 8'd32;
 wire game_vert = game_flags[4];
 wire vert_view = game_vert & ~status[12];
 
@@ -630,17 +621,10 @@ pause #(8,8,8,40) pause
 wire hs, vs;
 wire [7:0] r, g, b;
 wire ce_pix;
-wire b8_hs, b8_vs, b8_hb, b8_vb, b8_ce;
-wire [7:0] b8_r, b8_g, b8_b;
-wire z_hs, z_vs, z_hb, z_vb, z_ce, z_on;
 wire bd_hs, bd_vs, bd_hbl, bd_vbl;
-assign {bd_hs, bd_vs, bd_hbl, bd_vbl, ce_pix} = zac ? {z_hs, z_vs, z_hb, z_vb, z_ce} : {b8_hs, b8_vs, b8_hb, b8_vb, b8_ce};
-wire [7:0] z_r, z_g, z_b;
-wire [7:0] b8_snd1;
-wire [31:0] b8_lat;                 // sound latches 4-1
-assign b8_lat[7:0] = b8_snd1;
-assign an_sel = an_cfg[96][7] ? b8_lat[{an_cfg[96][5:4], an_cfg[96][2:0]}] : b8_snd1[1];
-wire [23:0] bd_rgb = zac ? {z_r, z_g, z_b} : {b8_r, b8_g, b8_b};
+wire [23:0] bd_rgb;
+wire [31:0] snd_lat;                // 8080 board sound latches 4-1
+assign an_sel = an_cfg[96][7] ? snd_lat[{an_cfg[96][5:4], an_cfg[96][2:0]}] : snd_lat[1];
 
 // MAME artwork (ioctl index 6, OSD Game Options): native composite on the core video (one pixel late),
 // full view through the DDR3 framebuffer on HDMI. The in-core colour overlay is off while artwork draws
@@ -669,57 +653,6 @@ artwork #(.IDX(8'd6)) artwork
 );
 // Orientation Horz (rotated monitor): the artwork turns its own view, so it keeps the framebuffer
 assign art_fb = art_run & ~direct_video;
-
-// discrete sound engine: the set's sound board program arrives as MRA index 5 (tools/dsnd_boards.py)
-reg ds_on_r = 1'b0;
-always @(posedge CLK_40M) if (ioctl_wr) begin
-	if (ioctl_index == 8'd1 && ioctl_addr == 25'd0) ds_on_r <= 1'b0;
-	if (ioctl_index == 8'd5) ds_on_r <= 1'b1;
-end
-assign ds_on = ds_on_r;
-// second engine (invad2ct's second sound board, right channel): its program is index 5 from 0x2000
-reg ds2_on_r = 1'b0;
-always @(posedge CLK_40M) if (ioctl_wr) begin
-	if (ioctl_index == 8'd1 && ioctl_addr == 25'd0) ds2_on_r <= 1'b0;
-	if (ioctl_index == 8'd5 && ioctl_addr[13]) ds2_on_r <= 1'b1;
-end
-
-// sources: 7-6 Game Audio, 5 misc {coin (IN1 D3 inverted, maze), VBLANK}, 4 = IN0 as the CPU reads it (maze), 3-0 latches
-// (8080bw boards: 1 / 2 = sound ports 1 / 2, 3 = port 0 / polaris port 2, 4 = last shift-data write, ozmawars port 4)
-// Invaders board program (index 1 byte 2 bit 3): latches 1 / 2 = the board's inputs after its per-set remaps
-wire [31:0] ds_lat = zac ? {16'd0, z_dsper, z_dslat} : snd_flags[3] ? {b8_lat[31:16], b8_dsp2, b8_dsp1} : b8_lat;
-wire [63:0] ds_src = {status[48:46], status[45:44], status[43:41], 2'd0, status[40:35], 5'd0, zac & z_dstone, ~in_port[1][3], vblank, in_port[0], ds_lat};
-
-dsnd_engine dsnd
-(
-	.clk(CLK_40M),
-	.reset(reset),
-	.pause(pause_cpu),
-	.prog_wr(ioctl_wr && ioctl_index == 8'd5 && !ioctl_addr[13]),
-	.prog_addr(ioctl_addr[12:0]),
-	.prog_data(ioctl_dout),
-	.src(ds_src),
-	.out(ds_audio)
-);
-// invad2ct board 2: latches 3 / 4 as the program's latches 1 / 2 (no remaps, no tune)
-wire [63:0] ds2_src = {ds_src[63:16], b8_lat[31:16]};
-wire signed [15:0] ds2_audio;
-dsnd_engine dsnd2
-(
-	.clk(CLK_40M),
-	.reset(reset),
-	.pause(pause_cpu),
-	.prog_wr(ioctl_wr && ioctl_index == 8'd5 && ioctl_addr[13]),
-	.prog_addr(ioctl_addr[12:0]),
-	.prog_data(ioctl_dout),
-	.src(ds2_src),
-	.out(ds2_audio)
-);
-// invaders board program: the board's tune speaker rides on the engine output, as it does on the board's own mix
-wire signed [16:0] ds_sum = ds_audio + (snd_flags[3] ? b8_tune : 17'sd0);
-wire signed [15:0] ds_out = ds_sum > 17'sd32767 ? 16'sd32767 : ds_sum < -17'sd32768 ? -16'sd32768 : 16'(ds_sum);
-assign audio   = ds_on ? ds_out : zac ? 16'sd0 : b8_audio;
-assign audio_r = zac ? audio : ds_on ? (ds2_on_r ? ds2_audio : ds_out) : b8_audio_r;
 
 wire rotate_ccw = ~game_flags[7];  // ROT270 sets rotate CCW, ROT90 sets CW
 wire no_rotate  = ~game_vert | status[12] | direct_video;
@@ -771,119 +704,60 @@ arcade_video #(720,24) arcade_video                 // Zaccaria: 720 master cloc
 	.fx(status[18:16])
 );
 
-/////////////////////////////  Shared ROM blocks  /////////////////////////////
+///////////////          Boards and shared pools          ////////////////
 
-// rom0: MRA index 0 0x00000-0x1FFFF (128K), stored as loaded for both boards (the variant arrives after the ROMs).
-// 8080 board: CPU program on port B; port A = high-nibble chips (spaceattbp) / invrvnge sound ROMs.
-// Zaccaria board: program ROM 0000-17FF on port B; port A = character ROM 2000-23FF.
-// Port A loads the block during download and is the second read port otherwise.
-wire        load_rom0 = ioctl_wr && ioctl_index == 8'd0 && ioctl_addr < 25'h20000;
-wire [16:0] b8_r0a, b8_r0b_a, z_r0a, z_r0b_a;
-wire  [7:0] rom0_d, rom0b_d;
-
-dpram_dc #(.widthad_a(17)) rom0
-(
-	.clock_a(CLK_40M), .address_a(load_rom0 ? ioctl_addr[16:0] : zac ? z_r0b_a : b8_r0b_a), .data_a(ioctl_dout),
-	.wren_a(load_rom0), .q_a(rom0b_d), .byteena_a(1'b1),
-	.clock_b(CLK_40M), .address_b(zac ? z_r0a : b8_r0a), .data_b(8'd0), .wren_b(1'b0), .q_b(rom0_d), .byteena_b(1'b1)
-);
-
-///////////////                 Board                  ////////////////
-
-mw8080_board board
+// rtl/spaceinvaders_dispatcher.sv: the 8080 and Zaccaria boards, their CPUs, EEPROM, sound engines, ROM and RAM pool
+spaceinvaders_dispatcher dispatcher
 (
 	.clk(CLK_40M),
-	.reset(reset | zac),
+	.reset(reset),
 	.pause(pause_cpu),
 	.variant(game_var),
+	.snd_flags(snd_flags),
+	.rom_dec(rom_dec[2:0]),
+	.f3(f3_cfg),
+	.io_tab(io_tab),
+	.ov_tab(ov_tab),
+	.ov_en(~status[23] & ~art_run),
 
 	.in0(in_port[0]),
 	.in1(in_port[1]),
 	.in2(in_port[2]),
 	.in3(in_port[3]),
-	.cocktail(1'b0),
-	.rom_dec(rom_dec[2:0]),
 	.gun_x(gun_x),
 	.gun_y(gun_y),
 	.gun_trig(gun_trig),
 	.xhair_en(~status[24]),
-	.f3(f3_cfg),
-
-	.ioctl_addr(ioctl_addr),
-	.ioctl_dout(ioctl_dout),
-	.ioctl_wr0(ioctl_wr & (ioctl_index == 8'd0)),
-
-	.rom0_a(b8_r0a),
-	.rom0_d(rom0_d),
-	.rom0b_a(b8_r0b_a),
-	.rom0b_d(rom0b_d),
 
 	.crt_flip(status[22]),
 	.h_adj(status[30:27]),
 	.v_adj(status[34:31]),
-	.ov_en(~status[23] & ~art_run),
-	.ov_tab(ov_tab),
+	.game_audio(status[48:35]),
+	.ds_vblank(vblank),
 
-	.ce_pix(b8_ce),
-	.video_r(b8_r),
-	.video_g(b8_g),
-	.video_b(b8_b),
-	.video_hs(b8_hs),
-	.video_vs(b8_vs),
-	.video_hblank(b8_hb),
-	.video_vblank(b8_vb),
+	.ioctl_download(ioctl_download),
+	.ioctl_index(ioctl_index),
+	.ioctl_wr(ioctl_wr),
+	.ioctl_addr(ioctl_addr),
+	.ioctl_dout(ioctl_dout),
 
-	.snd1(b8_snd1),
-	.snd2(b8_lat[15:8]),
-	.snd34(b8_lat[31:16]),
-	.audio(b8_audio),
-	.audio_r(b8_audio_r),
-	.ds_p1(b8_dsp1),
-	.ds_p2(b8_dsp2),
-	.ds_tune(b8_tune),
-	.io_tab(io_tab),
+	.ce_pix(ce_pix),
+	.video_r(bd_rgb[23:16]),
+	.video_g(bd_rgb[15:8]),
+	.video_b(bd_rgb[7:0]),
+	.video_hs(bd_hs),
+	.video_vs(bd_vs),
+	.video_hblank(bd_hbl),
+	.video_vblank(bd_vbl),
+
+	.audio_l(audio),
+	.audio_r(audio_r),
+	.snd_lat(snd_lat),
 
 	.hs_address(hs_address),
 	.hs_data_in(hs_data_in),
 	.hs_data_out(hs_data_out),
 	.hs_write(hs_write_enable & hs_configured)
-);
-
-zac1b1120_board zboard
-(
-	.clk(CLK_40M),
-	.reset(reset | ~zac),
-	.pause(pause_cpu),
-	.dodgem(game_var == 8'd33),
-
-	.in0(in_port[0]),
-	.in1(in_port[1]),
-	.in2(in_port[2]),
-	.in3(in_port[3]),
-
-	.rom0_a(z_r0a),
-	.rom0_d(rom0_d),
-	.rom0b_a(z_r0b_a),
-	.rom0b_d(rom0b_d),
-
-	.h_adj(status[30:27]),
-	.v_adj(status[34:31]),
-	.ov_en(~status[23] & ~art_run),
-	.ov_tab(ov_tab),
-
-	.ce_pix(z_ce),
-	.video_on(z_on),
-	.video_r(z_r),
-	.video_g(z_g),
-	.video_b(z_b),
-	.video_hs(z_hs),
-	.video_vs(z_vs),
-	.video_hblank(z_hb),
-	.video_vblank(z_vb),
-
-	.ds_latch(z_dslat),
-	.ds_period(z_dsper),
-	.ds_tone(z_dstone)
 );
 
 // Hiscore: config = MRA index 3, dump = index 4; RAM via the board's second port while the CPU is paused

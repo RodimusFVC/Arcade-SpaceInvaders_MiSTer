@@ -105,7 +105,14 @@ module mw8080_board
     input  logic [15:0] hs_address,
     input  logic  [7:0] hs_data_in,
     output logic  [7:0] hs_data_out,
-    input  logic        hs_write
+    input  logic        hs_write,
+
+    output chip_pool_pkg::t8080se_i_t     t8080se_0_i,      // pool slots in rtl/spaceinvaders_dispatcher.sv
+    input  chip_pool_pkg::t8080se_o_t     t8080se_0_o,
+    output chip_pool_pkg::eeprom93c46_i_t eeprom93c46_0_i,
+    input  chip_pool_pkg::eeprom93c46_o_t eeprom93c46_0_o,
+    output ram_pool_pkg::pram_i_t [6:0]   pr_i,             // RAM pool blocks 0-6 (Pool contract)
+    input  ram_pool_pkg::pram_o_t [6:0]   pr_o
 );
 
 // ---------------------------------------------------------------- clock enables
@@ -184,28 +191,18 @@ wire   [7:0] i80_do;
 wire  [15:0] i80_a;
 wire         i80_wr_n;
 
-`ifdef VERILATOR
-T8080se u_cpu
-`else
-t80sv_T8080se #(.Mode(2), .T2Write(1)) u_cpu
-`endif
-(
-    .RESET_n(rst_n & ~v_sfl),
-    .CLK(clk),
-    .CLKEN(cpu_ce),
-    .READY(ready & ~pause),
-    .HOLD(1'b0),
-    .INT(cpu_int),
-    .INTE(cpu_inte),
-    .DBIN(),
-    .SYNC(cpu_sync),
-    .VAIT(),
-    .HLDA(),
-    .WR_n(i80_wr_n),
-    .A(i80_a),
-    .DI(cpu_di),
-    .DO(i80_do)
-);
+// the 8080: pool slot t8080se_0 (dispatcher); sflush holds it in reset
+assign t8080se_0_i.reset_n = rst_n & ~v_sfl;
+assign t8080se_0_i.clken   = cpu_ce;
+assign t8080se_0_i.ready   = ready & ~pause;
+assign t8080se_0_i.hold    = 1'b0;
+assign t8080se_0_i.intr    = cpu_int;
+assign t8080se_0_i.di      = cpu_di;
+assign cpu_inte = t8080se_0_o.inte;
+assign cpu_sync = t8080se_0_o.sync;
+assign i80_wr_n = t8080se_0_o.wr_n;
+assign i80_a    = t8080se_0_o.a;
+assign i80_do   = t8080se_0_o.dout;
 
 // sflush: MC6800 (jt680x, 6800 microcode) at E = 1.5 MHz as MAME, cen = 4 x E = 6 MHz (39.936 MHz x 375 / 2496).
 // invrvnge: the same instance is the M6802 sound CPU (4 MHz crystal, E = 1 MHz), cen = 4 MHz (x 250 / 2496).
@@ -229,8 +226,8 @@ logic        irv_nmi;
 
 /////////////////////////////  Shared CPU / sound chip pool  /////////////////////////////
 
-// Only one of these sets runs at a time, so they share one MC6800 (rtl/chip_pool_pkg.sv). The 8080 (u_cpu above)
-// keeps its own pins: every other set uses it. rst is on the bus: the watchdog resets it, other sets hold it in reset.
+// Only one of these sets runs at a time, so they share one MC6800 (rtl/chip_pool_pkg.sv). It stays on the board
+// with the AY below until the jotego refactor (Pool contract); the 8080 is the dispatcher's t8080se_0. rst is on the bus: the watchdog resets it, other sets hold it in reset.
 // m6800_0: Straight Flush main CPU (variant 21), Invader's Revenge sound CPU (sound map 10)
 chip_pool_pkg::m6800_i_t sfl_m6800_0_i, irv_m6800_0_i, m6800_0_i;
 chip_pool_pkg::m6800_o_t m6800_0_o;
@@ -245,7 +242,7 @@ wire [15:0] m6800_0_a;
 wire  [7:0] m6800_0_do;
 wire        m6800_0_wr;
 
-jt680x m6800_0
+jt680x m6800_0         // POOL-EXCEPTION: jotego chip, kept on the board until the jotego refactor (Pool contract)
 (
     .rst(m6800_0_i.rst), .clk(clk), .cen(m6800_0_i.cen), .wr(m6800_0_wr), .addr(m6800_0_a), .din(m6800_0_i.din),
     .dout(m6800_0_do), .ext_halt(1'b0), .ba(), .irq(m6800_0_i.irq), .nmi(m6800_0_i.nmi),
@@ -519,22 +516,14 @@ end
 
 // work RAM (darthvdr): static RAM, no wait states
 logic [7:0] wram_q;
-dpram_dc #(.widthad_a(11)) u_wram
-(
-    .clock_a(clk),
-    .address_a(cpu_a[10:0]),
-    .data_a(cpu_do),
-    .wren_a(ce & ~cpu_wr_n & ~status[4] & is_wram),
-    .q_a(wram_q),
-    .byteena_a(1'b1),
-
-    .clock_b(clk),
-    .address_b(11'd0),
-    .data_b(8'd0),
-    .wren_b(1'b0),
-    .q_b(),
-    .byteena_b(1'b1)
-);
+// RAM pool block 3: u_wram (2048 bytes)
+assign pr_i[3].a_addr = 15'(11'(cpu_a[10:0]));
+assign pr_i[3].a_d    = cpu_do;
+assign pr_i[3].a_we   = ce & ~cpu_wr_n & ~status[4] & is_wram;
+assign wram_q = pr_o[3].a_q;
+assign pr_i[3].b_addr = 15'(11'(11'd0));
+assign pr_i[3].b_d    = 8'd0;
+assign pr_i[3].b_we   = 1'b0;
 
 // invmulti: memory writes to E000 select the ROM bank {D6, D4, D0}; writes to 6000 drive the EEPROM
 // (D0 DI, D4 SK, D6 CS), reads there return its DO on D0
@@ -550,23 +539,19 @@ always_ff @(posedge clk) begin
         bank <= {cpu_do[6], cpu_do[4], cpu_do[0]};
 end
 
+// 93C46 EEPROM (invmulti): pool slot eeprom93c46_0 (dispatcher). No NVRAM save / load: external port unused
 logic eep_do;
-eeprom_93c46 u_eeprom
-(
-    .clk(clk),
-    .reset(~rst_n),
-    .clear(ioctl_wr0 && ioctl_addr == 25'd0),
-    .wr(mem_wr & is_eep),
-    .di(cpu_do[0]),
-    .sk(cpu_do[4]),
-    .cs(cpu_do[6]),
-    .dout(eep_do),
-    .ext_sel(1'b0),                     // no NVRAM save / load on this core: external port unused
-    .ext_addr(7'd0),
-    .ext_din(8'd0),
-    .ext_we(1'b0),
-    .ext_q()
-);
+assign eeprom93c46_0_i.reset    = ~rst_n;
+assign eeprom93c46_0_i.clear    = ioctl_wr0 && ioctl_addr == 25'd0;
+assign eeprom93c46_0_i.wr       = mem_wr & is_eep;
+assign eeprom93c46_0_i.di       = cpu_do[0];
+assign eeprom93c46_0_i.sk       = cpu_do[4];
+assign eeprom93c46_0_i.cs       = cpu_do[6];
+assign eeprom93c46_0_i.ext_sel  = 1'b0;
+assign eeprom93c46_0_i.ext_addr = 7'd0;
+assign eeprom93c46_0_i.ext_din  = 8'd0;
+assign eeprom93c46_0_i.ext_we   = 1'b0;
+assign eep_do = eeprom93c46_0_o.dout;
 
 // data in: INTA -> RST vector, INP -> ports, video RAM -> RAM register, work RAM, EEPROM, else ROM
 // sflush (MAME sflush_map): 0000 work RAM, 4000 video RAM, 8008 paddle, 8009 shifter, 800A IN2 (bit 7 = MAME vpos
@@ -752,42 +737,28 @@ wire [4:0] vcol = flip ? 5'd30 - col : col;
 wire [12:0] ram_a  = asel ? cpu_a[12:0] : {row, vcol};
 wire        ram_we = ce & ~cpu_wr_n & (rr[8] ^ rr[9]) & asel;
 
-dpram_dc #(.widthad_a(13)) u_ram
-(
-    .clock_a(clk),
-    .address_a(ram_a),
-    .data_a(cpu_do),
-    .wren_a(ram_we),
-    .q_a(ram_q),
-    .byteena_a(1'b1),
-
-    .clock_b(clk),
-    .address_b(sfl_vb ? cpu_a[12:0] : hs_address[12:0]),
-    .data_b(sfl_vb ? cpu_do : hs_data_in),
-    .wren_b(sfl_vb ? sfl_wr & cpu_a[15:13] == 3'b010 : hs_write),
-    .q_b(vram_qb),
-    .byteena_b(1'b1)
-);
+// RAM pool block 0: u_ram (8192 bytes)
+assign pr_i[0].a_addr = 15'(13'(ram_a));
+assign pr_i[0].a_d    = cpu_do;
+assign pr_i[0].a_we   = ram_we;
+assign ram_q = pr_o[0].a_q;
+assign pr_i[0].b_addr = 15'(13'(sfl_vb ? cpu_a[12:0] : hs_address[12:0]));
+assign pr_i[0].b_d    = sfl_vb ? cpu_do : hs_data_in;
+assign pr_i[0].b_we   = sfl_vb ? sfl_wr & cpu_a[15:13] == 3'b010 : hs_write;
+assign vram_qb = pr_o[0].b_q;
 assign hs_data_out = vram_qb;
 
 // vortex colour: bit 0 of the byte after the one fetched, from a copy of the video RAM read in parallel
 logic [7:0] sram_q;
-dpram_dc #(.widthad_a(13)) u_sram
-(
-    .clock_a(clk),
-    .address_a(v_sfl ? cpu_a[12:0] : ram_a),     // sflush: work RAM 0000-1FFF
-    .data_a(cpu_do),
-    .wren_a(v_sfl ? sfl_wr & cpu_a[15:13] == 3'b000 : ram_we & v_vtx),
-    .q_a(sram_qa),
-    .byteena_a(1'b1),
-
-    .clock_b(clk),
-    .address_b({row, vcol} + 13'd1),
-    .data_b(8'd0),
-    .wren_b(1'b0),
-    .q_b(sram_q),
-    .byteena_b(1'b1)
-);
+// RAM pool block 1: u_sram (8192 bytes)
+assign pr_i[1].a_addr = 15'(13'(v_sfl ? cpu_a[12:0] : ram_a));
+assign pr_i[1].a_d    = cpu_do;
+assign pr_i[1].a_we   = v_sfl ? sfl_wr & cpu_a[15:13] == 3'b000 : ram_we & v_vtx;
+assign sram_qa = pr_o[1].a_q;
+assign pr_i[1].b_addr = 15'(13'({row, vcol} + 13'd1));
+assign pr_i[1].b_d    = 8'd0;
+assign pr_i[1].b_we   = 1'b0;
+assign sram_q = pr_o[1].b_q;
 
 logic [1:0] cdb = 2'd0;             // {next byte bit 0, source column bit 2}, timed as rdb
 always_ff @(posedge clk) if (ce) cdb <= {sram_q[0], vcol[2]};
@@ -804,22 +775,15 @@ wire  [1:0] cmap_sel = cflags[7:6];
 wire        cmap = cmap_sel == 2'd1 ? snd2[5] : cmap_sel == 2'd2 ? ~snd2[5] : cmap_sel == 2'd3 ? snd2[6] : 1'b0;
 wire [10:0] prom_ia = {cmap, row[7:3], vcol};
 
-dpram_dc #(.widthad_a(12)) u_cprom
-(
-    .clock_a(clk),
-    .address_a(reset ? ioctl_addr[11:0] : col_mode == 8'd7 ? {1'b0, p2_a} : {4'b1000, cloud_a}),
-    .data_a(ioctl_dout),
-    .wren_a(cprom_dl),
-    .q_a(cloud_q),
-    .byteena_a(1'b1),
-
-    .clock_b(clk),
-    .address_b({1'b0, prom_ia}),
-    .data_b(8'd0),
-    .wren_b(1'b0),
-    .q_b(cprom_q),
-    .byteena_b(1'b1)
-);
+// RAM pool block 2: u_cprom (4096 bytes)
+assign pr_i[2].a_addr = 15'(12'(reset ? ioctl_addr[11:0] : col_mode == 8'd7 ? {1'b0, p2_a} : {4'b1000, cloud_a}));
+assign pr_i[2].a_d    = ioctl_dout;
+assign pr_i[2].a_we   = cprom_dl;
+assign cloud_q = pr_o[2].a_q;
+assign pr_i[2].b_addr = 15'(12'({1'b0, prom_ia}));
+assign pr_i[2].b_d    = 8'd0;
+assign pr_i[2].b_we   = 1'b0;
+assign cprom_q = pr_o[2].b_q;
 
 // CPU colour RAM: per 4 rows {A12:7, A4:0} (schaser, polaris, lupin3a, orbite), per 8 rows {A12:8, A4:0}
 // (rollingc, second RAM = background colours), cosmo 5C00-5FFF {A9:0}
@@ -828,39 +792,25 @@ wire [10:0] cram_ca = cram4 ? {cpu_a[12:7], cpu_a[4:0]} : col_mode == 8'd6 ? {1'
                               {1'b0, cpu_a[12:8], cpu_a[4:0]};
 wire [10:0] cram_va = cram4 ? {row[7:2], vcol} : {1'b0, row[7:3], vcol};
 
-dpram_dc #(.widthad_a(11)) u_cram
-(
-    .clock_a(clk),
-    .address_a(cram_ca),
-    .data_a(cpu_do),
-    .wren_a(mem_wr & is_cram),
-    .q_a(cram_qa),
-    .byteena_a(1'b1),
+// RAM pool block 4: u_cram (2048 bytes)
+assign pr_i[4].a_addr = 15'(11'(cram_ca));
+assign pr_i[4].a_d    = cpu_do;
+assign pr_i[4].a_we   = mem_wr & is_cram;
+assign cram_qa = pr_o[4].a_q;
+assign pr_i[4].b_addr = 15'(11'(cram_va));
+assign pr_i[4].b_d    = 8'd0;
+assign pr_i[4].b_we   = 1'b0;
+assign cram_qb = pr_o[4].b_q;
 
-    .clock_b(clk),
-    .address_b(cram_va),
-    .data_b(8'd0),
-    .wren_b(1'b0),
-    .q_b(cram_qb),
-    .byteena_b(1'b1)
-);
-
-dpram_dc #(.widthad_a(10)) u_cram2
-(
-    .clock_a(clk),
-    .address_a(cram_ca[9:0]),
-    .data_a(cpu_do),
-    .wren_a(mem_wr & is_cram2),
-    .q_a(cram2_qa),
-    .byteena_a(1'b1),
-
-    .clock_b(clk),
-    .address_b(cram_va[9:0]),
-    .data_b(8'd0),
-    .wren_b(1'b0),
-    .q_b(cram2_qb),
-    .byteena_b(1'b1)
-);
+// RAM pool block 5: u_cram2 (1024 bytes)
+assign pr_i[5].a_addr = 15'(10'(cram_ca[9:0]));
+assign pr_i[5].a_d    = cpu_do;
+assign pr_i[5].a_we   = mem_wr & is_cram2;
+assign cram2_qa = pr_o[5].a_q;
+assign pr_i[5].b_addr = 15'(10'(cram_va[9:0]));
+assign pr_i[5].b_d    = 8'd0;
+assign pr_i[5].b_we   = 1'b0;
+assign cram2_qb = pr_o[5].b_q;
 
 // colour of the fetched byte, timed as rdb: {cloud allowed, background pen, foreground pen}
 logic [7:0] pq = 8'd0, cq = 8'd0, c2q = 8'd0;
@@ -1222,25 +1172,17 @@ always_comb begin
     else                           irv_di = 8'h00;
 end
 
-dpram_dc #(.widthad_a(7)) u_irv_ram
-(
-    .clock_a(clk),
-    .address_a(irv_ram_we ? cmt_a[6:0] : m68_a[6:0]),
-    .data_a(cmt_d),
-    .wren_a(irv_ram_we),
-    .q_a(irv_ram_q),
-    .byteena_a(1'b1),
-
-    .clock_b(clk),
-    .address_b(7'd0),
-    .data_b(8'd0),
-    .wren_b(1'b0),
-    .q_b(),
-    .byteena_b(1'b1)
-);
+// RAM pool block 6: u_irv_ram (128 bytes)
+assign pr_i[6].a_addr = 15'(7'(irv_ram_we ? cmt_a[6:0] : m68_a[6:0]));
+assign pr_i[6].a_d    = cmt_d;
+assign pr_i[6].a_we   = irv_ram_we;
+assign irv_ram_q = pr_o[6].a_q;
+assign pr_i[6].b_addr = 15'(7'(7'd0));
+assign pr_i[6].b_d    = 8'd0;
+assign pr_i[6].b_we   = 1'b0;
 
 wire [9:0] ay_snd;
-jt49 u_ay
+jt49 u_ay              // POOL-EXCEPTION: jotego chip, kept on the board until the jotego refactor (Pool contract)
 (
     .rst_n(rst_n & v_irv),
     .clk(clk),

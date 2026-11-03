@@ -22,8 +22,8 @@ cannot show.
 
 ## 2026-11-03 changes (read first; supersedes the sections named)
 
-Every sound board of this core now runs on the engine; `rtl/invaders_sound.sv` (and its generated
-`rtl/invaders_snd_consts.svh`) are deleted. Detail, numbers and A/B results: `Claude/standards_pass_2026-11-02.md` steps 5-10.
+Every sound board of this core now runs on the engine; `rtl/invaders_sound.sv`, `rtl/zac_snd.sv` and their generated
+`*_consts.svh` are deleted (only invrvnge's own board + the tune speaker stay in RTL). Detail, numbers and A/B results: `Claude/standards_pass_2026-11-02.md` steps 5-10.
 
 - **Invaders boards → `tools/dsnd_invaders.py`** `invaders(board, tweak=True, grid=None, sn_top=None)`, one program per
   board value: MIDWAY, TAITO, PV, CV, INVAD2CT1, INVAD2CT2 (constants from `tools/snd_consts.py` BOARD_PARAMS; the 17-bit
@@ -42,9 +42,14 @@ Every sound board of this core now runs on the engine; `rtl/invaders_sound.sv` (
   loaded: `audio_r = ds2_on ? ds2_audio : ds_out` (output table in §4 superseded). Used by invad2ct.
 - **Board audio** (`mw8080_board.sv`): only invrvnge's own sound board and the tune speaker remain; `audio_r = audio`;
   ports `snd_board` / `snd_tweak` removed.
-- **Zaccaria (in progress, step 10)**: `zac1b1120_board.sv` exports `ds_latch` / `ds_period` / `ds_tone`; for `zac` sets
-  `ds_src` latch 1 = 1E80 latch, latch 2 = S2636 C7 period, source 5 bit 2 = tone bit; zac audio = `ds_on ? ds_out :
-  z_audio` until `zac_snd.sv` is removed.
+- **Zaccaria → `tools/dsnd_zac.py`** (HW 2026-11-03): `zac1b1120_board.sv` exports `ds_latch` / `ds_period` / `ds_tone`;
+  for `zac` sets `ds_src` latch 1 = 1E80 latch, latch 2 = S2636 C7 period, source 5 bit 2 = tone bit. Keys
+  `zac1b1120:tinvader` / `zac1b1120:dodgem` (`gen_mra.py dsnd_key`). Default = raw tone bit, exact 555, engine noise
+  with the lock-up guard. Zac audio = `ds_on ? ds_out : 0`; `snd_tweak` port gone (Game Audio via sources 6 / 7).
+  Reference of the deleted RTL: `verilator_local_files/.../dsnd_zac_ab/ref/zac_snd.sv` + `verilator/snd/zac_model.h`.
+- **Engine `11dbdc41`: NOISE b[2] = SN76477 lock-up guard** (§3 table superseded for op 19): the new bit is forced 1
+  while LFSR bits 28 and 4:0 are all 0. b[2] = 0 is the old op (all shipped programs: byte-identical WAVs).
+  `dsnd_model.h` has the same line.
 - **gen_mra.py**: drops `#if 0` blocks from the MAME source (`strip_if0`; spclaser's dead DIPs had wiped Space War's
   controls); MAME paths = the vault link `Projects/Mame_Source`.
 
@@ -210,7 +215,7 @@ Notation:
 | 16 | MINI | imm | `if acc > imm: acc = imm` | 2 | 1 |
 | 17 | BIT | a, b | `F = sbit` (a[0] inverts) | 2 | 1 |
 | 18 | NOT | — | `F = !F` | 2 | 1 |
-| 19 | NOISE | b | `L = lfsr[b[1:0]]` (31 bit); `nb = L[28] ^ L[0]`; `L = {nb, L[30:1]}`; `F = nb` (ENG:276-281, MODEL:84) | 2 | 1 |
+| 19 | NOISE | b | `L = lfsr[b[1:0]]` (31 bit); `nb = L[28] ^ L[0]`; b[2]: `nb = 1` when `L[28]` and `L[4:0]` are all 0 (SN76477 lock-up guard, 2026-11-03); `L = {nb, L[30:1]}`; `F = nb` (ENG:276-283, MODEL:84-86) | 2 | 1 |
 | 20 | OUT | — | `mix = mix + acc` | 2 | 1 |
 | 21 | LDF | a | `if F: acc = M[a]` | 2 | 1 |
 | 22 | SKF | imm | `if F: pc = pc_next + imm` (10-bit wrap, relative to the next word, ENG:184, MODEL:87) | 2 | 1 |
@@ -292,7 +297,7 @@ Do not rely on the values of acc and F at the start of a sample. Do not rely on 
 
 | Condition | Result | Source |
 |---|---|---|
-| `zac` | Zaccaria board audio (2026-11-03: `ds_out` when an index 5 program is loaded) | TOP:80-81 |
+| `zac` | `ds_out` when an index 5 program is loaded, else silence (2026-11-03: `zac_snd` removed) | TOP:80-81 |
 | else `ds_on` | `ds_audio` (+ tune with `S_DS_BOARD`) on the left; right = `ds2_audio` when engine 2 is loaded, else the same | TOP:80-81 |
 | else | board audio (2026-11-03: only invrvnge's own board + tune; `invaders_sound` removed) | TOP:80-81 |
 | Master Volume | applied after the mux: ×1, 0.71, 0.5, 0.25, 1.41 or 2, saturated | TOP:82-91 |
@@ -412,8 +417,8 @@ index 5 only for `mw8080bw.cpp` machines (GEN:1057).
   maps Timing → C18/C19 and Oscillator → engine oscillator caps (`tools/dsnd_zzzap.py` docstring).
 - Boards with no group, kreg or music input get no change block, and only Master Volume affects them. Currently that
   is gunfight and seawolf (§7.6).
-- `zac_snd.sv` receives the same OSD bits through its `snd_tweak` port, not through the engine (TOP:714).
-  (`invaders_sound.sv` did too; deleted 2026-11-03 — its boards read sources 6 / 7 through `dsnd_invaders.py`.)
+- (`zac_snd.sv` and `invaders_sound.sv` took these bits through `snd_tweak` ports; both deleted 2026-11-03 — their
+  programs read sources 6 / 7.)
 
 ---
 

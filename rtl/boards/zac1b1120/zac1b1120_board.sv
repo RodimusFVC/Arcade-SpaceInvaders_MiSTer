@@ -64,7 +64,12 @@ module zac1b1120_board
 
     output logic  [7:0] ds_latch,       // sound board on the dsnd engine (MRA index 5, tools/dsnd_zac.py): the 1E80 latch,
     output logic  [7:0] ds_period,      //   the S2636 tone period (C7)
-    output logic        ds_tone         //   and the tone bit itself
+    output logic        ds_tone,        //   and the tone bit itself
+
+    output chip_pool_pkg::s2650_i_t s2650_0_i,              // pool slot in rtl/spaceinvaders_dispatcher.sv
+    input  chip_pool_pkg::s2650_o_t s2650_0_o,
+    output ram_pool_pkg::pram_i_t [6:0] pr_i,               // RAM pool blocks 0-2 (Pool contract); 3-6 unused here
+    input  ram_pool_pkg::pram_o_t [6:0] pr_o
 );
 
 // ---------------------------------------------------------------- master clock enable
@@ -111,26 +116,20 @@ logic [5:0] cdiv = 6'd0;            // 48 master clocks per bus cycle
 always_ff @(posedge clk) if (mce) cdiv <= (cdiv == 6'd47) ? 6'd0 : cdiv + 6'd1;
 wire ack = mce & (cdiv == 6'd47) & ~pause;
 
-s2650sv_s2650_cpu u_cpu
-(
-    .clk(clk),
-    .reset(reset),
-    .req(cpu_req),
-    .ack(ack),
-    .ad(cpu_ad),
-    .wr(cpu_wr),
-    .dw(cpu_dw),
-    .dr(cpu_dr),
-    .mio(cpu_mio),
-    .ene(cpu_ene),
-    .dc(cpu_dc),
-    .ph(cpu_ph),
-    .irq(1'b0),
-    .intack(),
-    .ivec(8'h00),
-    .sense(vis_v),                  // MAME: sense = !VBLANK
-    .flag()
-);
+// the S2650: pool slot s2650_0 (dispatcher); sense = vis_v (not VBLANK)
+assign s2650_0_i.reset = reset;
+assign s2650_0_i.ack = ack;
+assign s2650_0_i.dr = cpu_dr;
+assign s2650_0_i.irq = 1'b0;
+assign s2650_0_i.sense = vis_v;
+assign cpu_req = s2650_0_o.req;
+assign cpu_ad = s2650_0_o.ad;
+assign cpu_wr = s2650_0_o.wr;
+assign cpu_dw = s2650_0_o.dw;
+assign cpu_mio = s2650_0_o.mio;
+assign cpu_ene = s2650_0_o.ene;
+assign cpu_dc = s2650_0_o.dc;
+assign cpu_ph = s2650_0_o.ph;
 
 // The core's bus outputs are its combinational next state: between acks they hold the current access, during an ack
 // they already show the next one. Registered copies therefore describe the access being completed at ack, and the
@@ -172,26 +171,33 @@ assign rom_q   = rom0_d;
 assign rom0b_a = {7'h08, gfx_va};
 assign gfx_q   = rom0b_d;
 
-dpram_dc #(.widthad_a(10)) u_vram
-(
-    .clock_a(clk), .address_a(ba[9:0]), .data_a(dw_r),
-    .wren_a(bwr & is_vram), .q_a(vram_q), .byteena_a(1'b1),
-    .clock_b(clk), .address_b(vram_va), .data_b(8'd0), .wren_b(1'b0), .q_b(vram_vq), .byteena_b(1'b1)
-);
+// RAM pool block 0: u_vram (1024 bytes)
+assign pr_i[0].a_addr = 15'(10'(ba[9:0]));
+assign pr_i[0].a_d    = dw_r;
+assign pr_i[0].a_we   = bwr & is_vram;
+assign vram_q = pr_o[0].a_q;
+assign pr_i[0].b_addr = 15'(10'(vram_va));
+assign pr_i[0].b_d    = 8'd0;
+assign pr_i[0].b_we   = 1'b0;
+assign vram_vq = pr_o[0].b_q;
 
-dpram_dc #(.widthad_a(9)) u_ram
-(
-    .clock_a(clk), .address_a(ba[8:0]), .data_a(dw_r),
-    .wren_a(bwr & is_ram), .q_a(ram_q), .byteena_a(1'b1),
-    .clock_b(clk), .address_b(9'd0), .data_b(8'd0), .wren_b(1'b0), .q_b(), .byteena_b(1'b1)
-);
+// RAM pool block 1: u_ram (512 bytes)
+assign pr_i[1].a_addr = 15'(9'(ba[8:0]));
+assign pr_i[1].a_d    = dw_r;
+assign pr_i[1].a_we   = bwr & is_ram;
+assign ram_q = pr_o[1].a_q;
+assign pr_i[1].b_addr = 15'(9'(9'd0));
+assign pr_i[1].b_d    = 8'd0;
+assign pr_i[1].b_we   = 1'b0;
 
-dpram_dc #(.widthad_a(8)) u_pvi
-(
-    .clock_a(clk), .address_a(ba[7:0]), .data_a(dw_r),
-    .wren_a(bwr & is_pvi), .q_a(pvi_q), .byteena_a(1'b1),
-    .clock_b(clk), .address_b(8'd0), .data_b(8'd0), .wren_b(1'b0), .q_b(), .byteena_b(1'b1)
-);
+// RAM pool block 2: u_pvi (256 bytes)
+assign pr_i[2].a_addr = 15'(8'(ba[7:0]));
+assign pr_i[2].a_d    = dw_r;
+assign pr_i[2].a_we   = bwr & is_pvi;
+assign pvi_q = pr_o[2].a_q;
+assign pr_i[2].b_addr = 15'(8'(8'd0));
+assign pr_i[2].b_d    = 8'd0;
+assign pr_i[2].b_we   = 1'b0;
 
 // PVI object registers the video needs every line, mirrored as they are written: 4 objects x 14 bytes, sizes, tone
 logic [7:0] obj [4][14];
@@ -249,6 +255,8 @@ end
 assign ds_latch  = snd_l;
 assign ds_period = snd_period;
 assign ds_tone   = pvi_tone;
+
+assign pr_i[6:3] = '0;
 
 // ---------------------------------------------------------------- character background (master / 3)
 

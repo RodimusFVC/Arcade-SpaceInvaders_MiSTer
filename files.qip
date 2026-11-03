@@ -1,10 +1,12 @@
 set_global_assignment -name VHDL_INPUT_VERSION VHDL_2008
 
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/chip_pool_pkg.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/ram_pool_pkg.sv
 set_global_assignment -name SYSTEMVERILOG_FILE Arcade-SpaceInvaders.sv
-set_global_assignment -name SYSTEMVERILOG_FILE rtl/mw8080_board.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/spaceinvaders_dispatcher.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/boards/mw8080/mw8080_board.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/rodimus/eeprom_93c46/eeprom_93c46.sv
-set_global_assignment -name SYSTEMVERILOG_FILE rtl/zac1b1120_board.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/boards/zac1b1120/zac1b1120_board.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/rodimus/dsnd_engine/dsnd_engine.sv
 set_global_assignment -name VERILOG_FILE rtl/cpu/jt680x/jt680x.v
 set_global_assignment -name VERILOG_FILE rtl/cpu/jt680x/jt680x_ctrl.v
