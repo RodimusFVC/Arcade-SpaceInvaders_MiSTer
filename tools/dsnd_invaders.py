@@ -7,7 +7,7 @@ constants (tools/snd_consts.py BOARDS[board], Q20 volts / Q28 coefficients conve
 output scaling (OUT_G counts per volt) and P35 mute. `board` selects the constant set (snd_consts BOARD_PARAMS key);
 MIDWAY and TAITO (L-shaped, RTL board 1: constants only, its trimmer mix is folded into the G_ gains by snd_consts)
 are A/B-verified (Factory Game Audio). The other sets differ in constants only, plus INVAD2CT2's C37 low-pass, PV's
-8V gate and MAME's unclamped summer. `grid` (default: every board but MIDWAY, whose shipped program stays as it is)
+8V gate and MAME's unclamped summer. `grid` (default: every board; MIDWAY since 2026-11-03)
 puts the saucer-hit / invader-hit VCO_1s on the RTL's exact substep grid (vco1_grid; their steps and reciprocals
 move to the round robin's idle slots), which also lowers the static worst case (Taito 407 vs 409).
 
@@ -76,7 +76,7 @@ class Inv(Board):
     def __init__(self, board="MIDWAY", tweak=True, grid=None, sn_top=None):
         super().__init__("invaders_" + board.lower())
         self.board = board
-        self.grid = board != "MIDWAY" if grid is None else grid     # VCO_1s on the exact substep grid (vco1_grid)
+        self.grid = True if grid is None else grid     # VCO_1s on the exact substep grid (vco1_grid); MIDWAY too since 2026-11-03
         # SN76477 top crossing at most 15 substeps back (sn76477): off for the shipped MIDWAY / TAITO programs
         self.sn_top = True if sn_top is None else sn_top    # every board (MIDWAY / TAITO too: user 2026-11-02)
         self.c = SC.BOARDS[board]
