@@ -1,4 +1,4 @@
-"""Space Chaser (Taito 1979) and Crash Road (Centromatic bootleg) sound for the discrete sound engine (tools/dsnd.py,
+"""Space Chaser (Taito 1979) and Crash Road (Centromatic bootleg) sound for the discrete sound engine (master tools/dsnd.py,
 rtl/dsnd_engine.sv). Engine keys "8080bw:schaser" (schaser, schasera/b/c, schaserm) and "8080bw:crashrd".
 
 No schematic: MAME 8080bw_a.cpp schaser_discrete + schaser_sh_port_1_w / _2_w / schaser_effect_555_cb, crashrd_port03_w
@@ -24,6 +24,7 @@ input, 0..3.5 V) -> 560R / 0.1u -> 7.36k / 0.1u -> high pass 59.36k / 1u x VR2; 
 defaults 70 / 90 / 70 %. Filters start at their idle levels (no power-on thump).
 """
 import math
+import dsnd_rate  # noqa: F401,E402  master assembler + this core's FS, before any dsnd import
 from dsnd import Board, LATCH1, LATCH2, q, ONE, FS
 
 K, U = 1e3, 1e-6

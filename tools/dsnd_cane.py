@@ -1,4 +1,4 @@
-"""Cane (Model Racing prototype, 1979?) sound for the discrete sound engine (tools/dsnd.py, rtl/dsnd_engine.sv).
+"""Cane (Model Racing prototype, 1979?) sound for the discrete sound engine (master tools/dsnd.py, rtl/dsnd_engine.sv).
 
 No schematic exists (unreleased prototype; MAME's driver is derived from the game's source code). Reference = MAME
 8080bw_a.cpp CANE_AUDIO (SN76477 + 555 one-shot noise + TOS music, J.P. Piccato), node for node:
@@ -27,6 +27,7 @@ control voltage 5 (1 - exp(-t / 47)) with t in SECONDS since the last port-3 wri
 the game never uses an SN mixer mode with the VCO while SX0 is on, so the VCO choice is inaudible in this game.
 """
 import math
+import dsnd_rate  # noqa: F401,E402  master assembler + this core's FS, before any dsnd import
 from dsnd import Board, LATCH1, LATCH2, MISC, q, ONE, FS
 
 P5_STROBE_BIT, P3_STROBE_BIT = 2, 3                  # MISC (source 5) bits that would toggle on each port 5 / 3 write

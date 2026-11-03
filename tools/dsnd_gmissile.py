@@ -1,4 +1,4 @@
-"""Guided Missile (Midway 1977) sound board for the discrete sound engine (tools/dsnd.py, rtl/dsnd_engine.sv).
+"""Guided Missile (Midway 1977) sound board for the discrete sound engine (master tools/dsnd.py, rtl/dsnd_engine.sv).
 
 From the game board schematic (Useful Information/schematics/Guided Missile - gameboard schematics.pdf), not MAME
 (MAME plays two samples). Spec: verilator/snd/gmissile/gm_proto.py, ngspice reference gm_spice.py (same part names).
@@ -14,6 +14,7 @@ counter picks the tiers so every tier is evenly spaced. Units: V, mA, kOhm, mS.
 import math
 import sys
 import numpy as np
+import dsnd_rate  # noqa: F401,E402  master assembler + this core's FS, before any dsnd import
 from dsnd import Board, LATCH1, LATCH2, LATCH4, q, ONE
 
 FS = 48000.0

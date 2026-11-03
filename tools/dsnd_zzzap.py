@@ -1,4 +1,4 @@
-"""280-ZZZAP (Midway 1976) / Laguna Racer (Midway 1977) sound board for the discrete sound engine (tools/dsnd.py,
+"""280-ZZZAP (Midway 1976) / Laguna Racer (Midway 1977) sound board for the discrete sound engine (master tools/dsnd.py,
 rtl/dsnd_engine.sv).
 
 From the schematic "280 ZZZAP Game Logic P.C. 0610-00907A" (Useful Information/schematics/
@@ -19,6 +19,7 @@ Noise: binary noise (the saturating zener amplifier H4_2) at 24 kHz like MAME. O
 ((V - 2.5) / 1.25), route 1.0. Game Audio: Timing = C18 / C19 (engine response), Oscillator = engine oscillator caps.
 """
 import math
+import dsnd_rate  # noqa: F401,E402  master assembler + this core's FS, before any dsnd import
 from dsnd import Board, LATCH1, LATCH2, q, ONE, FS
 
 H = 1.0 / FS

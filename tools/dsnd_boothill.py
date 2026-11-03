@@ -1,4 +1,4 @@
-"""Boot Hill (Midway 1977) sound for the discrete sound engine (tools/dsnd.py, rtl/dsnd_engine.sv).
+"""Boot Hill (Midway 1977) sound for the discrete sound engine (master tools/dsnd.py, rtl/dsnd_engine.sv).
 
 Board: PC 0612-00902A (Boot_Hill_Game_Logic_(0612-00902A).pdf). Started from dsnd_boards.boothill() (MAME
 boothill_discrete, HW-confirmed 2026-10-02); three schematic corrections:
@@ -18,18 +18,13 @@ S1 = port 3 (D2 coin, D3 game on, D4 / D5 left / right shot, D6 / D7 left / righ
 Stereo board folded to mono 0.5 (L + R). Music volume (1M pot) at MAME's 35 % default (404K).
 """
 import math
+import dsnd_rate  # noqa: F401,E402  master assembler + this core's FS, before any dsnd import
 from dsnd import Board, LATCH1, LATCH2, LATCH3, FN_TRG0, FN_TRG1
+from dsnd_midway import MIDWAY_MUSIC_TVCA, logadj  # noqa: E402
 
 K, M_, U = 1e3, 1e6, 1e-6
 # copies of the dsnd_boards.py helpers (no import from dsnd_boards: it will import this file)
-MIDWAY_MUSIC_TVCA = dict(r1=3.3 * M_, r2=10 * K + 680 * K, r4=680 * K, r5=10 * K, r7=680 * K, c1=0.001 * U,
-                         v1=12, vP=12, f0=FN_TRG0, f2=FN_TRG1)
 SHOT_TVCA = dict(r1=2.7 * M_, r2=510 * K, r4=510 * K, r5=10 * K, r7=510 * K, c1=0.22 * U, v1=12, vP=12, f2=FN_TRG0)
-
-
-def logadj(rmin, rmax, pct):
-    """DISCRETE_ADJUSTMENT with DISC_LOGADJ at a PORT_ADJUSTER default (percent)"""
-    return 10 ** (math.log10(rmin) + pct / 100 * (math.log10(rmax) - math.log10(rmin)))
 
 
 def gated_out(b, src_l, src_r, scale, en):

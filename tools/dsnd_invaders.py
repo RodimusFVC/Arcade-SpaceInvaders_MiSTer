@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Space Invaders sound board (Midway A084-90700-B000 and its variants) as a discrete sound engine program
-(tools/dsnd.py, rtl/rodimus/dsnd_engine/dsnd_engine.sv).
+(master tools/dsnd.py, rtl/rodimus/dsnd_engine/dsnd_engine.sv).
 
 A circuit-for-circuit port of rtl/invaders_sound.sv (bit-exact C model verilator/snd/model.h): same topology, same
 constants (tools/snd_consts.py BOARDS[board], Q20 volts / Q28 coefficients converted to Q24), same summer, rail clamp,
@@ -43,6 +43,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import dsnd_rate  # noqa: F401,E402  master assembler + this core's FS, before any dsnd import
 from dsnd import Board, LATCH1, LATCH2, q, ONE, FS, OPS        # noqa: E402
 import snd_consts as SC                                         # noqa: E402
 

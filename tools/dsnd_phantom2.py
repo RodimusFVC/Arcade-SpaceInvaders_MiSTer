@@ -1,4 +1,4 @@
-"""Phantom II (Midway 1979, game no. 652) sound board for the discrete sound engine (tools/dsnd.py, rtl/dsnd_engine.sv).
+"""Phantom II (Midway 1979, game no. 652) sound board for the discrete sound engine (master tools/dsnd.py, rtl/dsnd_engine.sv).
 
 From the schematic (Useful Information/schematics/Phantom_II_Parts_and_Operating_Manual_(Oct_1979).pdf, PDF p19 =
 manual p17 "GAME BOARD SCHEMATIC", right half), settled with ngspice (verilator/snd/phantom2/ph_spice.py). MAME plays
@@ -11,6 +11,7 @@ pull-down (explosion 560 ohm / 1 uF ladder and radar 0.1 uF / 1.5k loads).
 Noise: 4006 18-stage register (taps 5 / 17, out bit 13) clocked by a 4030 RC oscillator (56k / 1 nF, 7.8 kHz by
 ngspice); the engine's LFSR stands in for the 4006 (same clocking, different sequence).
 """
+import dsnd_rate  # noqa: F401,E402  master assembler + this core's FS, before any dsnd import
 from dsnd import Board, LATCH1, LATCH2, q, ONE, FS, rc_exp
 import numpy as np
 

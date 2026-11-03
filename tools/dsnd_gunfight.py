@@ -1,4 +1,4 @@
-"""Gun Fight (Midway 1975) sound board for the discrete sound engine (tools/dsnd.py, rtl/dsnd_engine.sv).
+"""Gun Fight (Midway 1975) sound board for the discrete sound engine (master tools/dsnd.py, rtl/dsnd_engine.sv).
 
 Four transistor noise generators (left / right shot and hit), each switched onto its own supply cap, feeding one
 transistor mixer per side. Per-sample solver as verilator/snd/gunfight/gf_proto.py (the spec; MAME nl_gunfight
@@ -9,6 +9,7 @@ Units: V, mA, kOhm. S1 = the sound port (A0 AND gate): (~D7-D4) = 1 / 2 / 3 / 4 
 left hit / right hit, any other value turns all four off (MAME gunfight_audio_device::write).
 """
 import math
+import dsnd_rate  # noqa: F401,E402  master assembler + this core's FS, before any dsnd import
 from dsnd import Board, LATCH1, q, ONE
 
 SR = 24000.0                                         # per side
@@ -66,7 +67,7 @@ def lin(b, dst, const, terms):
 
 
 def jump(b):
-    """unconditional forward skip (F forced to 1; tools/dsnd.py worst_path() takes it as always taken)"""
+    """unconditional forward skip (F forced to 1; master tools/dsnd.py worst_path() takes it as always taken)"""
     b.op("CMPI", imm=NEVER)
     return b.skip_if(True)
 

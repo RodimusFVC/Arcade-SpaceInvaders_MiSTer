@@ -1,4 +1,4 @@
-"""Desert Gun / Road Runner (Midway 1977, desertgu / roadrunm) sound for the discrete sound engine (tools/dsnd.py,
+"""Desert Gun / Road Runner (Midway 1977, desertgu / roadrunm) sound for the discrete sound engine (master tools/dsnd.py,
 rtl/dsnd_engine.sv), from the schematic "Road Runner Game Logic & Sound" P.C. 0618-00902E (6-1-77), one sheet.
 
 Latches: S1 = port 3 (H4 74174 -> 7417 H3, 10k pull-ups to +12): D2 coin, D3 game on (7404 G2 -> 7417 J3 -> mute
@@ -16,8 +16,9 @@ The Road Runner / creature voices run on even samples, bottle / beep / the band-
 the rest every sample.
 """
 import math
+import dsnd_rate  # noqa: F401,E402  master assembler + this core's FS, before any dsnd import
 from dsnd import Board, LATCH1, LATCH2, LATCH3, LATCH4, q, ONE
-from dsnd_boards import MIDWAY_MUSIC_TVCA, logadj
+from dsnd_midway import MIDWAY_MUSIC_TVCA, logadj  # noqa: E402
 
 SR = 48000.0
 DT = 1.0 / SR

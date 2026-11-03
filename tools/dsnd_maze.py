@@ -1,4 +1,4 @@
-"""Amazing Maze (Midway 1976) sound for the discrete sound engine (tools/dsnd.py, rtl/dsnd_engine.sv).
+"""Amazing Maze (Midway 1976) sound for the discrete sound engine (master tools/dsnd.py, rtl/dsnd_engine.sv).
 
 Board: optional game-board add-on 0611-00905 ("Sound Circuit (Optional) Game Board Add-On", one page,
 Amazing_Maze_Sound_Board_Addon_(0611-00905).pdf). Started from dsnd_boards.maze() (MAME maze_discrete, sim-checked);
@@ -22,6 +22,7 @@ D0 LEFT, D1 RIGHT, D2 DOWN, D3 UP), coin = misc bit 1 (~IN1 D3, low while the co
 """
 import math
 
+import dsnd_rate  # noqa: F401,E402  master assembler + this core's FS, before any dsnd import
 from dsnd import Board, q, ONE, FS
 
 K, M_, U = 1e3, 1e6, 1e-6

@@ -1,4 +1,4 @@
-"""Space Encounters (Midway 1980) sound board for the discrete sound engine (tools/dsnd.py, rtl/dsnd_engine.sv).
+"""Space Encounters (Midway 1980) sound board for the discrete sound engine (master tools/dsnd.py, rtl/dsnd_engine.sv).
 
 From the schematic (Sound Generator A084-91324-F645, M051-00645-A004, Useful Information/schematics/
 Space_Encounters_Wiring_and_Schematics.pdf p3); MAME mw8080bw_a.cpp (D. Renaud) where it agrees, and its node models
@@ -15,6 +15,7 @@ Alternate samples (24 kHz, held): A = wind filter + phaser, explosion ladder; B 
 coupling caps >= 2 ms, enemy-shot VCO reciprocals (vmod moves over 60 ms+).
 """
 import math
+import dsnd_rate  # noqa: F401,E402  master assembler + this core's FS, before any dsnd import
 from dsnd import Board, LATCH1, LATCH2, LATCH3, q, ONE, FS, rc_exp, VBE, par
 
 K, M_, U = 1e3, 1e6, 1e-6

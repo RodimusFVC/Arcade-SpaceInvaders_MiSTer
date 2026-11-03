@@ -1,10 +1,12 @@
-"""Sound board programs for the discrete sound engine (tools/dsnd.py, rtl/dsnd_engine.sv).
+"""Sound board programs for the discrete sound engine (master tools/dsnd.py, rtl/dsnd_engine.sv).
 
 Circuit descriptions follow MAME src/mame/midw8080/mw8080bw_a.cpp (Derrick Renaud and others) where MAME models the
 board, and the board schematics where it does not. program(machine) -> MRA index 5 bytes, or None.
 Engine sources: LATCH1-4 = the board's sound latches 1-4 (FAMILY4 S1-S4 in tools/gen_mra.py), MISC bit 0 = VBLANK.
 """
+import dsnd_rate  # noqa: F401,E402  master assembler + this core's FS, before any dsnd import
 from dsnd import (Board, LATCH1, LATCH2, LATCH3, LATCH4, FN_NONE, FN_TRG0, FN_TRG1, FN_TRG2, q, ONE, FS, rc_exp)
+from dsnd_midway import MIDWAY_MUSIC_TVCA, logadj  # noqa: E402
 from dsnd_gunfight import gunfight
 from dsnd_spcenctr import spcenctr
 from dsnd_zzzap import zzzap, lagunar
@@ -17,9 +19,6 @@ from dsnd_boothill import boothill as boothill_hw     # schematic-validated 2026
 
 K, M_, U = 1e3, 1e6, 1e-6
 OUT_SCALE = 11000 * 0.25 / 32768          # MAME: DISCRETE_OUTPUT gain x the 0.25 route, 16-bit full scale
-
-MIDWAY_MUSIC_TVCA = dict(r1=3.3 * M_, r2=10 * K + 680 * K, r4=680 * K, r5=10 * K, r7=680 * K, c1=0.001 * U,
-                         v1=12, vP=12, f0=FN_TRG0, f2=FN_TRG1)
 
 
 def clowns():
@@ -107,12 +106,6 @@ def spacwalk():
     b.op("MULI", imm=int(round(11000 / 32768 * (1 << 24))))
     b.op("OUT")
     return b.finish()
-
-
-def logadj(rmin, rmax, pct):
-    """DISCRETE_ADJUSTMENT with DISC_LOGADJ at a PORT_ADJUSTER default (percent)"""
-    import math
-    return 10 ** (math.log10(rmin) + pct / 100 * (math.log10(rmax) - math.log10(rmin)))
 
 
 def gated_out(b, src_l, src_r, scale, en):
@@ -490,7 +483,7 @@ def spcenctr_mame():
     return b.finish()
 
 
-from dsnd_desertgu import desertgu as desertgu_hw     # imported here (it uses helpers above); schematic-validated 2026-10-14 (+ bottle / creature / Road Runner / beep-beep)
+from dsnd_desertgu import desertgu as desertgu_hw     # schematic-validated 2026-10-14 (+ bottle / creature / Road Runner / beep-beep)
 from dsnd_dplay import dplay as dplay_hw     # schematic-validated 2026-10-15; dplay() above = MAME version
 from dsnd_clowns import clowns as _clowns_sch     # schematic-validated 2026-10-15 (+ springboard miss); clowns() above = MAME version
 clowns_hw = lambda: _clowns_sch(out_gain=0.72)      # K1 amp's real swing at max R605 (MAME's rF overstates it 3x)

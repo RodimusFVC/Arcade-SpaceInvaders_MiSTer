@@ -1,4 +1,4 @@
-"""Polaris (Taito 1980) sound for the discrete sound engine (tools/dsnd.py, rtl/dsnd_engine.sv).
+"""Polaris (Taito 1980) sound for the discrete sound engine (master tools/dsnd.py, rtl/dsnd_engine.sv).
 
 No schematic yet: MAME polaris_discrete (src/mame/midw8080/8080bw_a.cpp, D. Renaud) is the reference, node for node.
 Sources (rtl/mw8080_board.sv, v_pol io_a renumbering): LATCH1 = port 4 (D0 SX0 shot, D1 SX1 sub hit, D2 SX2 ship,
@@ -10,6 +10,7 @@ Not modelled: the noise one-shot (5F / 1S1588, 1.5 ms every 8.5 s) that feeds on
 it only keeps MAME's noise from locking up; the engine LFSRs free-run.
 """
 import sys
+import dsnd_rate  # noqa: F401,E402  master assembler + this core's FS, before any dsnd import
 from dsnd import Board, LATCH1, LATCH2, LATCH3, q, ONE, FS, rc_exp, VBE, par
 
 K, M_, U, P_ = 1e3, 1e6, 1e-6, 1e-12

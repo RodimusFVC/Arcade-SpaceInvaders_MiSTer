@@ -1,4 +1,4 @@
-"""Blue Shark (Midway 1978) sound board for the discrete sound engine (tools/dsnd.py, rtl/dsnd_engine.sv).
+"""Blue Shark (Midway 1978) sound board for the discrete sound engine (master tools/dsnd.py, rtl/dsnd_engine.sv).
 
 From the schematic M051-00742-A005 (Useful Information/schematics/Blue_Shark_Schematic_(M051-00742-A005).pdf), MAME
 blueshrk_discrete as the cross-check; spec = verilator/snd/blueshrk/bs_proto.py, checked against ngspice decks of the
@@ -18,6 +18,7 @@ LM3900 conventions as MAME (VBE 0.5 V, out 0 .. 11.5 V) with each input current 
 """
 import math
 import sys
+import dsnd_rate  # noqa: F401,E402  master assembler + this core's FS, before any dsnd import
 from dsnd import Board, LATCH1, q, ONE, FS, rc_exp, par
 
 K, M_, U = 1e3, 1e6, 1e-6

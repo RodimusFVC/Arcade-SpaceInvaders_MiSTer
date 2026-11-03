@@ -1,4 +1,4 @@
-"""M-4 (Midway 1977) sound for the discrete sound engine (tools/dsnd.py, rtl/dsnd_engine.sv).
+"""M-4 (Midway 1977) sound for the discrete sound engine (master tools/dsnd.py, rtl/dsnd_engine.sv).
 
 The sound circuits are on the game logic board (schematic M-4 Game Logic A084-90700-D626, one sheet): 74174 F3
 (port 3 = S1) / F4 (port 5 = S2) with 1k pull-ups, a 4006 / 4030 noise generator (MAME: measured 3760 Hz), and per
@@ -12,6 +12,7 @@ Latch bits: S1 D3 sound on (7404 F2 -> summer mute diodes), D4 / D5 left / right
 explosion (300k); S2 D0 / D1 left / right explosion (510k), D2 / D3 left / right tank, D4 / D5 left / right plane.
 """
 import math
+import dsnd_rate  # noqa: F401,E402  master assembler + this core's FS, before any dsnd import
 from dsnd import Board, LATCH1, LATCH2, q, ONE
 
 SR = 48000.0

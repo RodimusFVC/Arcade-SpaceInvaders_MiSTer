@@ -1,4 +1,4 @@
-"""Sea Wolf (Midway 1976) sound board P.C. 596-909 for the discrete sound engine (tools/dsnd.py, rtl/dsnd_engine.sv).
+"""Sea Wolf (Midway 1976) sound board P.C. 596-909 for the discrete sound engine (master tools/dsnd.py, rtl/dsnd_engine.sv).
 
 Traced from the Kush N' Stuff Sea Wolf service manual (PDF p23 sound schematic; theory p22-24, scope photos p26-30).
 Reference = verilator/snd/seawolf/sw_spice.py (ngspice deck of the whole board). MAME plays samples only; the samples
@@ -16,6 +16,7 @@ Circuits (2N3394 NPN: Ebers-Moll IS 1e-14, BF 80 (spec hFE 55-110), VT at 300.15
   summing: Q29 (150k / 30k, 1k || 50u, 5.1k), 0.1u -> 30k -> 1n + 47k master pot (50 %) -> LM354 (gain ignored).
 """
 import math
+import dsnd_rate  # noqa: F401,E402  master assembler + this core's FS, before any dsnd import
 from dsnd import Board, LATCH1, q, ONE
 
 FS = 48000.0
@@ -79,7 +80,7 @@ def lin(b, dst, const, terms):
 
 
 def jump(b):
-    """unconditional forward skip (F forced to 1; tools/dsnd.py worst_path() takes it as always taken)"""
+    """unconditional forward skip (F forced to 1; master tools/dsnd.py worst_path() takes it as always taken)"""
     b.op("CMPI", imm=NEVER)
     return b.skip_if(True)
 

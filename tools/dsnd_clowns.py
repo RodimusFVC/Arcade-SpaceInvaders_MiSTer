@@ -1,4 +1,4 @@
-"""Clowns (Midway 1978) sound for the discrete sound engine (tools/dsnd.py, rtl/dsnd_engine.sv).
+"""Clowns (Midway 1978) sound for the discrete sound engine (master tools/dsnd.py, rtl/dsnd_engine.sv).
 
 Validated against the Game Logic schematic P.C. A084-90700-B630 (one sheet, `Clowns_Game_Logic_(A084-90700-B630).pdf`),
 starting from dsnd_boards.clowns() (MAME clowns_discrete, HW-confirmed). Ports: S1 = port 3, S2 / S3 = tone generator
@@ -30,12 +30,12 @@ Music (Midway tone generator + its TVCA) is kept as MAME (HW-confirmed); the Nor
 """
 import math
 
+import dsnd_rate  # noqa: F401,E402  master assembler + this core's FS, before any dsnd import
 from dsnd import Board, LATCH2, LATCH3, LATCH4, FN_TRG0, FN_TRG1, FN_TRG2, q, ONE, FS, rc_exp, par, VBE
+from dsnd_midway import MIDWAY_MUSIC_TVCA  # noqa: E402
 
 K, M_, U = 1e3, 1e6, 1e-6
 OUT_SCALE = 11000 * 0.25 / 32768          # MAME: DISCRETE_OUTPUT gain x the 0.25 route, 16-bit full scale
-MIDWAY_MUSIC_TVCA = dict(r1=3.3 * M_, r2=10 * K + 680 * K, r4=680 * K, r5=10 * K, r7=680 * K, c1=0.001 * U,
-                         v1=12, vP=12, f0=FN_TRG0, f2=FN_TRG1)
 
 # ---- springboard miss (schematic "SPRINGBOARD MISS SOUND"), values and derived constants
 VOH, VOL = 11.5, 0.09         # LM3900 output swing: V+ - VBE (MAME / the dsnd Norton nodes), datasheet VOL 0.09 V

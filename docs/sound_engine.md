@@ -12,13 +12,13 @@ cannot show.
 | Short name | File |
 |---|---|
 | ENG | `rtl/rodimus/dsnd_engine/dsnd_engine.sv` (chips-repo master copy since 2026-11-02; line numbers below are the 2026-10-14 file) |
-| MODEL | `verilator/snd/dsnd_model.h` |
-| ASM | `tools/dsnd.py` |
+| MODEL | `Rodimus_Chips_MiSTer/dsnd_engine/verify/dsnd_model.h` |
+| ASM | `RodimusCoresMaster_MiSTer/tools/dsnd.py` (rate: `tools/dsnd_rate.py`) |
 | BOARDS | `tools/dsnd_boards.py` (+ `tools/dsnd_<board>.py`) |
 | GEN | `tools/gen_mra.py` |
 | TOP | `Arcade-SpaceInvaders.sv` |
 | MW | `rtl/mw8080_board.sv` |
-| LOCK | `verilator/snd/dsnd_lockstep.cpp` |
+| LOCK | `Rodimus_Chips_MiSTer/dsnd_engine/verify/dsnd_lockstep.cpp` |
 
 ## 2026-11-03 changes (read first; supersedes the sections named)
 
@@ -63,19 +63,19 @@ Every sound board of this core now runs on the engine; `rtl/invaders_sound.sv`, 
   boards would not fit the Cyclone V (VAULT:138-139). The engine added about 630 ALMs, 8 RAM blocks and 3 DSPs
   (VAULT:223-225). The program arrives as MRA **ioctl index 5** (TOP:568-589).
 - **Sample rate.** 48 kHz. One sample is 832 clocks of the 39.936 MHz core clock (`go = tick == 831`, ENG:98-100;
-  `FS = 48000.0`, ASM:9).
-- **Number format.** Q24 two's complement, so 1.0 = `1 << 24` (ENG:25-26, ASM:10). The accumulator and state words are
-  32-bit and **wrap** on overflow (ENG:26, MODEL:63-68). The representable range is -128.0 to just under +128.0
-  (`q()` asserts it, ASM:19-23).
+  `FS = 48000.0`, ASM:14).
+- **Number format.** Q24 two's complement, so 1.0 = `1 << 24` (ENG:25-26, ASM:15). The accumulator and state words are
+  32-bit and **wrap** on overflow (ENG:26, MODEL:65-70). The representable range is -128.0 to just under +128.0
+  (`q()` asserts it, ASM:25-29).
 - **Units.** The convention belongs to the program, not the engine:
-  - Op-amp / MAME-node boards: volts (ASM:3, ASM:86).
+  - Op-amp / MAME-node boards: volts (ASM:8, ASM:98).
   - Transistor-level boards: V, mA and kΩ, so V = mA × kΩ stays inside Q24 (`tools/dsnd_gunfight.py:8`,
     `tools/dsnd_seawolf.py:8`).
   - The M-4 prototype uses V, µA, MΩ, µF and s (`verilator/snd/m4/m4_proto.py:6`).
 - **Budget.** At most **410 budget units** per sample. Every instruction costs 1 unit, except EXP (4) and RCP (5).
   At 2 clocks per unit, the budget uses 824 of the 832 clocks (ENG:26-27, ENG:39-40, ENG:136, ENG:290).
 - **Output.** The program accumulates `mix` with OUT. At the end of the sample:
-  `out = saturate16(mix >>> 9)`, so Q24 1.0 = 32768 = full scale (ENG:27, ENG:292-293, MODEL:103-104).
+  `out = saturate16(mix >>> 9)`, so Q24 1.0 = 32768 = full scale (ENG:27, ENG:292-293, MODEL:106-107).
 
 ---
 
@@ -85,13 +85,13 @@ Every sound board of this core now runs on the engine; `rtl/invaders_sound.sv`, 
 
 - **No header.** Index 5 is the raw program image. Byte `n` goes to program word `n >> 3`, byte lane `n & 7`. The
   program RAM is written through byte enables `8'd1 << prog_addr[2:0]` (ENG:63-70).
-- **Byte order.** Each 64-bit word is **little endian**: the assembler uses `struct.pack("<Q", ...)` (ASM:82), and the
-  harness loads the same way (LOCK:20-24).
-- **Instruction word** (ENG:25, ENG:114-117, ASM:82):
+- **Byte order.** Each 64-bit word is **little endian**: the assembler uses `struct.pack("<Q", ...)` (ASM:94), and the
+  harness loads the same way (LOCK:31-39).
+- **Instruction word** (ENG:25, ENG:114-117, ASM:94):
 
 | Bits | Field | Byte in the MRA (within the 8-byte group) | Use |
 |---|---|---|---|
-| 63:56 | `op` | byte 7 | opcode 0-32. Any other value is a NOP that costs 1 unit (ENG:179, MODEL:96). |
+| 63:56 | `op` | byte 7 | opcode 0-33. Any other value is a NOP that costs 1 unit (ENG:179, MODEL:99). |
 | 55:48 | `a` | byte 6 | state address for read/write (M[a]). For BIT/FAND/FOR, bit 0 = invert. |
 | 47:40 | `b` | byte 5 | Source selector `b[5:3]` = source, `b[2:0]` = bit. Also the NOISE LFSR number `b[1:0]` and the RCM coefficient address M[b]. |
 | 39:32 | (none) | byte 4 | Unused, always 0. |
@@ -99,11 +99,11 @@ Every sound board of this core now runs on the engine; `rtl/invaders_sound.sv`, 
 
 - **Maximum size.** 1024 words = **8192 bytes**. The address is 13 bits (`prog_addr[12:0]`, ENG:49, TOP:585), and the
   program counter is 10 bits (ENG:61). The assembler asserts `len(code) <= 1024` and that the program ends with END
-  (ASM:79-82). A longer download would wrap around and overwrite the start.
+  (ASM:91-94). A longer download would wrap around and overwrite the start.
 - **Program RAM is never cleared.** Words past a shorter, newer program keep old contents, which is harmless because
   execution stops at END. The **state** RAM is cleared on every reset (§4).
 - **The init block and settings data are part of the program.** They are not a separate header. `Board.finish()`
-  emits them as instructions (ASM:1292-1341). Structure:
+  emits them as instructions (ASM:1312-1372). Structure:
 
 ```text
 [init block]     LD M[255]; CMPI 1; SKF +n            ; skip if M[255] >= 1 (already initialised)
@@ -116,8 +116,8 @@ Every sound board of this core now runs on the engine; `rtl/invaders_sound.sv`, 
 [body]           ... per-sample circuit ...; END
 ```
 
-  The init block is emitted only if `inits` is non-empty (ASM:1299). The change block is emitted only if the board
-  uses a Game Audio group, a kreg or a music input (ASM:1296, ASM:1309).
+  The init block is emitted only if `inits` is non-empty (ASM:1319). The change block is emitted only if the board
+  uses a Game Audio group, a kreg or a music input (ASM:1316, ASM:1329).
 
 ### 2.2 MRA XML
 
@@ -175,7 +175,7 @@ Registers allocated by the assembler: `o`=0, `sq0`=1, `sq1`=2, `sq2`=3, `_fF`=4,
 | 66-67 | | LDI 1.0; ST 0 | | | | body starts |
 | 111-113 | | LD 7; MULI 0.999969; OUT; END | | | | `output("snd", 32767/32768)` |
 
-Byte `0x30` in the `b` field is source 6, bit 0 (`src()` = `source << 3 | bit`, ASM:47-48). `imm` 0x08FF for LDLM means
+Byte `0x30` in the `b` field is source 6, bit 0 (`src()` = `source << 3 | bit`, ASM:59-60). `imm` 0x08FF for LDLM means
 mask 0xFF and shift 8 (ENG:174).
 
 ---
@@ -187,16 +187,16 @@ Notation:
 - `M[x]` is a 32-bit state word.
 - `imm` is the signed 32-bit immediate.
 - `q24(p)` = `(int32)(p >>> 24)` of the full product, an arithmetic shift with the result truncated to 32 bits
-  (MODEL:16, ENG:123-124).
+  (MODEL:18, ENG:123-124).
 - `S` = `src[b[5:3]]`, a source byte (§5).
-- `sbit` = `S[b[2:0]] ^ a[0]` (ENG:120-122, MODEL:49).
+- `sbit` = `S[b[2:0]] ^ a[0]` (ENG:120-122, MODEL:51).
 - Every add and subtract wraps mod 2³².
 - Compares are signed.
-- Semantics come from ENG:151-181 and MODEL:59-97. The two are bit-exact (ENG:27, MODEL:1).
+- Semantics come from ENG:151-181 and MODEL:61-100. The two are bit-exact (ENG:27, MODEL:1).
 
 | op | Mnemonic | Operands | Semantics | Clocks | Units |
 |---|---|---|---|---|---|
-| 0 | END | — | End of sample: publish `out`. A program word of 0 is END. | 2 | 1 in `worst_path` (the model does not count it, MODEL:60) |
+| 0 | END | — | End of sample: publish `out`. A program word of 0 is END. | 2 | 1 in `worst_path` (the model does not count it, MODEL:62) |
 | 1 | LD | a | `acc = M[a]` | 2 | 1 |
 | 2 | LDI | imm | `acc = imm` | 2 | 1 |
 | 3 | ADD | a | `acc = acc + M[a]` | 2 | 1 |
@@ -207,7 +207,7 @@ Notation:
 | 8 | ST | a | `M[a] = acc` | 2 | 1 |
 | 9 | STF | a | `if F: M[a] = acc` | 2 | 1 |
 | 10 | LDIF | imm | `if F: acc = imm` | 2 | 1 |
-| 11 | RC | a, imm | `acc = M[a] + q24((acc - M[a]) * imm); M[a] = acc`. The difference is formed in 33 bits (ENG:221) / int64 (MODEL:75), so it cannot overflow. | 2 | 1 |
+| 11 | RC | a, imm | `acc = M[a] + q24((acc - M[a]) * imm); M[a] = acc`. The difference is formed in 33 bits (ENG:221) / int64 (MODEL:77), so it cannot overflow. | 2 | 1 |
 | 12 | RCM | a, b | Like RC with the coefficient `M[b]` (ENG:222) | 2 | 1 |
 | 13 | CMP | a | `F = acc >= M[a]` | 2 | 1 |
 | 14 | CMPI | imm | `F = acc >= imm` | 2 | 1 |
@@ -215,22 +215,22 @@ Notation:
 | 16 | MINI | imm | `if acc > imm: acc = imm` | 2 | 1 |
 | 17 | BIT | a, b | `F = sbit` (a[0] inverts) | 2 | 1 |
 | 18 | NOT | — | `F = !F` | 2 | 1 |
-| 19 | NOISE | b | `L = lfsr[b[1:0]]` (31 bit); `nb = L[28] ^ L[0]`; b[2]: `nb = 1` when `L[28]` and `L[4:0]` are all 0 (SN76477 lock-up guard, 2026-11-03); `L = {nb, L[30:1]}`; `F = nb` (ENG:276-283, MODEL:84-86) | 2 | 1 |
+| 19 | NOISE | b | `L = lfsr[b[1:0]]` (31 bit); `nb = L[28] ^ L[0]`; b[2]: `nb = 1` when `L[28]` and `L[4:0]` are all 0 (SN76477 lock-up guard, 2026-11-03); `L = {nb, L[30:1]}`; `F = nb` (ENG:276-283, MODEL:86-88) | 2 | 1 |
 | 20 | OUT | — | `mix = mix + acc` | 2 | 1 |
 | 21 | LDF | a | `if F: acc = M[a]` | 2 | 1 |
-| 22 | SKF | imm | `if F: pc = pc_next + imm` (10-bit wrap, relative to the next word, ENG:184, MODEL:87) | 2 | 1 |
+| 22 | SKF | imm | `if F: pc = pc_next + imm` (10-bit wrap, relative to the next word, ENG:184, MODEL:89) | 2 | 1 |
 | 23 | SKNF | imm | `if !F: pc = pc_next + imm` | 2 | 1 |
 | 24 | LDL | b | `acc = S << 16` (unsigned byte, ENG:173) | 2 | 1 |
 | 25 | ABS | — | `if acc < 0: acc = -acc` (INT_MIN stays INT_MIN) | 2 | 1 |
 | 26 | FAND | a, b | `F = F & sbit` | 2 | 1 |
 | 27 | FOR | a, b | `F = F \| sbit` | 2 | 1 |
 | 28 | STNF | a | `if !F: M[a] = acc` | 2 | 1 |
-| 29 | LDLM | b, imm | `acc = (S & imm[7:0]) << imm[12:8]` (32-bit, zero-filled, ENG:174, MODEL:90) | 2 | 1 |
+| 29 | LDLM | b, imm | `acc = (S & imm[7:0]) << imm[12:8]` (32-bit, zero-filled, ENG:174, MODEL:93) | 2 | 1 |
 | 30 | MACI | a, imm | `acc = acc + q24(M[a] * imm)` | 2 | 1 |
 | 31 | EXP | — | `acc = 2^acc` (below) | 8 | 4 |
 | 32 | RCP | — | `acc = 1/acc` (below) | 10 | 5 |
 
-**EXP** (MODEL:19-28, ENG:223-227, ENG:240-251). Q28 coefficients
+**EXP** (MODEL:21-30, ENG:223-227, ENG:240-251). Q28 coefficients
 `C = {268435436, 186066863, 64465738, 14985772, 2413057, 504005}` (ENG:127-128):
 
 ```c
@@ -241,7 +241,7 @@ for (k = 4; k >= 0; k--) p = (int32)(C[k] + q24(p * fr));   // Horner on the fra
 sh = ip - 4;  return sh >= 0 ? (int32)(p << sh) : p >> -sh; // Q28 -> Q24 and 2^ip
 ```
 
-**RCP** (MODEL:30-45, ENG:228-231, ENG:252-270):
+**RCP** (MODEL:32-47, ENG:228-231, ENG:252-270):
 
 ```c
 if (d == 0) return 0x7FFFFFFF;
@@ -259,8 +259,8 @@ programs never see a read-after-write hazard. EXP and RCP insert 6 and 8 `S_X` m
 (ENG:236-272).
 
 **Skips are the only control flow.** There are no loops or calls. The ISA allows a backward skip through the 10-bit
-wrap, but the assembler emits forward skips only (`skip_if`/`land`, ASM:51-56), and `worst_path` assumes that
-(ASM:1352).
+wrap, but the assembler emits forward skips only (`skip_if`/`land`, ASM:63-68), and `worst_path` assumes that
+(ASM:1383).
 
 ---
 
@@ -268,14 +268,14 @@ wrap, but the assembler emits forward skips only (`skip_if`/`land`, ASM:51-56), 
 
 | Item | Width | Reset / initial | Notes |
 |---|---|---|---|
-| State RAM M[0..255] | 256 × 32 | **Cleared on reset**: `S_CLR` writes 0 to all 256 words (ENG:192-201); the model starts at 0 (MODEL:8) | Two dpram copies (M[a], M[b] read ports) share one write port (ENG:80-95) |
-| M[255] | 32 | 0 after reset | **Reserved init flag**: the assembler allocates registers 0..254 only (`assert len(self.regs) < 255`, ASM:35-40), and `finish()` guards the init block with it (ASM:1299-1308) |
+| State RAM M[0..255] | 256 × 32 | **Cleared on reset**: `S_CLR` writes 0 to all 256 words (ENG:192-201); the model starts at 0 (MODEL:10) | Two dpram copies (M[a], M[b] read ports) share one write port (ENG:80-95) |
+| M[255] | 32 | 0 after reset | **Reserved init flag**: the assembler allocates registers 0..254 only (`assert len(self.regs) < 255`, ASM:47-52), and `finish()` guards the init block with it (ASM:1319-1328) |
 | Program RAM | 1024 × 64 | Not cleared | Loaded byte-wise from index 5 (ENG:63-78) |
-| acc | 32 signed | 0 at power-up only | **Persists across samples**, and the reset branch does not clear it (ENG:103, ENG:192-196; MODEL:9) |
+| acc | 32 signed | 0 at power-up only | **Persists across samples**, and the reset branch does not clear it (ENG:103, ENG:192-196; MODEL:11) |
 | F (flag) | 1 | 0 at power-up only | Persists across samples |
 | pc | 10 | 0 at the start of each sample | (ENG:203) |
 | mix | 32 signed | 0 at the start of each sample | Wraps (ENG:204, ENG:282) |
-| lfsr[0..3] | 31 each | 1 at power-up; **not reset** | Stepped only by NOISE (ENG:105, MODEL:11) |
+| lfsr[0..3] | 31 each | 1 at power-up; **not reset** | Stepped only by NOISE (ENG:105, MODEL:13) |
 | icnt (budget) | 9 | 0 at the start of each sample | (ENG:106, ENG:288) |
 | out | 16 signed | 0 on reset | Changes once per sample (ENG:292-293) |
 
@@ -288,7 +288,7 @@ Do not rely on the values of acc and F at the start of a sample. Do not rely on 
    (ENG:208-214).
 3. E1/E2 then run per instruction (with `S_X` for EXP/RCP).
 4. The sample ends on END, or **after the instruction that reaches 410 units**:
-   `icnt + cost - 1 >= 410` (ENG:290); in the model, `while (n < 410)` (MODEL:53).
+   `icnt + cost - 1 >= 410` (ENG:290); in the model, `while (n < 410)` (MODEL:55).
    - An over-budget program is **truncated silently**: instructions after the cut, including OUT, do not run that
      sample. `finish()` therefore asserts the static worst case (§7.5).
 5. `S_PUB` sets `out = sat16(mix >>> 9)` (ENG:292-293).
@@ -318,7 +318,7 @@ whole MRA download and clears M after it. Every load therefore re-runs the init 
 wire [63:0] ds_src = {status[48:46], status[45:44], status[43:41], 2'd0, status[40:35], 6'd0, ~in_port[1][3], vblank, in_port[0], b8_lat};
 ```
 
-| Source (`b[5:3]`) | Content | Assembler name (ASM:16) |
+| Source (`b[5:3]`) | Content | Assembler name (ASM:21) |
 |---|---|---|
 | 0 | Sound latch 1 (`snd1`) | `LATCH1` |
 | 1 | Sound latch 2 (`snd2`) | `LATCH2` |
@@ -386,33 +386,33 @@ index 5 only for `mw8080bw.cpp` machines (GEN:1057).
 | Music Volume | [48:46] | Factory, Low, Lowest, High, Highest |
 | Master Volume | [51:49] | Factory, -3dB, -6dB, -12dB, +3dB, +6dB. Applied in TOP:82-91, outside the engine. |
 
-**Groups in the assembler** (ASM:121-126):
+**Groups in the assembler** (ASM:134-139):
 
 | Group | Source byte, mask, shift (`GROUP_SRC`) | Factor register | Factor value |
 |---|---|---|---|
 | T (timing / envelope caps) | src 6, `0x07`, 16 | `_fT` | `1 / SCALES[i]`, SCALES = (1.0, 0.9, 0.8, 0.7, 1.1, 1.2, 1.3); × `_fA` |
 | F (filter / coupling caps) | src 6, `0x38`, 13 | `_fF` | `1 / SCALES[i]`; × `_fA` |
 | O (oscillator caps, RC noise clocks) | src 7, `0x07`, 16 | `_fO` | `1 / SCALES[i]` (no aging) |
-| Aged | src 7, `0x18`, 13 | `_fA` | `1 / AGED[i]`, AGED = (1.0, 0.85, 0.7); multiplied into `_fT` and `_fF` only (ASM:1323-1329) |
-| Music | src 7, `0xE0`, 11 | `_fM` | MUSIC = (1.0, 0.7, 0.5, 1.4, 2.0), a direct gain (ASM:1330-1331) |
+| Aged | src 7, `0x18`, 13 | `_fA` | `1 / AGED[i]`, AGED = (1.0, 0.85, 0.7); multiplied into `_fT` and `_fF` only (ASM:1347-1353) |
+| Music | src 7, `0xE0`, 11 | `_fM` | MUSIC = (1.0, 0.7, 0.5, 1.4, 2.0), a direct gain (ASM:1354-1356) |
 
 **How the settings reach the program.**
 
 - `chain(reg, src, mask, sh, values)` emits LDLM, which turns the setting into `index << 16`. It then stores
-  `values[i]` through `CMPI i<<16` + STF steps (ASM:128-138). OSD indices past the table use the last entry.
+  `values[i]` through `CMPI i<<16` + STF steps (ASM:141-151). OSD indices past the table use the last entry.
 - `kreg(reg, k, g, clamp=True)` emits `reg = q(k) × _f<g>` into the **change block**, not the body, so a scaled rate
   costs nothing per sample. By default it clamps with `MINI 1.0` so an RC coefficient never exceeds 1.0. Use
-  `clamp=False` for slopes and phase steps (ASM:140-151).
+  `clamp=False` for slopes and phase steps (ASM:153-164).
 - The change block runs when `key = src6 | src7 << 8` differs from `_glast`, and on the first sample after reset
-  (`_glast` initialised to -1.0). That sample ENDs without OUT, so it is silent (ASM:1309-1336).
-- Music: a mixer input with tuple element 3 = True multiplies by `_fM` (`_mix_sum`, ASM:509-511). This sets
+  (`_glast` initialised to -1.0). That sample ENDs without OUT, so it is silent (ASM:1329-1367).
+- Music: a mixer input with tuple element 3 = True multiplies by `_fM` (`_mix_sum`, ASM:527-529). This sets
   `self.music` so the chain is emitted.
 
 **What is legal.**
 
-- A rate per sample scales by 1/C: a factor > 1 means a smaller capacitance and a faster rate (ASM:121-122).
+- A rate per sample scales by 1/C: a factor > 1 means a smaller capacitance and a faster rate (ASM:134-135).
 - Crystal-derived clocks are left unscaled: `midway_tone`, `squarewfix` and plain `rc`/`rc_sel` use fixed constants
-  (ASM:59-71, ASM:218-240, ASM:902-910).
+  (ASM:71-83, ASM:236-258, ASM:920-928).
 - A program may read sources 6 and 7 directly (BIT/LDL/LDLM), but then it handles changes itself. The zzzap program
   maps Timing → C18/C19 and Oscillator → engine oscillator caps (`tools/dsnd_zzzap.py` docstring).
 - Boards with no group, kreg or music input get no change block, and only Master Volume affects them. Currently that
@@ -422,9 +422,9 @@ index 5 only for `mw8080bw.cpp` machines (GEN:1057).
 
 ---
 
-## 7. Assembler and node library (`tools/dsnd.py`)
+## 7. Assembler and node library (`RodimusCoresMaster_MiSTer/tools/dsnd.py`)
 
-### 7.1 Core API (`Prog`, ASM:31-82)
+### 7.1 Core API (`Prog`, ASM:43-94)
 
 | Call | Effect |
 |---|---|
@@ -441,16 +441,16 @@ Helpers:
 
 | Helper | Meaning | Source |
 |---|---|---|
-| `q(v)` | volts → Q24, range-checked | ASM:19 |
-| `k_rc(tau)` | `1 - exp(-1/(FS tau))` | ASM:26 |
-| `rc_exp(rc)` | same; returns 1.0 for rc ≤ 0 | ASM:103 |
-| `par(*rs)` | parallel resistance | ASM:107 |
-| `qmul(a, b)` | the engine's exact Q24 multiply | ASM:98 |
-| `wrap32` | 32-bit wrap | ASM:94 |
-| `VBE = 0.5`, `RAIL = 1.5` | MAME `OP_AMP_NORTON_VBE` / `OP_AMP_VP_RAIL_OFFSET` | ASM:89-90 |
-| `FN_*` | trigger functions | ASM:91 |
+| `q(v)` | volts → Q24, range-checked | ASM:25 |
+| `k_rc(tau)` | `1 - exp(-1/(FS tau))` | ASM:32 |
+| `rc_exp(rc)` | same; returns 1.0 for rc ≤ 0 | ASM:115 |
+| `par(*rs)` | parallel resistance | ASM:119 |
+| `qmul(a, b)` | the engine's exact Q24 multiply | ASM:110 |
+| `wrap32` | 32-bit wrap | ASM:106 |
+| `VBE = 0.5`, `RAIL = 1.5` | MAME `OP_AMP_NORTON_VBE` / `OP_AMP_VP_RAIL_OFFSET` | ASM:101-102 |
+| `FN_*` | trigger functions | ASM:103 |
 
-### 7.2 `Board(Prog)` infrastructure (ASM:111-216, 972-975, 1286-1357)
+### 7.2 `Board(Prog)` infrastructure (ASM:123-234, 990-993, 1304-1388)
 
 | Method | Purpose |
 |---|---|
@@ -551,13 +551,13 @@ python3 $CORE/tools/gen_mra.py /Work/Build/mame/src/mame/midw8080/mw8080bw.cpp $
 
 ### 7.5 Budget rules
 
-- `worst_path()` (ASM:1343-1357) does dynamic programming backwards over the code:
+- `worst_path()` (ASM:1374-1388) does dynamic programming backwards over the code:
   - END = 1 unit.
   - EXP = 4, RCP = 5, every other instruction = 1.
   - SKF/SKNF = 1 + max(fall-through, target), except `CMPI INT_MIN; SKF` (`jump()`), which always takes the target.
   - It covers the init and change blocks too. The change block ends in END, so the result is
     max(change path, body path).
-- `finish()` asserts `worst <= 410` (ASM:1339-1340). This is an exact static bound, not a simulation maximum.
+- `finish()` asserts `worst <= 410` (ASM:1370-1371). This is an exact static bound, not a simulation maximum.
 - If a board is over budget:
   - Move rate scaling into `kreg` (the change block).
   - Share identical sub-circuits (spacwalk shares one noise filter + VCO for sb1/sb2, BOARDS:70-75).
@@ -642,24 +642,24 @@ Scripts: `blueshrk/cmp.py:1-3` (30 Hz high pass first, because MAME has no ampli
 
 ```bash
 CORE=/Work/Projects/ZZZ_Obsidian_FPGA/FPGA-Brain/Projects/Arcade-SpaceInvaders_MiSTer
-make -C $CORE/verilator obj_dsnd/Vdsnd_engine                 # Makefile:18-22 (RTL + ram_sim.sv + LOCK + MODEL)
+make -C $CORE/verilator obj_dsnd/Vdsnd_engine                 # verilator/Makefile obj_dsnd rule (RTL + ram_sim.sv + LOCK + MODEL)
 E=$CORE/verilator/obj_dsnd/Vdsnd_engine
 # program binary (tools/dsnd_boards.py __main__ writes <m>.dsnd.bin into the CURRENT directory, BOARDS:496-501;
 # write it explicitly instead):
 python3 -B -c "import sys; sys.path.insert(0,'$CORE/tools'); import dsnd_boards as d; open('$SCRATCH/m.bin','wb').write(d.program('<machine>'))"
-# lockstep RTL vs model with events, WAV out (LOCK:2-4, 59-118)
+# lockstep RTL vs model with events, WAV out (LOCK:2-6, 57-141)
 $E --prog=$SCRATCH/m.bin --len=10 --ev=0.5:0:09 --ev=1.0:0:19 --wav=$SCRATCH/m.wav
 EV=$(python3 $CORE/verilator/snd/blueshrk/stress_ev.py 60 1 | sed 's/^/--ev=/')
 $E --prog=$SCRATCH/m.bin --len=60 ${=EV}                       # zsh: ${=EV} splits the list
 # random-program fuzz, optionally restricted to opcodes
 $E --fuzz=1000 [--ops=31,32]
-# directed EXP / RCP bit coverage (dsnd_optest.py:1-4)
-python3 $CORE/verilator/snd/dsnd_optest.py $SCRATCH            # then each {exp,rcp}_w<k>.bin with --len=2
+# directed EXP / RCP / NOISE-guard programs, fuzz, control mutants and every shipped program of the fleet:
+make -C /Work/Projects/Rodimus_Chips_MiSTer/dsnd_engine/verify fleet   # check.py: PASS = every check, exit 0
 ```
 
-- **Pass criterion.** `lockstep: N samples, 0 mismatches`, and the exit status is 0 (LOCK:118-121).
+- **Pass criterion.** `lockstep: N samples, 0 mismatches`, and the exit status is 0 (LOCK:140-141).
 - The harness also prints `most instructions in a sample` (the executed maximum, which is at most the static worst
-  path) and `peak` (LOCK:111).
+  path) and `peak` (LOCK:136).
 - **Stress run.** Use random overlapping triggers at the game's write rate for a long run, e.g.
   `verilator/snd/blueshrk/stress_ev.py <len> <seed>`. Use several seeds.
 - **MRA install.**
@@ -674,14 +674,14 @@ python3 $CORE/verilator/snd/dsnd_optest.py $SCRATCH            # then each {exp,
 | Rule | Why / where |
 |---|---|
 | **Apply each board's MAME `add_route` gain** in the output scale (with `DISCRETE_OUTPUT` gain / 32768) | Missing it showed as a constant 1.25× level on desertgu (VAULT:173-174). In code: clowns 0.25 (BOARDS:12), desertgu 0.8 (BOARDS:211), dplay 0.8 (BOARDS:309), checkmat 0.4 (BOARDS:350), spcenctr 0.45 (`dsnd_spcenctr.py:27`). |
-| **Node register names must not collide.** `Prog.r()` is one global namespace, and nodes derive internals as `out + "_x"`. | A VCO's `_i` collided with the integrator output `siren_i` and was renamed `_iv` (VAULT:189-190, ASM:761). Prefix board-level temporaries uniquely. Names starting with `_` are used by the assembler (`_t`, `_k`, `_gv`, `_glast`, `_key`, `_f*`, `_fa`) and by board helpers (`_o`, `_rr`, `_ph`, `_dv`, `_re`, `_rd`, `_ie`, `_side`, `_nx`). |
+| **Node register names must not collide.** `Prog.r()` is one global namespace, and nodes derive internals as `out + "_x"`. | A VCO's `_i` collided with the integrator output `siren_i` and was renamed `_iv` (VAULT:189-190, ASM:779). Prefix board-level temporaries uniquely. Names starting with `_` are used by the assembler (`_t`, `_k`, `_gv`, `_glast`, `_key`, `_f*`, `_fa`) and by board helpers (`_o`, `_rr`, `_ph`, `_dv`, `_re`, `_rd`, `_ie`, `_side`, `_nx`). |
 | **zsh does not word-split `$EV`.** Use `${=EV}` (sh scripts can use `$EV`, `ph_eng.sh:4-5`). | An unsplit list passes only the first event, which gives a silent run (VAULT:220). |
 | **Fold stereo to mono.** The engine has one output. | `gated_out()` = 0.5 (L + R) gated by the enable (BOARDS:111-121). Gun Fight folds L/R into its final scale (`dsnd_gunfight.py:259-260`). |
-| **Respect the Q24 range.** ±128 per value; products are truncated `>>24` and wrap. | Clip **before** a large gain and split the gain into steps: `op_amp_filt_bp1` clips at the rails, then applies gain in ×16 steps (ASM:429-437). Newton splits a 1/rt ≥ 127 (`dsnd_gunfight.py:91-93`). Asserts guard feedback state (ASM:707). Pick units that keep values small (V/mA/kΩ for transistor boards). |
+| **Respect the Q24 range.** ±128 per value; products are truncated `>>24` and wrap. | Clip **before** a large gain and split the gain into steps: `op_amp_filt_bp1` clips at the rails, then applies gain in ×16 steps (ASM:447-455). Newton splits a 1/rt ≥ 127 (`dsnd_gunfight.py:91-93`). Asserts guard feedback state (ASM:725). Pick units that keep values small (V/mA/kΩ for transistor boards). |
 | **MAME `-wavwrite` ignores `system_mute`.** | A MAME WAV is not a reference for the enable/mute bit. Test the mute against the schematic (VAULT:159). |
 | **Check the static budget, not the sim maximum.** | `finish()` asserts `worst_path() <= 410`. A truncated sample silently loses its OUT (ENG:290). |
 | **Index 5 must follow index 1 in the MRA** | `ds_on` is cleared by index 1 byte 0 (TOP:571-572) |
-| **A settings change costs one silent sample** | The change block ENDs (ASM:1335) |
+| **A settings change costs one silent sample** | The change block ENDs (ASM:1366) |
 
 ---
 
@@ -693,8 +693,8 @@ python3 $CORE/verilator/snd/dsnd_optest.py $SCRATCH            # then each {exp,
 |---|---|
 | `rtl/dsnd_engine.sv` | The engine (SystemVerilog, Quartus 17 compatible, ENG:146) |
 | `rtl/ram_rom/dpram_dc.vhd` | `altsyncram` wrapper with `byteena_a` (generics `widthad_a`, `width_a`), used for the program RAM and both state RAMs |
-| `tools/dsnd.py` (+ board files) | Assembler and node library |
-| `verilator/snd/dsnd_model.h`, `verilator/snd/dsnd_lockstep.cpp`, `verilator/common/ram_sim.sv` (sim `dpram_dc`), `verilator/snd/dsnd_optest.py` | Verification |
+| `RodimusCoresMaster_MiSTer/tools/dsnd.py` (+ board files, `tools/dsnd_rate.py`) | Assembler and node library |
+| `Rodimus_Chips_MiSTer/dsnd_engine/verify/` (model, lockstep, directed programs, `make fleet`), `verilator/common/ram_sim.sv` (sim `dpram_dc`) | Verification |
 
 **Top-level hookup** (from TOP:568-589):
 
@@ -723,7 +723,7 @@ assign AUDIO_L = ds_on ? ds_audio : board_audio;    // mono: same on R
 
 - **Clock.** The sample period is fixed at 832 clocks (ENG:99). At another clock either:
   - generate `clk` at 832 × fs, or
-  - change the `tick` compare. Then `FS` in `tools/dsnd.py:9` must equal the real sample rate, and the 410-unit budget
+  - change the `tick` compare. Then the rate in `tools/dsnd_rate.py` (`set_fs`) must equal the real sample rate, and the 410-unit budget
     must fit the new period (2 clocks per unit plus about 4 overhead, ENG:27).
 - **Source byte meanings** are a contract between `ds_src` and the programs (`LATCH1..`, `MISC`, `GROUP_SRC`). Keep
   sources 6 and 7 as the Game Audio layout if you use the assembler's groups.
@@ -822,21 +822,20 @@ Every former `invaders_sound` set now has an engine program (table 10.1a).
 
 ## Discrepancies (code wins)
 
-1. **Program RAM size.** VAULT:141 says 512 words. The code has 1024 words (ENG:25, 61-63; MODEL:7). VAULT:188 records
+1. **Program RAM size.** VAULT:141 says 512 words. The code has 1024 words (ENG:25, 61-63; MODEL:9). VAULT:188 records
    the change.
 2. **Budget.** VAULT:142 says "<= 400 instructions per sample". The code has 410 **budget units**, with EXP = 4 and
-   RCP = 5 (ENG:39-40, 136, 290; ASM:14, 1340). VAULT:211 has 410 instructions but predates EXP/RCP units.
-3. **Opcode count.** VAULT:144 says "30 ops". The code has 33 (0-32), including MACI 30, EXP 31 and RCP 32 (ENG:28-38).
+   RCP = 5 (ENG:39-40, 136, 290; ASM:19, 1371). VAULT:211 has 410 instructions but predates EXP/RCP units.
+3. **Opcode count.** VAULT:144 says "30 ops". The code has 34 (0-33), including MACI 30, EXP 31, RCP 32 and OUTR 33 (ENG:19-32).
 4. **Source 4.** VAULT:143 says "latch 0 (0)". The top level wires **IN0** (`in_port[0]`, TOP:576-577). The code
-   contradicts itself: the engine header (ENG:41), `ASM:16` (`LATCH0`) and the harness help (LOCK:4) still say
-   "latch 0".
+   contradicts itself: the engine header (ENG:41) and `ASM:21` (`LATCH0`) still say "latch 0".
 5. **Misc source.** The `dsnd_boards.py` docstring (BOARDS:5) lists only "MISC bit 0 = VBLANK". Bit 1 = coin
    (`~IN1[3]`) is also wired (TOP:577).
 6. **Source byte 7.** VAULT:230-231 has "src7 = osc", later superseded at VAULT:254 by {music, aged, osc}. The code matches
-   the latter (TOP:577, ASM:123-126).
+   the latter (TOP:577, ASM:136-139).
 7. **spcenctr status.** VAULT:301 lists spcenctr as TODO, but it is in `BOARDS` (BOARDS:488) and
    `releases/Space Encounters.mra` has index 5.
-8. **Program location.** The `ASM:4` docstring says board programs live in `tools/dsnd_boards.py`. Many now live in
+8. **Program location.** The `ASM:9` docstring says board programs live in `tools/dsnd_boards.py`. Many now live in
    `tools/dsnd_<board>.py` and are imported there (BOARDS:8-9).
 9. **Coordinator list vs code.**
    - m4 and gmissile have no `tools/dsnd_*.py` yet.
@@ -846,7 +845,6 @@ Every former `invaders_sound` set now has an engine program (table 10.1a).
      from the list.
    - sflush has no MRA.
    - invrvnge is silent, with no 6802/AY RTL in the build.
-10. **Harness nit.** `run(..., uint8_t src[6], ...)` reads 8 source bytes (LOCK:43-48). This is harmless (the array
-    decays to a pointer, and callers pass `src[8]`), but the declared size is wrong.
-11. **END accounting.** `worst_path` counts END as 1 unit (ASM:1349-1350). The model does not count it toward the
-    budget (MODEL:60), and the RTL's stop test ignores it. `worst_path` is therefore conservative by 1.
+10. **Harness sources.** The lockstep drives all 8 source bytes (LOCK:57-63).
+11. **END accounting.** `worst_path` counts END as 1 unit (ASM:1380-1381). The model does not count it toward the
+    budget (MODEL:62), and the RTL's stop test ignores it. `worst_path` is therefore conservative by 1.

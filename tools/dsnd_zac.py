@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Zaccaria 1B1120 sound board (The Invaders tinv2650 / sia2650, Dodgem) as a discrete sound engine program
-(tools/dsnd.py, rtl/rodimus/dsnd_engine/dsnd_engine.sv).
+(master tools/dsnd.py, rtl/rodimus/dsnd_engine/dsnd_engine.sv).
 
 A port of rtl/zac_snd.sv (constants tools/zac_snd_consts.py): SN76477 with latch-switched components (one-shot,
 attack / decay, SLF, VCO, noise generator + noise filter, mixer), the 555 VCO sweep (DB3) and the S2636 tone through
@@ -55,6 +55,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import dsnd_rate  # noqa: F401,E402  master assembler + this core's FS, before any dsnd import
 from dsnd import Board, LATCH1, LATCH2, MISC, ONE             # noqa: E402
 import zac_snd_consts as Z                                      # noqa: E402
 

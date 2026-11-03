@@ -1,4 +1,4 @@
-"""Double Play / Extra Inning (Midway 1977 / 1978) sound for the discrete sound engine (tools/dsnd.py, rtl/dsnd_engine.sv).
+"""Double Play / Extra Inning (Midway 1977 / 1978) sound for the discrete sound engine (master tools/dsnd.py, rtl/dsnd_engine.sv).
 
 Board: Extra Inning game logic P.C. A084-90700-A642 (Extra_Innings_Game_Logic_(A084-90700-A642).pdf, one page, sound =
 right half). MAME runs both sets on one machine (dplay, DPLAY_AUDIO); no Double Play (619) sheet to compare. Started
@@ -19,20 +19,14 @@ what MAME leaves out. Schematic corrections (ngspice, verilator/snd/dplay/dp_spi
   0 .. 11.5 V. Modelled at the pot's maximum (the loudest setting): the output keeps MAME's level and scale, the L1
   window becomes 3 x (-5.68 / +5.82 V) in MAME's 100K units. MAME has no pot and no clipping there.
 """
+import dsnd_rate  # noqa: F401,E402  master assembler + this core's FS, before any dsnd import
 from dsnd import Board, LATCH1, LATCH2, LATCH3, FN_TRG0, FN_TRG1, q, ONE, FS, VBE, rc_exp
+from dsnd_midway import MIDWAY_MUSIC_TVCA, logadj  # noqa: E402
 
 K, M_, U = 1e3, 1e6, 1e-6
 VBN = 0.55                    # LM3900 inverting input (gain transistor Vbe), as the fleet's ngspice model
 VOH = 11.5                    # LM3900 output swing at V+ 12 V (datasheet V+ - 0.5 V = MAME's vP - VBE)
 SLEW_TD = 6.0 / 0.5e6         # Schmitt output 0 -> 6 V (4016 control threshold at Vdd 12 V) at 0.5 V/us
-MIDWAY_MUSIC_TVCA = dict(r1=3.3 * M_, r2=10 * K + 680 * K, r4=680 * K, r5=10 * K, r7=680 * K, c1=0.001 * U,
-                         v1=12, vP=12, f0=FN_TRG0, f2=FN_TRG1)
-
-
-def logadj(rmin, rmax, pct):
-    """DISC_LOGADJ as MAME computes it"""
-    import math
-    return 10 ** (math.log10(rmin) + pct / 100 * (math.log10(rmax) - math.log10(rmin)))
 
 
 def vco2_hw(b, out, vmod, r1, r2, r3, r4, r5, r6, c, vP=12.0):

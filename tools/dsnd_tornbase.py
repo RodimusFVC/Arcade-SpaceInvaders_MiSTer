@@ -1,4 +1,4 @@
-"""Tornado Baseball / Ball Park (Midway 1976) sound for the discrete sound engine (tools/dsnd.py, rtl/dsnd_engine.sv).
+"""Tornado Baseball / Ball Park (Midway 1976) sound for the discrete sound engine (master tools/dsnd.py, rtl/dsnd_engine.sv).
 
 Board: Sound Generator 0605-00900 (L. Dekker, Mch 26 '76, change #1 7-20-76),
 Useful Information/schematics/Tornado_Baseball_Schematic_Sound_Generator_(0605_00900).pdf (one sheet).
@@ -27,6 +27,7 @@ Assumptions (not on the sheet): FREQ pull-up 1K to +5 V; latch outputs 3.4 V hig
 R602 at mid travel, volume R703 at max; zener noise NZ.
 """
 import math
+import dsnd_rate  # noqa: F401,E402  master assembler + this core's FS, before any dsnd import
 from dsnd import Board, LATCH1, q, ONE, FS
 
 DT = 1.0 / FS

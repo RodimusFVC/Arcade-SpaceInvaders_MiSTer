@@ -1,4 +1,4 @@
-"""Bowling Alley (Midway 1978) sound board for the discrete sound engine (tools/dsnd.py, rtl/dsnd_engine.sv).
+"""Bowling Alley (Midway 1978) sound board for the discrete sound engine (master tools/dsnd.py, rtl/dsnd_engine.sv).
 
 From the schematic (Useful Information/schematics/Bowling_Alley_Table_Game_Logic_(A084-90700-A749).pdf, one sheet,
 lower third), settled with ngspice (verilator/snd/bowler/bw_spice.py). MAME models the foul only (as a 180 Hz square).
@@ -17,6 +17,7 @@ noise burst (CA3080 T3: noise 2 x 60 Hz low pass, differenced), chimes (two tria
 GAME ON: the sheet draws K5 pin 10 straight to the summer's D201 / D200 (which would mute while P52 is high); the game
 holds D2 = 1 in play (MAME capture), as MAME's mute reads it, and Phantom II's identical summer has a 7404 there.
 """
+import dsnd_rate  # noqa: F401,E402  master assembler + this core's FS, before any dsnd import
 from dsnd import Board, LATCH1, LATCH2, LATCH3, LATCH4, q, ONE, FS, rc_exp
 import numpy as np
 
