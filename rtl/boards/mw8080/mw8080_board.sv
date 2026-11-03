@@ -6,7 +6,8 @@
 //  Timing, RAM arbitration and interrupt logic from mw8080.vhd / invaders.vhd,
 //  Copyright (c) 2002 Daniel Wallner, MikeJ tidy-up, MiSTer port by Gehstock,
 //  Gyurco, David Woods, Mike Coates, Shane Lynch and Alan Steremberg.
-//  Memory map, I/O map and shifter follow MAME mw8080bw.cpp / 8080bw.cpp.
+//  Based on MAME mw8080bw.cpp / 8080bw.cpp (Nicola Salmoria, Tormod Tjaberg, Mirko Buffoni, Lee Taylor, Valerio Verrando, Zsolt Vasvari, Aaron Giles, Jonathan Gevaryahu, hap, Robbbert, BSD-3-Clause)
+//  Memory map, I/O map and shifter from those drivers.
 //
 //  Redistribution and use in source and synthesized forms, with or without
 //  modification, are permitted provided that the following conditions are met:
@@ -27,7 +28,7 @@
 //============================================================================
 
 // clk = 39.936 MHz (2 x the 19.968 MHz board crystal). ce = 9.984 MHz, pixel = ce/2 = 4.992 MHz, CPU = ce/5.
-// Picture = MAME's 260 x 224: 4 black pixels, then the 256 bitmap pixels.
+// Picture = 260 x 224: 4 black pixels, then the 256 bitmap pixels.
 // variant (MRA index 1 byte 0): 0 invaders (MB14241 shifter on port 3), 1 no shifter (port 3 open),
 //   2 invasion (port 3 = IN3), 3 spcewars (port 3 bit 4 = 1-bit tune speaker, no sound enable, no watchdog),
 //   4 yosakdon (no shifter, own sound bits, no watchdog), 5 darthvdr (ROM 0000-17FF, work RAM 1800-1FFF,
@@ -40,7 +41,7 @@
 //   the gun on ports 2 / 6, IN1 [0] gun on 250 ms, [1] trigger 2 frames; shifter count 1 / data 2, watchdog 4, silent)
 //   12 starw1 (no shifter, sound on ports 4 / 5), 13 spcewarla (shifter count 8 / data C / result 6, sound 4 / 5),
 //   14 polaris (port 0 = IN0 [2:0] + IN1 [7:3], music 2, sound 4 / 6, watchdog 5), 15 indianbt (port 0 protection
-//   read keyed on the IN instruction's address, as MAME), 16 schasercv (port 2 = IN2 + IN1 controls), 18 cane
+//   read keyed on the IN instruction's address), 16 schasercv (port 2 = IN2 + IN1 controls), 18 cane
 //   (claybust ports without the gun), 19 orbite (ports 06 / 08 / 20 / 40 / 66 / 76 / 7A), 20 Midway one-offs:
 //   table-driven I/O (io_tab = MRA index 1 bytes 48-63, tools/gen_mra.py FAMILY4)
 // f3 (MRA index 1 bytes 12-15, family 3 colour boards, tools/gen_mra.py FAMILY3): [7:0] colour mode, [15:8] colour
@@ -204,7 +205,7 @@ assign i80_wr_n = t8080se_0_o.wr_n;
 assign i80_a    = t8080se_0_o.a;
 assign i80_do   = t8080se_0_o.dout;
 
-// sflush: MC6800 (jt680x, 6800 microcode) at E = 1.5 MHz as MAME, cen = 4 x E = 6 MHz (39.936 MHz x 375 / 2496).
+// sflush: MC6800 (jt680x, 6800 microcode) at E = 1.5 MHz, cen = 4 x E = 6 MHz (39.936 MHz x 375 / 2496).
 // invrvnge: the same instance is the M6802 sound CPU (4 MHz crystal, E = 1 MHz), cen = 4 MHz (x 250 / 2496).
 // A bus cycle spans 4 cen: each write is latched on every cen while wr is high and committed once, a clock after
 // the cycle ends (one pulse per write, final data), at the latched address.
@@ -332,7 +333,7 @@ end
 wire int_trig = v_dvdr ? cnt_e7[4] : (~cnt_e7[2] & cnt_e7[3]) | cnt_e7[4];
 logic int_trig_d = 1'b0;
 
-// sflush IRQ: held from each interrupt point until the program reads 800B (MAME sflush_in0_r)
+// sflush IRQ: held from each interrupt point until the program reads 800B (IN0)
 always_ff @(posedge clk) begin
     if (!rst_n)
         m68_irq <= 1'b0;
@@ -387,7 +388,7 @@ end
 // ---------------------------------------------------------------- program ROM (0000-1FFF, 4000-5FFF)
 
 // MRA index 0 is stored as loaded (up to 128K); every set reads its CPU windows at their own offsets, invmulti
-// reads its bank through MAME init_invmulti's address / data scramble.
+// reads its bank through the board's address / data scramble.
 logic [7:0] rom_raw, rom_hi;
 logic [2:0] bank = 3'd0;
 wire [12:0] rom_a = rom_dec[0] ? {cpu_a[12:10], cpu_a[8], cpu_a[9], cpu_a[7:0]} :   // decrypted on the read path
@@ -438,7 +439,7 @@ wire [2:0] io_a = v_tab  ? 3'd7 :
                   v_orb  ? (cpu_a[7:0] == 8'h06 ? 3'd6 : cpu_a[7:0] == 8'h20 ? 3'd2 : cpu_a[7:0] == 8'h40 ? 3'd4 : 3'd7) :
                            cpu_a[2:0];
 
-// claybust light gun (MAME claybust_state): the trigger latches ((x >> 3) | (y << 5)) + 2 with y = V 0x20-0xFF,
+// claybust light gun: the trigger latches ((x >> 3) | (y << 5)) + 2 with y = V 0x20-0xFF,
 // "gun on" holds for 250 ms, the trigger bit is a 2-frame pulse
 logic [15:0] gun_pos = 16'd0;
 logic [21:0] gun_tim = 22'd0;
@@ -485,10 +486,10 @@ always_comb begin
         port_in = cpu_a[3:0] == 4'h0 ? in0 : cpu_a[3:0] == 4'h1 ? in1 : cpu_a[3:0] == 4'h2 ? in2 :
                   cpu_a[3:0] == 4'h6 ? shift_q : 8'h00;
     else if (v_pol && cpu_a[1:0] == 2'd0)
-        port_in = {in1[7:3], in0[2:0]};                           // upright: MAME polaris_port00_r
-    else if (v_ind && cpu_a[2:0] == 3'd0)                         // MAME indianbt_r: keyed on the IN's PC
+        port_in = {in1[7:3], in0[2:0]};                           // upright: IN1 [7:3] + IN0 [2:0]
+    else if (v_ind && cpu_a[2:0] == 3'd0)                         // protection read keyed on the IN's PC
         port_in = pc_m1 == 16'h5FEB ? 8'h10 : pc_m1 == 16'h5FFA ? 8'h00 : rnd;
-    else if (v_scv && cpu_a[1:0] == 2'd2)                         // upright: MAME schasercv_02_r
+    else if (v_scv && cpu_a[1:0] == 2'd2)                         // upright: IN2 + IN1 controls
         port_in = (in2 & 8'h89) | (in1 & 8'h70) | {5'd0, in1[7], in1[3], 1'b0};
     else if (v_cane)
         port_in = cpu_a[2:0] == 3'd1 ? in1 : cpu_a[2:0] == 3'd3 ? shift_q : 8'h00;
@@ -510,7 +511,7 @@ always_comb begin
         default: port_in = variant == 8'd0 || variant == 8'd3 || v_afc || v_vtx || v_imul || v_pol || v_ind || v_scv ?
                                                                                           shift_q :   // MB14241 shifter
                            variant == 8'd2 || v_scom ? in3 :   // invasion / spacecom: fourth input port
-                                             8'h00;        // no shifter: open (MAME unmapped)
+                                             8'h00;        // no shifter: open, reads 0
     endcase
 end
 
@@ -534,7 +535,7 @@ always_ff @(posedge clk) if (ce) mem_d <= mem_strobe;
 
 always_ff @(posedge clk) begin
     if (reset)
-        bank <= 3'd0;                       // MAME keeps the bank across a watchdog reset
+        bank <= 3'd0;                       // the bank survives a watchdog reset
     else if (mem_wr && is_bank)
         bank <= {cpu_do[6], cpu_do[4], cpu_do[0]};
 end
@@ -554,7 +555,7 @@ assign eeprom93c46_0_i.ext_we   = 1'b0;
 assign eep_do = eeprom93c46_0_o.dout;
 
 // data in: INTA -> RST vector, INP -> ports, video RAM -> RAM register, work RAM, EEPROM, else ROM
-// sflush (MAME sflush_map): 0000 work RAM, 4000 video RAM, 8008 paddle, 8009 shifter, 800A IN2 (bit 7 = MAME vpos
+// sflush: 0000 work RAM, 4000 video RAM, 8008 paddle, 8009 shifter, 800A IN2 (bit 7 = vpos
 // bit 7: V >= 160 or VBLANK), 800B IN0, A000 colour RAM, D800-FFFF ROM; anything else reads 0
 wire       sfl_v128 = cnt_e7[4] | (vpos >= 8'd160);
 logic [7:0] sfl_di;
@@ -581,7 +582,7 @@ always_comb begin
     else if (is_cram)   cpu_di = cram_qa;
     else if (is_cram2)  cpu_di = cram2_qa;
     else if (is_star)   cpu_di = 8'h00;
-    else if (is_bank)   cpu_di = 8'h00;     // MAME unmapped
+    else if (is_bank)   cpu_di = 8'h00;     // bank latch: write only
     else                cpu_di = rom_q;
 end
 
@@ -595,7 +596,7 @@ logic [7:0] snd3 = 8'd0, snd4 = 8'd0;  // variant 20 sound latches 3 / 4
 // discrete engine latches 3 / 4: variant 20 its own latches; the 8080bw boards the port 0 latch (polaris port 2) and
 // the last shift-data port (port 4) write (ozmawars stage sounds)
 assign snd34 = v_tab ? {snd4, snd3} : {shift_data[15:8], snd0};
-// spcenctr (MAME spcenctr_state::io_w): A2-A0 0 /BRITE (D3), 1 sound P1 / P2 / P3 by A4 A3 (A6 low), 3 trench slope
+// spcenctr I/O writes: A2-A0 0 /BRITE (D3), 1 sound P1 / P2 / P3 by A4 A3 (A6 low), 3 trench slope
 // [A7 A6 A4 A3], 4 trench centre, 7 trench width
 logic       sc_bright = 1'b0;
 logic [7:0] sc_center = 8'd0, sc_width = 8'd0;
@@ -725,7 +726,7 @@ end
 
 // ---------------------------------------------------------------- video RAM (2000-3FFF, mirror 6000)
 
-// Flip (cocktail / CRT Flip): the bitmap is scanned from the other corner so the picture matches MAME's
+// Flip (cocktail / CRT Flip): the bitmap is scanned from the other corner so the picture is the
 // flipped 260 x 224 image. Bytes are fetched one slot early and loaded 4 pixels earlier, bit-reversed.
 wire flip = crt_flip ^ (cocktail & (v_dvdr ? dv_flip : v_shut ? sh_flip : snd2[5]));
 
@@ -763,7 +764,7 @@ assign sram_q = pr_o[1].b_q;
 logic [1:0] cdb = 2'd0;             // {next byte bit 0, source column bit 2}, timed as rdb
 always_ff @(posedge clk) if (ce) cdb <= {sram_q[0], vcol[2]};
 
-// ---------------------------------------------------------------- family 3 colour (MAME 8080bw_v.cpp)
+// ---------------------------------------------------------------- family 3 colour (Taito colour boards)
 
 // colour PROM (2 x 1K, P1 / P2 halves) and polaris cloud graphics: MRA index 0 at 0x20000 / 0x20800. Port A loads
 // them while the board is in reset and reads the cloud pattern at run time.
@@ -875,10 +876,10 @@ always_ff @(posedge clk) begin
     end
 end
 
-// ---------------------------------------------------------------- sync / blank (MAME framing)
+// ---------------------------------------------------------------- sync / blank
 
 // Registered outputs show one count after their edge: bitmap pixel d is on screen at hx = d + 5, so the
-// visible window hx 1-260 = 4 black pixels + 256 bitmap pixels; HSYNC = MAME H 272-287, VSYNC = V 236-239.
+// visible window hx 1-260 = 4 black pixels + 256 bitmap pixels; HSYNC = H 272-287, VSYNC = V 236-239.
 // spacecom has no 4-pixel delay: only the 256 bitmap pixels are shown (hx 5-260, flipped hx 1-256).
 wire [8:0] hb_end   = (narrow & ~flip) ? 9'd4 : 9'd0;
 wire [8:0] hs_on    = 9'd272 + {{4{h_adj[3]}}, h_adj, 1'b0};   // blanking stays put, only the sync pulses move
@@ -900,7 +901,7 @@ always_ff @(posedge clk) begin
     end
 end
 
-// ---------------------------------------------------------------- colour overlay (MAME layout rectangles)
+// ---------------------------------------------------------------- colour overlay (artwork layout rectangles)
 
 // Rectangles are in picture coordinates (x 0-259 = hx 1-260, rows 0-223), half-open, later ones win. The bands follow
 // every flip (CRT Flip and the cocktail flip), so they stay on the score, shields and bases.
@@ -937,7 +938,7 @@ always_ff @(posedge clk) begin
 end
 
 // polaris clouds: a 16 x 64 pattern drawn on background pixels where the PROM allows it, moving down one line every
-// 4 frames (MAME screen_update_polaris / polaris_60hz_w). Bitmap x = picture x - 4, raw V = picture row + 32.
+// 4 frames (the 60 Hz line). Bitmap x = picture x - 4, raw V = picture row + 32.
 logic [7:0] cloud_pos = 8'd0;
 logic [1:0] cloud_div = 2'd0;
 logic       cl_vb = 1'b0, cl_bit = 1'b0;
@@ -955,10 +956,10 @@ always_ff @(posedge clk) begin
     if (pix) cl_bit <= col_mode == 8'd4 && cl_y < 8'd64 && cloud_q[{1'b0, ~cl_x[1:0]}];
 end
 
-// phantom2 clouds (MAME screen_update_phantom2): row counter = frame start + picture row, 0xE0B-0xFFF, advanced 262
+// phantom2 clouds: row counter = frame start + picture row, 0xE0B-0xFFF, advanced 262
 // rows per frame from 0; a pixel x uses PROM byte {counter[7:1], ((x - 16) >> 4)}, bit ((x - 16) >> 1) & 7; pixels 0-15 still
 // show the previous row's last byte. Cloud pixels are grey on background pixels.
-logic [11:0] p2_frame = 12'd0;         // MAME machine_start: 0, then wraps 0x1000 -> 0xE0B
+logic [11:0] p2_frame = 12'd0;         // 0 at power-up, then wraps 0x1000 -> 0xE0B
 logic        p2_vb = 1'b0, p2_bit = 1'b0;
 wire  [12:0] p2_next = {1'b0, p2_frame} + 13'd262;
 wire  [8:0]  p2_x  = ox - 9'd16;
@@ -974,7 +975,7 @@ always_ff @(posedge clk) begin
     if (pix) p2_bit <= col_mode == 8'd7 && cloud_q[p2_x[3:1]];
 end
 
-// spcenctr trench (MAME spcenctr_state::screen_update): width / floor width start the frame at the width register and
+// spcenctr trench: width / floor width start the frame at the width register and
 // step +1 / -1 per pixel by bit 7 of a counter running from the centre register; at the end of a line the line's last
 // byte (column 31) sets / clears the trench and floor, and the slope nibble for V[3:0] widens them. A 256 x 1 line
 // buffer carries the trench edge pattern down the sides and floor. /BRITE flashes the screen white, decaying 10 per frame.
@@ -1031,12 +1032,12 @@ end
 wire [7:0] sc_pix = sc_gray > sc_lvl ? sc_gray : sc_lvl;
 
 // pens -> RGB: RBG_3BIT (b0 R, b1 B, b2 G), RGB_3BIT (b0 R, b1 G, b2 B), rollingc 16 pens (b3 intensity, pens 5 / 6
-// pink / orange as MAME)
+// pink / orange)
 wire [3:0] pen = vid ? gvid[3:0] : (gvid[8] && cl_bit) ? 4'd7 : gvid[7:4];
 logic [23:0] pen_rgb;
 always_comb begin
     if (v_sfl && pen == 4'd0)
-        pen_rgb = 24'h8080FF;                    // MAME sflush_palette: pen 0 bright blue
+        pen_rgb = 24'h8080FF;                    // sflush palette: pen 0 bright blue
     else if (col_mode == 8'd5)
         pen_rgb = pen == 4'd5 ? 24'hFF0080 : pen == 4'd6 ? 24'hFF8000 :
                   {{8{pen[2]}}, {8{pen[1]}}, {8{pen[0]}}} & (pen[3] ? 24'hFFFFFF : 24'h7F7F7F);
@@ -1046,13 +1047,13 @@ always_comb begin
         pen_rgb = {{8{pen[0]}}, {8{pen[2]}}, {8{pen[1]}}};
 end
 
-// vortex: red / green from the next byte's bit 0, blue on source columns 4-7 of every 8 (MAME screen_update_vortex)
+// vortex: red / green from the next byte's bit 0, blue on source columns 4-7 of every 8
 wire [7:0] bg = p2_bit ? 8'hC0 : 8'h00;          // phantom2 cloud grey (through the overlay like lit pixels)
 wire [7:0] base_r = xh ? 8'hFF : colour ? pen_rgb[23:16] : !vid ? (v_spc ? sc_pix : p2_bit ? ov_r & 8'hC0 : 8'd0) : v_vtx ? {8{~cvid[1]}} : ov_r;
 wire [7:0] base_g = xh ? 8'h00 : colour ? pen_rgb[15:8]  : !vid ? (v_spc ? sc_pix : p2_bit ? ov_g & bg : 8'd0) : v_vtx ? {8{ cvid[1]}} : ov_g;
 wire [7:0] base_b = xh ? 8'h00 : colour ? pen_rgb[7:0]   : !vid ? (v_spc ? sc_pix : p2_bit ? ov_b & bg : 8'd0) : v_vtx ? {8{ cvid[0]}} : ov_b;
 
-// spcenctr cabinet lamp / strobe reflected on the screen (MAME layout_spcenctr, additive): lamp = P3 D3 at
+// spcenctr cabinet lamp / strobe reflected on the screen (cabinet artwork, additive): lamp = P3 D3 at
 // (0.5, 0.125, 0.05); strobe = 9 Hz 555 lit 5 % of each period, enabled by P3 D2 at the start of the flash (0.7 grey)
 localparam int ST_PERIOD = 1109333;              // ce (9.984 MHz) / 9 Hz
 localparam int ST_ON     = 55467;                // 5 %
@@ -1074,7 +1075,7 @@ assign video_b = |add_b[9:8] ? 8'hFF : add_b[7:0];
 
 // ---------------------------------------------------------------- sound board (port 3 / port 5, 16V = "480 Hz")
 
-// The sample-driven bootlegs' sound bits (MAME 8080bw_a.cpp handlers) remapped onto the board's inputs:
+// The sample-driven bootlegs' sound bits (their sample triggers) remapped onto the board's inputs:
 // p1 [0] saucer [1] missile [2] explosion [3] invader hit [4] bonus [5] sound on; p2 [3:0] fleet [4] saucer hit
 logic [7:0] sp1, sp2;
 always_comb begin
@@ -1084,12 +1085,12 @@ always_comb begin
                        sp2 = {3'b000, snd2[2] | snd2[4], snd2[0], 2'b00, snd1[0]}; end
         8'd5:    begin sp1 = {2'b00, snd1[0], snd1[4], snd1[7], snd1[6], snd1[1], snd1[5]};
                        sp2 = {3'b000, snd1[2], snd1[3] ? 4'b0001 << dv_play : 4'b0000}; end
-        8'd6, 8'd11: begin sp1 = 8'd0; sp2 = 8'd0; end                 // attackfc / claybust: no sound in MAME, silent
+        8'd6, 8'd11: begin sp1 = 8'd0; sp2 = 8'd0; end                 // attackfc / claybust: sound not documented, silent
         8'd10:   begin sp1 = {3'b001, snd1[1], sh_pulse[1], sh_pulse[2], sh_pulse[3], snd1[2]};  // FD [0] fleet [1] extra tank [2] UFO,
                        sp2 = {3'b000, sh_pulse[0], 3'b000, snd1[0]}; end  // FE codes as pulses
         default: begin sp1 = snd1; sp2 = snd2; end
     endcase
-    // family 3: MAME's sample handlers mapped onto the board's voices (invaders samples: 0 missile, 1 explosion,
+    // family 3: the sample triggers mapped onto the board's voices (invaders samples: 0 missile, 1 explosion,
     // 2 invader hit, 3 saucer hit, 4-7 fleet, 8 bonus)
     case (smap)
         8'd1: begin sp1 = 8'd0; sp2 = 8'd0; end                                       // silent
@@ -1108,7 +1109,7 @@ always_comb begin
     endcase
 end
 
-// shuttlei FE sound codes (MAME sh_port_2_w): 23 hit, 2B shoot, A3 UFO hit, AB death -> ~10 ms trigger pulses
+// shuttlei FE sound codes: 23 hit, 2B shoot, A3 UFO hit, AB death -> ~10 ms trigger pulses
 // sh_pulse: [0] UFO hit, [1] invader hit, [2] explosion, [3] missile
 logic [3:0]  sh_pulse = 4'd0;
 logic [16:0] sh_ptim = 17'd0;
@@ -1132,12 +1133,12 @@ always_ff @(posedge clk) begin
     end
 end
 
-// invrvnge sound board (MAME invrvnge_state::sound_map): M6802 (pool m6800_0) with its 128 bytes of internal RAM at
+// invrvnge sound board: M6802 (pool m6800_0) with its 128 bytes of internal RAM at
 // 0000-007F; A001 AY data read, A002 AY data write, A003 AY address write; ROM C000-C7FF and E000-E7FF, each
-// mirrored to 2000 bytes (index 0 0x8000 / 0xA000), D3 / D4 swapped (MAME init_invrvnge), decoded on the read path.
+// mirrored to 2000 bytes (index 0 0x8000 / 0xA000), D3 / D4 swapped on the board, decoded on the read path.
 // The AY is clocked by E; its port A reads the port 3 latch >> 1 (the CPU polls it). A 4040 on E drives NMI:
-// MAME toggles the line at E / 256, so NMI edges come at E / 512 = 1953 Hz (MAME's comment names Q8 = E / 256).
-localparam IRV_NMI_BIT = 8;                               // counter bit on E: 8 = MAME's 1953 Hz, 7 = 3906 Hz
+// the line toggles at E / 256 (Q8), so NMI edges come at E / 512 = 1953 Hz.
+localparam IRV_NMI_BIT = 8;                               // counter bit on E: 8 = 1953 Hz (Q8), 7 = 3906 Hz
 wire   [7:0] irv_rom = {rom_hi[7:5], rom_hi[3], rom_hi[4], rom_hi[2:0]};
 logic  [7:0] irv_ram_q, ay_dout;
 logic  [3:0] ay_reg = 4'd0;
@@ -1204,8 +1205,8 @@ jt49 u_ay              // POOL-EXCEPTION: jotego chip, kept on the board until t
     .IOB_out()
 );
 
-// AY output: DC removed by a 1-pole high pass (4.9 Hz); gain = MAME's gameplay level (RMS 7563 over coin / start /
-// first wave, verilator/jt680x_timing + MAME tap 2026-10-15); 3 channels at full volume peak ~ +-26.7k
+// AY output: DC removed by a 1-pole high pass (4.9 Hz); gain = the reference gameplay level (RMS 7563 over coin /
+// start / first wave); 3 channels at full volume peak ~ +-26.7k
 localparam IRV_GAIN = 70;
 logic signed [26:0] irv_dc = 27'sd0;                     // tau = 2^15 E = 33 ms (4.9 Hz)
 wire  signed [11:0] irv_x  = $signed({2'b00, ay_snd}) - $signed(irv_dc[26:15]);

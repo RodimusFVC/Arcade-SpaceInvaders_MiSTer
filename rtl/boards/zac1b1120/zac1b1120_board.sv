@@ -3,8 +3,9 @@
 //  Zaccaria 1B1120 board (The Invaders, Super Invader Attack, Dodgem)
 //  Copyright (C) 2026 Rodimus
 //
-//  Memory map, inputs and object placement follow MAME zaccaria/zac1b1120.cpp (Mike Coates); the S2636 PVI object
-//  logic follows MAME devices/machine/s2636.cpp (Vas Crabb). S2650 CPU: s2650sv (rtl/rodimus/s2650sv), SystemVerilog translation of the core by DO.
+//  Based on MAME zaccaria/zac1b1120.cpp (Mike Coates, BSD-3-Clause)
+//  Based on MAME devices/machine/s2636.cpp (Vas Crabb, BSD-3-Clause)
+//  Memory map, inputs and object placement from the first, the S2636 PVI object logic from the second. S2650 CPU: s2650sv (rtl/rodimus/s2650sv), SystemVerilog translation of the core by DO.
 //
 //  Redistribution and use in source and synthesized forms, with or without
 //  modification, are permitted provided that the following conditions are met:
@@ -25,7 +26,7 @@
 //============================================================================
 
 // clk = 39.936 MHz. A fractional enable gives the board's master clock (15.625 MHz, Dodgem 14.318 MHz) on average;
-// one output pixel per master clock: 908 x 312 total, 720 x 256 visible (MAME set_raw). The character background
+// one output pixel per master clock: 908 x 312 total, 720 x 256 visible. The character background
 // runs at master / 3 (240 visible pixels), the S2636 objects at master / 4 (227 PVI clocks per line). The S2650 runs
 // at master / 16 with one bus cycle per 3 of its clocks: one ack every 48 master clocks.
 // MRA index 0: program ROM 0000-17FF, character ROM (gfx1) at 2000-23FF, read from the shared ROM block rom0 in the top.
@@ -49,7 +50,7 @@ module zac1b1120_board
 
     input  logic signed [3:0] h_adj,   // CRT position: HSYNC moved 4 counts per step
     input  logic signed [3:0] v_adj,   //               VSYNC moved 1 line per step
-    input  logic        ov_en,          // colour overlay (MAME layout rectangles, raw x 0-719 / line 0-255)
+    input  logic        ov_en,          // colour overlay (artwork layout rectangles, raw x 0-719 / line 0-255)
     input  logic [1031:0] ov_tab,
 
     output logic        ce_pix,
@@ -230,12 +231,12 @@ always_comb begin
 end
 
 always_comb begin
-    if (!mio_l)                      cpu_dr = 8'h00;     // S2650 I/O space: nothing mapped (MAME reads 0)
+    if (!mio_l)                      cpu_dr = 8'h00;     // S2650 I/O space: nothing mapped (reads 0)
     else if (is_rom)                 cpu_dr = rom_q;
     else if (rd_vram)                cpu_dr = vram_q;
     else if (rd_ram)                 cpu_dr = ram_q;
     else if (rd_io)                  cpu_dr = io_q;
-    else if (rd_pvi && ra[7:0] == 8'hCB) cpu_dr = {2'b00, obj_coll};    // MAME: frame's object collisions
+    else if (rd_pvi && ra[7:0] == 8'hCB) cpu_dr = {2'b00, obj_coll};    // the frame's object collisions
     else if (rd_pvi)                 cpu_dr = pvi_q;
     else                             cpu_dr = 8'hFF;
 end
@@ -288,8 +289,8 @@ wire bg_pix = bg_shift[7];          // this master clock's background pixel, ali
 
 // ---------------------------------------------------------------- S2636 objects (master / 4)
 
-// Per line (MAME s2636_device::render_next_line): count lines to each object, then show its 10 rows (scaled), then
-// its duplicate VCB + 1 lines later at HCB. Placement as MAME zac1b1120: x = 4 * HC - 22 master clocks, first line
+// Per line: count lines to each object, then show its 10 rows (scaled), then
+// its duplicate VCB + 1 lines later at HCB. Placement: x = 4 * HC - 22 master clocks, first line
 // VC + 1 (the counters latch one line before the first visible line).
 logic [7:0] ocnt [4];
 logic [3:0] odisp = 4'd0, odup = 4'd0;
@@ -358,7 +359,7 @@ always_comb begin
     end
 end
 
-// collisions, latched for the frame at the end of the visible area (MAME draw_sprites per frame)
+// collisions, latched for the frame at the end of the visible area
 always_ff @(posedge clk) if (mce) begin
     if (vis_v && vis_h) begin
         if (|opix && bg_pix) bg_coll_acc <= 1'b1;

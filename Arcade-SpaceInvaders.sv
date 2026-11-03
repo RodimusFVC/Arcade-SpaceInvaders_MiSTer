@@ -270,37 +270,6 @@ wire reset = RESET | status[0] | buttons[1] | ioctl_download | ~locked;
 
 ///////////////////         Keyboard           //////////////////
 
-// CTL-2026-10-25: keyboard -> controllers.sv ctl_keyboard (keys now act on press; paused, held keys keep tracking).
-// Original commented out below.
-// reg kb_up = 0, kb_down = 0, kb_left = 0, kb_right = 0;
-// reg kb_b1 = 0, kb_b2 = 0;
-// reg kb_coin1 = 0, kb_coin2 = 0, kb_start1 = 0, kb_start2 = 0, kb_pause = 0, kb_service = 0, kb_tilt = 0;
-//
-// wire       pressed = ~ps2_key[9];
-// wire [7:0] code    = ps2_key[7:0];
-//
-// always @(posedge CLK_40M) begin
-// 	reg old_state;
-// 	old_state <= ps2_key[10];
-// 	if (old_state != ps2_key[10]) begin
-// 		case (code)
-// 			'h16: kb_start1  <= pressed; // 1
-// 			'h1E: kb_start2  <= pressed; // 2
-// 			'h2E: kb_coin1   <= pressed; // 5
-// 			'h36: kb_coin2   <= pressed; // 6
-// 			'h46: kb_service <= pressed; // 9
-// 			'h2C: kb_tilt    <= pressed; // T
-// 			'h4D: kb_pause   <= pressed; // P
-//
-// 			'h75: kb_up      <= pressed; // up
-// 			'h72: kb_down    <= pressed; // down
-// 			'h6B: kb_left    <= pressed; // left
-// 			'h74: kb_right   <= pressed; // right
-// 			'h14: kb_b1      <= pressed; // ctrl
-// 			'h11: kb_b2      <= pressed; // alt
-// 		endcase
-// 	end
-// end
 // kb: [0] up [1] down [2] left [3] right [4] Ctrl [5] Alt [6] 1 [7] 2 [8] 5 [9] 6 [10] 9 [11] T [12] P
 wire [12:0] kb;
 /* verilator lint_off UNUSED */
@@ -312,14 +281,6 @@ ctl_keyboard u_kb(.clk(CLK_40M), .ps2_key(ps2_key), .pause(pause_cpu), .kb(kb), 
 
 // Joystick bits: 0 R, 1 L, 2 D, 3 U, 4-7 Btn 1-4, 8 Coin, 9 Start 1P, 10 Start 2P, 11 Pause, 12-13 Btn 5-6
 // analog sticks as 4 directions {U, D, L, R} (threshold +/-40 of 127)
-// CTL-2026-10-25: stick directions -> ctl_stick_dirs (+-40 per axis); keyboard arrows from ctl_keyboard. Original commented out below.
-// function [3:0] stick(input [15:0] a);
-//     stick = {$signed(a[15:8]) < -8'sd40, $signed(a[15:8]) > 8'sd40, $signed(a[7:0]) < -8'sd40, $signed(a[7:0]) > 8'sd40};
-// endfunction
-// wire [3:0] al1 = stick(joy_la0), al2 = stick(joy_la1);
-//
-// wire [3:0] dir1 = {joystick_0[3] | kb_up, joystick_0[2] | kb_down, joystick_0[1] | kb_left, joystick_0[0] | kb_right} |
-//                   al1;
 wire [3:0] al1, al2;
 ctl_stick_dirs #(.MODE(0), .THRESH(7'd40)) u_al1(.stick(joy_la0), .dir(al1));
 ctl_stick_dirs #(.MODE(0), .THRESH(7'd40)) u_al2(.stick(joy_la1), .dir(al2));
@@ -328,8 +289,6 @@ wire [3:0] dir1 = {joystick_0[3] | kb[0], joystick_0[2] | kb[1], joystick_0[1] |
                   al1;
 wire [3:0] dir2 = joystick_1[3:0] | al2;   // {U, D, L, R}
 
-// CTL-2026-10-25: keyboard P from ctl_keyboard. Original commented out below.
-// wire m_pause = joystick_0[11] | kb_pause;
 wire m_pause = joystick_0[11] | kb[12];
 
 // DIP switches arrive from the OSD via ioctl index 254
@@ -345,39 +304,7 @@ wire       an_sel;                  // the board's controller-select line (clown
 wire [3:0] dsel = an_sel ? dip_sw[4][3:0] : dip_sw[3][3:0];
 
 // control ids used by the MRA input map
-// CTL-2026-10-25: ids 0-35 -> ctl_ids (pad 2's Start = Start 2 only; mouse left button still ORed into P1 Btn 1); ids 36-75 stay
-// core-local. Original commented out below.
-// wire [127:0] ctl =
-// {
-// 	52'd0,
-// 	joystick_3[9] | joystick_3[10],                 // 75 start 4: player 4's start button
-// 	joystick_2[9] | joystick_2[10],                 // 74 start 3: player 3's start button
-// 	joystick_3[4],                                  // 73 P4 Btn 1
-// 	joystick_3[0], joystick_3[1], joystick_3[2], joystick_3[3],   // 72 R, 71 L, 70 D, 69 U
-// 	joystick_2[4],                                  // 68 P3 Btn 1
-// 	joystick_2[0], joystick_2[1], joystick_2[2], joystick_2[3],   // 67 R, 66 L, 65 D, 64 U
-// 	4'd0,                                           // 63-60 unused
-// 	dsel,                                           // 59-56 DIP byte 4 / 3 bits 3-0 by the select line
-// 	dip_sw[4],                                      // 55-48 DIP byte 4 (MAME fake port lines)
-// 	dip_sw[3],                                      // 47-40 DIP byte 3 (MAME fake port lines)
-// 	3'd0,
-// 	vblank,                                         // 36 VBLANK
-// 	joystick_1[13:12],                              // 35-34 P2 Btn 6-5
-// 	joystick_0[13:12],                              // 33-32 P1 Btn 6-5
-// 	8'd0,                                           // 31-24 unused
-// 	1'b0,                                           // 23 coin 3
-// 	kb_service,                                     // 22 service
-// 	kb_tilt,                                        // 21 tilt
-// 	joystick_0[10] | joystick_1[10] | kb_start2,    // 20 start 2
-// 	joystick_0[9]  | joystick_1[9]  | kb_start1,    // 19 start 1
-// 	joystick_1[8] | kb_coin2,                       // 18 coin 2
-// 	joystick_0[8] | kb_coin1,                       // 17 coin 1
-// 	joystick_1[7:4],                                // 16-13 P2 Btn 4-1
-// 	dir2[0], dir2[1], dir2[2], dir2[3],             // 12 R, 11 L, 10 D, 9 U
-// 	joystick_0[7], joystick_0[6], joystick_0[5] | kb_b2, joystick_0[4] | kb_b1 | ps2_mouse[0],   // 8-5 P1 Btn 4-1
-// 	dir1[0], dir1[1], dir1[2], dir1[3],             // 4 R, 3 L, 2 D, 1 U
-// 	1'b0                                            // 0 none
-// };
+// ids 0-35 from ctl_ids (pad 2's Start = Start 2 only; the mouse left button ORed into P1 Btn 1); ids 36-75 core-local
 wire [35:0] ids;
 ctl_ids u_ids(.joy0(joystick_0), .joy1(joystick_1), .kb(kb), .dir1(dir1), .dir2(dir2), .coin1(joystick_0[8] | kb[8]),
 	.coin2(joystick_1[8] | kb[9]), .coin3(1'b0), .ctl(ids));
@@ -392,8 +319,8 @@ wire [127:0] ctl =
 	joystick_2[0], joystick_2[1], joystick_2[2], joystick_2[3],   // 67 R, 66 L, 65 D, 64 U
 	4'd0,                                           // 63-60 unused
 	dsel,                                           // 59-56 DIP byte 4 / 3 bits 3-0 by the select line
-	dip_sw[4],                                      // 55-48 DIP byte 4 (MAME fake port lines)
-	dip_sw[3],                                      // 47-40 DIP byte 3 (MAME fake port lines)
+	dip_sw[4],                                      // 55-48 DIP byte 4 (DIP lines read as port bits)
+	dip_sw[3],                                      // 47-40 DIP byte 3 (DIP lines read as port bits)
 	3'd0,
 	vblank,                                         // 36 VBLANK
 	ids[35:6],                                      // 35-6 ctl_ids
@@ -403,12 +330,10 @@ wire [127:0] ctl =
 
 // Analog controls (Midway one-offs): paddles / wheels / periscope from the MiSTer paddle, spinner, mouse X, left stick
 // or D-pad; gun angles from Btn 2 / 3; pedal from Btn 1 or the stick pushed up. Each MRA descriptor turns a channel
-// into a port field: linear between min / max (optionally reversed) or N positions through a MAME remap table.
+// into a port field: linear between min / max (optionally reversed) or N positions through the MRA remap table.
 reg  [7:0] pad[2]  = '{8'd128, 8'd128};
 reg  [7:0] aim[2]  = '{8'd128, 8'd128};
-reg  [7:0] pady    = 8'd255;         // P1 vertical (spcenctr thrust: MAME default position 19 of 20)
-// CTL-2026-10-25: trackball counters -> ctl_trackball below. Original commented out below.
-// reg  [7:0] tb[2]   = '{8'd0, 8'd0};  // trackball X / Y counters (wrap)
+reg  [7:0] pady    = 8'd255;         // P1 vertical (spcenctr thrust: power-up position 19 of 20)
 reg        an_vbl = 1'b0, an_mtog = 1'b0, sp0_d = 1'b0, sp1_d = 1'b0;
 reg  [7:0] pd0_d = 8'd0, pd1_d = 8'd0;
 
@@ -422,23 +347,9 @@ wire signed [7:0] an_x0 = joy_la0[7:0], an_x1 = joy_la1[7:0], an_y0 = joy_la0[15
 wire signed [9:0] an_v0 = (an_x0 > 8'sd12 || an_x0 < -8'sd12) ? (10'(an_x0) >>> 4) : dir1[0] ? 10'sd3 : dir1[1] ? -10'sd3 : 10'sd0;
 wire signed [9:0] an_v1 = (an_x1 > 8'sd12 || an_x1 < -8'sd12) ? (10'(an_x1) >>> 4) : dir2[0] ? 10'sd3 : dir2[1] ? -10'sd3 : 10'sd0;
 wire signed [9:0] an_vy = (an_y0 > 8'sd12 || an_y0 < -8'sd12) ? (10'(an_y0) >>> 4) : dir1[2] ? 10'sd3 : dir1[3] ? -10'sd3 : 10'sd0;
-// CTL-2026-10-25: only the trackball used this (now ctl_trackball). Original commented out below.
-// wire signed [9:0] an_mx = {ps2_mouse[4], ps2_mouse[4], ps2_mouse[15:8]};
 wire signed [9:0] an_my = -{ps2_mouse[5], ps2_mouse[5], ps2_mouse[23:16]};   // PS/2 Y is positive upward
-// CTL-2026-10-25: only the trackball used this (now ctl_trackball). Original commented out below.
-// wire signed [9:0] an_sx = 10'($signed(spinner_0[7:0]));
-// CTL-2026-10-25: trackball stick / D-pad steps now inside ctl_trackball. Original commented out below.
-// wire signed [9:0] tb_sx = (an_x0 > 8'sd12 || an_x0 < -8'sd12) ? (10'(an_x0) >>> 3) : dir1[0] ? 10'sd8 : dir1[1] ? -10'sd8 : 10'sd0;
-// wire signed [9:0] tb_sy = (an_y0 > 8'sd12 || an_y0 < -8'sd12) ? (10'(an_y0) >>> 3) : dir1[2] ? 10'sd8 : dir1[3] ? -10'sd8 : 10'sd0;
 wire       [7:0] gx, gy;            // light gun position scaled to 0-255 (assigned with the gun below)
 
-// CTL-2026-10-25: trackball -> controllers.sv ctl_trackball (10-bit counters; every source on one clock is summed, opposite
-// D-pad directions cancel, the speed scaling applies to the counter, not to each delta, so Normal / Slow no longer drift;
-// stopped while paused). Original commented out below.
-// // trackball speed (Game Options): Normal 1/2, Fast 1/1, Slow 1/4 of the mouse / stick delta
-// function automatic [7:0] tbd(input [7:0] v, input signed [9:0] d, input [1:0] spd);
-// 	tbd = v + 8'(spd == 2'd1 ? d : spd == 2'd2 ? d >>> 2 : d >>> 1);
-// endfunction
 // trackball speed (Game Options): Normal 1/2, Fast 1/1, Slow 1/4 of the mouse / spinner / stick counts
 wire       ms_ev;
 wire [9:0] ms_dx, ms_dy;
@@ -457,7 +368,6 @@ ctl_trackball #(.CW(10), .OUT_W(8), .STICK_RSH(3), .DPAD_STEP(8), .DZ(12)) u_tb
 	.tick(frame_tick), .stick_en(1'b1), .stick(joy_la0), .dpad(dir1), .x(tb[0]), .y(tb[1]), .dir(tb_dir)
 );
 
-// CTL-2026-10-25: Ctrl from ctl_keyboard (kb[4]); original line: wire [7:0] pedal = (joystick_0[4] | kb_b1) ? ... (rest unchanged)
 wire       [7:0] pedal = (joystick_0[4] | kb[4]) ? 8'd255 : (an_y0 == -8'sd128) ? 8'd255 : (an_y0 < -8'sd12) ? 8'(-{an_y0, 1'b0}) : 8'd0;
 
 always @(posedge CLK_40M) begin
@@ -476,16 +386,6 @@ always @(posedge CLK_40M) begin
 	else if (vblank && !an_vbl)           pad[1] <= padd(pad[1], an_v1);
 	if (ps2_mouse[24] != an_mtog)          pady <= padd(pady, an_my);
 	else if (vblank && !an_vbl)            pady <= padd(pady, an_vy);
-	// CTL-2026-10-25: trackball now ctl_trackball (above). Original commented out below.
-// 	if (ps2_mouse[24] != an_mtog) begin
-// 		tb[0] <= tbd(tb[0], an_mx, status[26:25]);
-// 		tb[1] <= tbd(tb[1], an_my, status[26:25]);
-// 	end else if (spinner_0[8] != sp0_d)
-// 		tb[0] <= tbd(tb[0], an_sx, status[26:25]);
-// 	else if (vblank && !an_vbl) begin
-// 		tb[0] <= tbd(tb[0], tb_sx, status[26:25]);
-// 		tb[1] <= tbd(tb[1], tb_sy, status[26:25]);
-// 	end
 	if (vblank && !an_vbl) begin
 		aim[0] <= padd(aim[0], joystick_0[5] ? 10'sd4 : joystick_0[6] ? -10'sd4 : 10'sd0);
 		aim[1] <= padd(aim[1], joystick_1[5] ? 10'sd4 : joystick_1[6] ? -10'sd4 : 10'sd0);
@@ -534,27 +434,10 @@ always @* begin
 	end
 end
 
-// CTL-2026-10-25: port loop -> controllers.sv ctl_port_map (IDW 7, analog fields as the overlay). Original commented out below.
-// reg [7:0] in_port[4];
-// always @(posedge CLK_40M) begin
-// 	for (int p = 0; p < 4; p++)
-// 		for (int b = 0; b < 8; b++)
-// 			in_port[p][b] <= an_mask[p][b] ? an_val[p][b] : dip_sw[p][b] ^ ctl[in_map[p*8 + b]];
-// end
 wire  [7:0] in_port[4];
 wire [31:0] pm_idle, pm_ovm, pm_ovv, pm_ports;
 wire [255:0] pm_map;
-// CTL2-2026-10-25: Quartus 17.0 rejects `for (genvar ...)` in the loop header (error 10170) and genvar b clashed
-// with wire b; genvars now declared at module scope inside generate. Original block:
-// for (genvar p = 0; p < 4; p++) begin : g_pm
-// 	assign pm_idle[p*8 +: 8] = dip_sw[p];
-// 	assign pm_ovm[p*8 +: 8]  = an_mask[p];
-// 	assign pm_ovv[p*8 +: 8]  = an_val[p];
-// 	assign in_port[p]        = pm_ports[p*8 +: 8];
-// 	for (genvar b = 0; b < 8; b++) begin : g_b
-// 		assign pm_map[(p*8 + b)*8 +: 8] = {1'b0, in_map[p*8 + b]};
-// 	end
-// end
+// genvars at module scope: Quartus 17.0 rejects `for (genvar ...)` in a loop header (error 10170)
 genvar pm_p, pm_b;
 generate
 	for (pm_p = 0; pm_p < 4; pm_p = pm_p + 1) begin : g_pm
@@ -572,31 +455,6 @@ ctl_port_map #(.NP(4), .IDW(7)) u_pm(.clk(CLK_40M), .idle(pm_idle), .in_map(pm_m
 
 // Light gun (claybust / gunchamp): crosshair moved by the mouse, the left stick or the D-pad; fire or the left
 // mouse button pulls the trigger. Bitmap x 0-255, picture row 0-223; CRT Flip turns the controls with the picture.
-// CTL-2026-10-25: crosshair -> controllers.sv ctl_gun_cursor (stopped while paused); Ctrl from ctl_keyboard. Original commented out below.
-// reg  [7:0] gun_x = 8'd128, gun_y = 8'd112;
-// reg        mouse_tog = 1'b0, gun_vbl = 1'b0;
-// wire signed [9:0] mouse_dx = {ps2_mouse[4], ps2_mouse[4], ps2_mouse[15:8]};
-// wire signed [9:0] mouse_dy = -{ps2_mouse[5], ps2_mouse[5], ps2_mouse[23:16]};          // PS/2 Y is positive upward
-// wire signed [7:0] ana_x = joy_la0[7:0], ana_y = joy_la0[15:8];
-// wire signed [9:0] stick_dx = (ana_x > 8'sd12 || ana_x < -8'sd12) ? (10'(ana_x) >>> 4) :
-//                              dir1[0] ? 10'sd3 : dir1[1] ? -10'sd3 : 10'sd0;
-// wire signed [9:0] stick_dy = (ana_y > 8'sd12 || ana_y < -8'sd12) ? (10'(ana_y) >>> 4) :
-//                              dir1[2] ? 10'sd3 : dir1[3] ? -10'sd3 : 10'sd0;
-// wire signed [9:0] gun_dx = status[22] ? -(mouse_tog != ps2_mouse[24] ? mouse_dx : stick_dx) :
-//                                          (mouse_tog != ps2_mouse[24] ? mouse_dx : stick_dx);
-// wire signed [9:0] gun_dy = status[22] ? -(mouse_tog != ps2_mouse[24] ? mouse_dy : stick_dy) :
-//                                          (mouse_tog != ps2_mouse[24] ? mouse_dy : stick_dy);
-// wire signed [10:0] gun_nx = $signed({3'b000, gun_x}) + gun_dx;
-// wire signed [10:0] gun_ny = $signed({3'b000, gun_y}) + gun_dy;
-// always @(posedge CLK_40M) begin
-// 	mouse_tog <= ps2_mouse[24];
-// 	gun_vbl   <= vblank;
-// 	if (mouse_tog != ps2_mouse[24] || (vblank && !gun_vbl)) begin
-// 		gun_x <= gun_nx < 0 ? 8'd0 : gun_nx > 255 ? 8'd255 : gun_nx[7:0];
-// 		gun_y <= gun_ny < 0 ? 8'd0 : gun_ny > 223 ? 8'd223 : gun_ny[7:0];
-// 	end
-// end
-// wire gun_trig = joystick_0[4] | kb_b1 | ps2_mouse[0];
 wire [7:0] gun_x, gun_y;
 ctl_gun_cursor #(.XMAX(8'd255), .YMAX(8'd223), .X0(8'd128), .Y0(8'd112)) u_gun(.clk(CLK_40M), .pause(pause_cpu),
 	.tick(frame_tick), .flip(status[22]), .mouse_ev(ms_ev), .mouse_dx(ms_dx), .mouse_dy(ms_dy), .stick(joy_la0), .dpad(dir1),
@@ -626,7 +484,7 @@ wire [23:0] bd_rgb;
 wire [31:0] snd_lat;                // 8080 board sound latches 4-1
 assign an_sel = an_cfg[96][7] ? snd_lat[{an_cfg[96][5:4], an_cfg[96][2:0]}] : snd_lat[1];
 
-// MAME artwork (ioctl index 6, OSD Game Options): native composite on the core video (one pixel late),
+// Arcade artwork (ioctl index 6, OSD Game Options): native composite on the core video (one pixel late),
 // full view through the DDR3 framebuffer on HDMI. The in-core colour overlay is off while artwork draws
 // (the view's own overlay replaces it); the OSD Overlay option switches the artwork overlays.
 wire        art_run, art_ddr;

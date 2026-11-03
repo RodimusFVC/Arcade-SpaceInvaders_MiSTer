@@ -694,7 +694,7 @@ python3 $CORE/verilator/snd/dsnd_optest.py $SCRATCH            # then each {exp,
 | `rtl/dsnd_engine.sv` | The engine (SystemVerilog, Quartus 17 compatible, ENG:146) |
 | `rtl/ram_rom/dpram_dc.vhd` | `altsyncram` wrapper with `byteena_a` (generics `widthad_a`, `width_a`), used for the program RAM and both state RAMs |
 | `tools/dsnd.py` (+ board files) | Assembler and node library |
-| `verilator/snd/dsnd_model.h`, `verilator/snd/dsnd_lockstep.cpp`, `verilator/ram_sim.sv` (sim `dpram_dc`), `verilator/snd/dsnd_optest.py` | Verification |
+| `verilator/snd/dsnd_model.h`, `verilator/snd/dsnd_lockstep.cpp`, `verilator/common/ram_sim.sv` (sim `dpram_dc`), `verilator/snd/dsnd_optest.py` | Verification |
 
 **Top-level hookup** (from TOP:568-589):
 
