@@ -78,8 +78,8 @@ wire zac;                                   // board select (MRA variant 32 / 33
 wire signed [15:0] z_audio;
 wire signed [15:0] ds_audio;
 wire               ds_on;
-assign audio   = zac ? z_audio : ds_on ? ds_audio : b8_audio;
-assign audio_r = zac ? audio : ds_on ? ds_audio : b8_audio_r;
+wire  [7:0]        b8_dsp1, b8_dsp2;      // invaders board program (index 1 byte 2 bit 3): the board's remapped p1 / p2
+wire signed [16:0] b8_tune;               //   and its tune speaker, which the engine path would otherwise bypass
 // Master Volume (Game Audio): the board's master pot, x 1 / 0.71 / 0.5 / 0.25 / 1.41 / 2, saturated
 wire [9:0] mvol = status[51:49] == 3'd1 ? 10'd181 : status[51:49] == 3'd2 ? 10'd128 : status[51:49] == 3'd3 ? 10'd64 :
                   status[51:49] == 3'd4 ? 10'd362 : status[51:49] == 3'd5 ? 10'd512 : 10'd256;
@@ -679,7 +679,9 @@ assign ds_on = ds_on_r;
 
 // sources: 7-6 Game Audio, 5 misc {coin (IN1 D3 inverted, maze), VBLANK}, 4 = IN0 as the CPU reads it (maze), 3-0 latches
 // (8080bw boards: 1 / 2 = sound ports 1 / 2, 3 = port 0 / polaris port 2, 4 = last shift-data write, ozmawars port 4)
-wire [63:0] ds_src = {status[48:46], status[45:44], status[43:41], 2'd0, status[40:35], 6'd0, ~in_port[1][3], vblank, in_port[0], b8_lat};
+// Invaders board program (index 1 byte 2 bit 3): latches 1 / 2 = the board's inputs after its per-set remaps
+wire [31:0] ds_lat = snd_flags[3] ? {b8_lat[31:16], b8_dsp2, b8_dsp1} : b8_lat;
+wire [63:0] ds_src = {status[48:46], status[45:44], status[43:41], 2'd0, status[40:35], 6'd0, ~in_port[1][3], vblank, in_port[0], ds_lat};
 
 dsnd_engine dsnd
 (
@@ -692,6 +694,11 @@ dsnd_engine dsnd
 	.src(ds_src),
 	.out(ds_audio)
 );
+// invaders board program: the board's tune speaker rides on the engine output, as it does on the board's own mix
+wire signed [16:0] ds_sum = ds_audio + (snd_flags[3] ? b8_tune : 17'sd0);
+wire signed [15:0] ds_out = ds_sum > 17'sd32767 ? 16'sd32767 : ds_sum < -17'sd32768 ? -16'sd32768 : 16'(ds_sum);
+assign audio   = zac ? z_audio : ds_on ? ds_out : b8_audio;
+assign audio_r = zac ? audio : ds_on ? ds_out : b8_audio_r;
 
 wire rotate_ccw = ~game_flags[7];  // ROT270 sets rotate CCW, ROT90 sets CW
 wire no_rotate  = ~game_vert | status[12] | direct_video;
@@ -812,6 +819,9 @@ mw8080_board board
 	.snd34(b8_lat[31:16]),
 	.audio(b8_audio),
 	.audio_r(b8_audio_r),
+	.ds_p1(b8_dsp1),
+	.ds_p2(b8_dsp2),
+	.ds_tune(b8_tune),
 	.io_tab(io_tab),
 
 	.hs_address(hs_address),

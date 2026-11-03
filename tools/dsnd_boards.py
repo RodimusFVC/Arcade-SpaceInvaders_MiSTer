@@ -500,9 +500,11 @@ from dsnd_polaris import polaris     # 8080bw.cpp (Taito), from MAME polaris_dis
 from dsnd_schaser import schaser, crashrd     # 8080bw.cpp (Taito), from MAME 2026-10-15 (exact SN76477 noise)
 from dsnd_cane import cane     # 8080bw.cpp prototype, from MAME CANE_AUDIO 2026-10-15; SN uses the port-selected mixer (MAME's is stuck: bug)
 from dsnd_gmissile import gmissile as gmissile_hw     # schematic 2026-10-15: 8 voices + pan ladders + summers (MAME: 2 samples only)
+from dsnd_invaders import invaders     # Midway board (invaders_sound.sv board 0), A/B vs model.h 2026-11-02; user: indistinguishable
 BOARDS = {"clowns": clowns_hw, "dogpatch": dogpatch, "boothill": boothill_hw, "tornbase": tornbase_hw, "desertgu": desertgu_hw,
           "bowler": bowler_hw, "shuffle": shuffle, "dplay": dplay_hw, "checkmat": checkmat, "maze": maze_hw,
-          "spacwalk": spacwalk, "gunfight": gunfight, "spcenctr": spcenctr, "zzzap": zzzap, "lagunar": lagunar, "blueshrk": blueshrk, "phantom2": phantom2, "m4": m4, "seawolf": seawolf, "8080bw:polaris": polaris, "8080bw:schaser": schaser, "8080bw:crashrd": crashrd, "8080bw:cane": cane, "gmissile": gmissile_hw}
+          "spacwalk": spacwalk, "gunfight": gunfight, "spcenctr": spcenctr, "zzzap": zzzap, "lagunar": lagunar, "blueshrk": blueshrk, "phantom2": phantom2, "m4": m4, "seawolf": seawolf, "8080bw:polaris": polaris, "8080bw:schaser": schaser, "8080bw:crashrd": crashrd, "8080bw:cane": cane, "gmissile": gmissile_hw, "invaders": invaders,
+          "invaders:taito": lambda: invaders("TAITO")}     # Taito L board (board 1), A/B 2026-11-02; picked by gen_mra.py taito_l_dsnd()
 
 
 def program(machine):

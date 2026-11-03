@@ -100,6 +100,9 @@ module mw8080_board
     output logic [15:0] snd34,          // engine latches {4, 3}: variant 20 latches 3 / 4, else {port 4, port 0}
     output logic signed [15:0] audio,
     output logic signed [15:0] audio_r,
+    output logic  [7:0] ds_p1,          // invaders board program on dsnd (MRA index 1 byte 2 bit 3): the board's p1 / p2
+    output logic  [7:0] ds_p2,          //   after the per-set remaps below (sp1 / sp2)
+    output logic signed [16:0] ds_tune, //   and the 1-bit tune speaker, mixed after the engine
 
     input  logic [15:0] hs_address,
     input  logic  [7:0] hs_data_in,
@@ -1307,6 +1310,9 @@ assign audio_r = smap == 8'd9 ? board2_snd : audio;
 wire tune_bit = (variant == 8'd3 || smap == 8'd8) ? snd1[4] : smap == 8'd7 ? snd2[3] & snd1[5] :
                 smap == 8'd5 ? snd2[0] : 1'b0;
 wire signed [16:0] tune = tune_bit ? 17'sd6000 : 17'sd0;
+assign ds_p1   = sp1;
+assign ds_p2   = sp2;
+assign ds_tune = tune;
 wire signed [15:0] snd_src = v_irv ? irv_snd : board_snd;        // invrvnge: its own sound board
 wire signed [16:0] mix  = snd_src + tune;
 assign audio = mix > 17'sd32767 ? 16'sd32767 : 16'(mix);

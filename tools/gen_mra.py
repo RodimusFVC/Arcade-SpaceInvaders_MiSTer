@@ -176,6 +176,18 @@ def snd_board(g):
     return SND_BOARD_SET.get(g["name"], SND_BOARD_MACHINE.get(g["machine"], S_TAITO))
 
 
+S_DS_BOARD = 0x08                                       # index 1 byte 2 bit 3: the dsnd program is the invaders board
+INVADERS_PROGRAMS = {"invaders", "invaders:taito"}       # -> engine latches 1 / 2 = the board's remapped p1 / p2, + tune
+
+
+def taito_l_dsnd(cfg):
+    """Taito L board sets the dsnd program replaces (A/B 2026-11-02): sound board 1 (index 1 byte 2), except sound
+    map 10 (index 1 byte 14: invrvnge, its own sound CPU). S_DS_BOARD makes the engine read the board's p1 / p2 after
+    the per-set remaps (rtl/mw8080_board.sv sp1 / sp2: variants 3-6 / 10 / 11, sound maps 1-8) and mixes the tune
+    speaker after it, so remapped, silent and tune-speaker sets play exactly what the board would get."""
+    return cfg[2] == S_TAITO and cfg[14] != 10
+
+
 def dsnd_key(g):
     """Engine program key (tools/dsnd_boards.py BOARDS): mw8080bw.cpp machine name, 8080bw.cpp "8080bw:<machine>"."""
     return g["machine"] if g["drv"] == "mw8080bw.cpp" else f'8080bw:{g["machine"]}' if g["drv"] == "8080bw.cpp" else None
@@ -1255,9 +1267,13 @@ def mra(g, games, segs, build_inputs, with_art=False):
     dip_lines = "\n".join(f'        <dip name="{n}" bits="{b}" ids="{i}"' + (f' values="{v}"' if v else "") + "/>"
                           for n, b, i, v in dips)
     cfg = config_bytes(g, idle, imap)
-    cfg_rows = "\n".join("            " + " ".join(f"{b:02X}" for b in cfg[i:i + 16]) for i in range(0, len(cfg), 16))
     key = dsnd_key(g)
+    if key not in dsnd_boards.BOARDS and taito_l_dsnd(cfg):
+        key = "invaders:taito"
     ds = dsnd_boards.program(key) if key else None
+    if key in INVADERS_PROGRAMS:
+        cfg[2] |= S_DS_BOARD
+    cfg_rows = "\n".join("            " + " ".join(f"{b:02X}" for b in cfg[i:i + 16]) for i in range(0, len(cfg), 16))
     ds_block = "" if ds is None else (
         f"\n    <!-- Index 5: sound board program for the discrete sound engine (tools/dsnd_boards.py) -->\n"
         f"    <rom index=\"5\">\n        <part>\n"
