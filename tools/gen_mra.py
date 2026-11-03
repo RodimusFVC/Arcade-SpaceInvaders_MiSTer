@@ -190,8 +190,10 @@ def invaders_board_key(cfg):
 
 
 def dsnd_key(g):
-    """Engine program key (tools/dsnd_boards.py BOARDS): mw8080bw.cpp machine name, 8080bw.cpp "8080bw:<machine>"."""
-    return g["machine"] if g["drv"] == "mw8080bw.cpp" else f'8080bw:{g["machine"]}' if g["drv"] == "8080bw.cpp" else None
+    """Engine program key (tools/dsnd_boards.py BOARDS): mw8080bw.cpp machine name, 8080bw.cpp "8080bw:<machine>",
+    zac1b1120.cpp "zac1b1120:<machine>"."""
+    return (g["machine"] if g["drv"] == "mw8080bw.cpp" else f'8080bw:{g["machine"]}' if g["drv"] == "8080bw.cpp"
+            else f'zac1b1120:{g["machine"]}' if g["drv"] == "zac1b1120.cpp" else None)
 
 # port order on the board: DIP bytes 0-3 and input map bytes 16-47
 PORTS = ["IN0", "IN1", "IN2", "IN3"]

@@ -11,7 +11,7 @@ cannot show.
 
 | Short name | File |
 |---|---|
-| ENG | `rtl/dsnd_engine.sv` |
+| ENG | `rtl/rodimus/dsnd_engine/dsnd_engine.sv` (chips-repo master copy since 2026-11-02; line numbers below are the 2026-10-14 file) |
 | MODEL | `verilator/snd/dsnd_model.h` |
 | ASM | `tools/dsnd.py` |
 | BOARDS | `tools/dsnd_boards.py` (+ `tools/dsnd_<board>.py`) |
@@ -19,6 +19,34 @@ cannot show.
 | TOP | `Arcade-SpaceInvaders.sv` |
 | MW | `rtl/mw8080_board.sv` |
 | LOCK | `verilator/snd/dsnd_lockstep.cpp` |
+
+## 2026-11-03 changes (read first; supersedes the sections named)
+
+Every sound board of this core now runs on the engine; `rtl/invaders_sound.sv` (and its generated
+`rtl/invaders_snd_consts.svh`) are deleted. Detail, numbers and A/B results: `Claude/standards_pass_2026-11-02.md` steps 5-10.
+
+- **Invaders boards → `tools/dsnd_invaders.py`** `invaders(board, tweak=True, grid=None, sn_top=None)`, one program per
+  board value: MIDWAY, TAITO, PV, CV, INVAD2CT1, INVAD2CT2 (constants from `tools/snd_consts.py` BOARD_PARAMS; the 17-bit
+  noise LFSR, the 555 fleet, the SN76477 VCO on the RTL's 16-substep grid, `grid` = same for the hit VCOs, `sn_top` =
+  SN76477 top-crossing fix; PV's 8V / everyone's 16V free-running). A/B folders under
+  `verilator_local_files/Arcade-SpaceInvaders_MiSTer/dsnd_*_ab/`; the bit-exact reference of the deleted RTL stays in
+  `verilator/snd/model.h` (`model_wav`).
+- **BOARDS keys** (§2.2 superseded): `invaders` (mw8080bw machine) plus `invaders:taito/pv/cv/b1`, chosen in `gen_mra.py`
+  `invaders_board_key(cfg)` from index 1 byte 2 (board value 1 / 4 / 5 / 2) for every set without its own key, except sound
+  map 10 (invrvnge). `invad2ct` = `dsnd_boards.EnginePair` (two programs, below). Index 5 is no longer mw8080bw-only.
+- **Index 1 byte 2 bit 3 = `S_DS_BOARD`**: the program is an invaders board → engine latches 1 / 2 = the board's inputs
+  **after** its per-set remaps (`mw8080_board.sv` `sp1`/`sp2` → `ds_p1`/`ds_p2`), and the 1-bit tune speaker (`ds_tune`)
+  is added after the engine. Flag clear = raw latches (every program written before 2026-11-02).
+- **Second engine** `dsnd2` (TOP): program = index 5 from **0x2000** (`ioctl_addr[13]`; engine 1 now takes only
+  `!ioctl_addr[13]`), sources = engine 1's with latches 1 / 2 = `b8_lat[31:16]` (latches 3 / 4). Right channel when
+  loaded: `audio_r = ds2_on ? ds2_audio : ds_out` (output table in §4 superseded). Used by invad2ct.
+- **Board audio** (`mw8080_board.sv`): only invrvnge's own sound board and the tune speaker remain; `audio_r = audio`;
+  ports `snd_board` / `snd_tweak` removed.
+- **Zaccaria (in progress, step 10)**: `zac1b1120_board.sv` exports `ds_latch` / `ds_period` / `ds_tone`; for `zac` sets
+  `ds_src` latch 1 = 1E80 latch, latch 2 = S2636 C7 period, source 5 bit 2 = tone bit; zac audio = `ds_on ? ds_out :
+  z_audio` until `zac_snd.sv` is removed.
+- **gen_mra.py**: drops `#if 0` blocks from the MAME source (`strip_if0`; spclaser's dead DIPs had wiped Space War's
+  controls); MAME paths = the vault link `Projects/Mame_Source`.
 
 ---
 
@@ -264,9 +292,9 @@ Do not rely on the values of acc and F at the start of a sample. Do not rely on 
 
 | Condition | Result | Source |
 |---|---|---|
-| `zac` | Zaccaria board audio | TOP:80-81 |
-| else `ds_on` | `ds_audio` on **both** channels (mono) | TOP:80-81 |
-| else | `invaders_sound` board audio | TOP:80-81 |
+| `zac` | Zaccaria board audio (2026-11-03: `ds_out` when an index 5 program is loaded) | TOP:80-81 |
+| else `ds_on` | `ds_audio` (+ tune with `S_DS_BOARD`) on the left; right = `ds2_audio` when engine 2 is loaded, else the same | TOP:80-81 |
+| else | board audio (2026-11-03: only invrvnge's own board + tune; `invaders_sound` removed) | TOP:80-81 |
 | Master Volume | applied after the mux: ×1, 0.71, 0.5, 0.25, 1.41 or 2, saturated | TOP:82-91 |
 | `pause_cpu` | AUDIO_L/R forced to 0 | TOP:90-91 |
 
@@ -384,8 +412,8 @@ index 5 only for `mw8080bw.cpp` machines (GEN:1057).
   maps Timing → C18/C19 and Oscillator → engine oscillator caps (`tools/dsnd_zzzap.py` docstring).
 - Boards with no group, kreg or music input get no change block, and only Master Volume affects them. Currently that
   is gunfight and seawolf (§7.6).
-- `invaders_sound.sv` and `zac_snd.sv` receive the same OSD bits through `snd_tweak` ports, not through the engine
-  (TOP:670, TOP:714; MW:80).
+- `zac_snd.sv` receives the same OSD bits through its `snd_tweak` port, not through the engine (TOP:714).
+  (`invaders_sound.sv` did too; deleted 2026-11-03 — its boards read sources 6 / 7 through `dsnd_invaders.py`.)
 
 ---
 
@@ -709,14 +737,25 @@ Sources:
 - Variant / sound map: GEN:31-130 and the scanned MRAs.
 - Hardware status: VAULT (cited), or the coordinator's list where the code and vault cannot show it (marked ⚠).
 
-### 10.1 Hard-coded RTL
+### 10.1 Hard-coded RTL (updated 2026-11-03)
 
-| Sets | Implementation | Status | Schematic |
-|---|---|---|---|
-| Every `invaders`-board set with sound map 0. Variant 0: invaders, spcking2ir (Midway); 49 Taito/bootleg sets incl. invadpt2, sitv, sicv, spaceatt, cosmicmo, galxwars... Variant 1: cosmo, galactic, invaderl, ozmawarsmr, searthin, solfight, spaceph, spacmiss, starw, superinv, tst_invd. Variant 2: astropal. Variants 7, 8, 9, 12: vortex, spacecom, invmulti ×10, starw1. | `invaders_sound.sv` `u_sound` (MW:1165-1176). `taito_snd` = Taito L-shaped variant for `8080bw.cpp` sets (GEN:1006). | ✅ HW (coordinator) ⚠ | Midway A084-90700-B000 (`invaders_sound.sv` header; VAULT:576) |
-| invad2ct | Two boards: `u_sound` on latches 1/2 → left, `u_sound2` on latches 3/4 → right (smap 9, MW:1178-1192) | ✅ HW for board 1 ⚠. Board 2 **not validated** against `Space Invaders 2 Cocktail.pdf` p21/22 (coordinator; not checkable in code). | Same board ×2 |
-| tinv2650, sia2650, dodgem | `zac_snd.sv` (`zac1b1120_board.sv:254`) via `zac` (TOP:80) | ✅ HW for The Invaders (coordinator) ⚠ dodgem not separately recorded | Zaccaria "The Invaders" sheet (`zac_snd.sv` header; VAULT:542) |
-| invasion, invasiona, invasiona2, invasionb, invasionrz | Variant 2, smap 0, Taito flag → **Taito invaders board** | Plays, but MAME uses a Sidam board (coordinator) ⚠ | Needed |
+| Sets | Implementation | Status |
+|---|---|---|
+| tinv2650, sia2650, dodgem | `zac_snd.sv` (`zac1b1120_board.sv`) via `zac` — dsnd port in progress (step 10) | ✅ HW The Invaders; Dodgem played fine (user) |
+| invrvnge ×5 | Own sound board in `mw8080_board.sv`: M6802 (jt680x) + AY-3-8910 (jt49), sound map 10 | ✅ |
+
+Every former `invaders_sound` set now has an engine program (table 10.1a).
+
+### 10.1a Invaders boards on the engine (2026-11-02 / 03)
+
+| Board (program) | Sets | Status |
+|---|---|---|
+| MIDWAY `invaders` | invaders, spcking2ir | ✅ HW |
+| TAITO `invaders:taito` | 86 board-1 sets (Taito / bootleg invaders, incl. the remapped, tune-speaker and silent-in-MAME ones via `S_DS_BOARD`) | ✅ HW |
+| PV `invaders:pv` | 26 (invadpt2, lrescue, galxwars, ozmawars, spcewarl families) | ✅ user A/B; Space War HW |
+| CV `invaders:cv` | sicv, sicv1 | ✅ user A/B |
+| INVAD2CT1 `invaders:b1` | invaddlx (mono) | ✅ user A/B |
+| INVAD2CT1 + INVAD2CT2 `invad2ct` (two engines) | invad2ct (stereo) | ✅ HW |
 
 ### 10.2 Discrete engine (index 5 in the MRA)
 
@@ -738,6 +777,9 @@ Sources:
 
 ### 10.3 Engine program written, not registered (no index 5, so the set is **silent**: smap 1, `ds_on` = 0)
 
+> 2026-11-03: stale. blueshrk, phantom2, seawolf, 280zzzap / lagunar, m4, gmissile, polaris, schaser, crashrd and cane
+> all have index 5 in `releases/` now; `tools/dsnd_boards.py` `BOARDS` is the current list.
+
 | Sets | Program | Schematic | Status |
 |---|---|---|---|
 | blueshrk, blueshrkmr, blueshrkmr2 | `tools/dsnd_blueshrk.py` | M051-00742-A005 + `bs_spice.py` | In progress (coordinator) |
@@ -748,6 +790,11 @@ Sources:
 | gmissile | **No program yet.** `verilator/snd/gmissile/` prototype + ngspice only. | Gameboard schematic sheet (`gm_spice.py:2`) | In progress |
 
 ### 10.4 Silent or remapped (no discrete model)
+
+> 2026-11-03: superseded for every invaders-board row (remapped, tune speaker, silent variants 6 / 11, sound maps
+> 1-8, lrescue family): they run the board programs of table 10.1a through `S_DS_BOARD`. invrvnge has its own sound
+> board (10.1). Still without sound: lupin3 ×2, mraker, orbite, attackfc ×2, claybust, gunchamp (MAME silent), sflush
+> (held back, no MRA).
 
 | Sets | Code path | Notes |
 |---|---|---|

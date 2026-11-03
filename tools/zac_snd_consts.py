@@ -142,7 +142,8 @@ def emit():
     for n, t in tables.items():
         sv.append(f"localparam int {n} [{len(t)}] = '{{{', '.join(str(x) for x in t)}}};")
         h.append(f"static const int32_t {n}[{len(t)}] = {{{', '.join(str(x) for x in t)}}};")
-    (here / "rtl" / "zac_snd_consts.svh").write_text("\n".join(sv) + "\n")
+    # rtl/zac_snd_consts.svh is no longer written: zac_snd.sv left the core 2026-11-03 (the board runs on dsnd,
+    # tools/dsnd_zac.py); the constants still feed verilator/snd/zac_snd_consts.h and the generator.
     (here / "verilator" / "snd" / "zac_snd_consts.h").write_text("\n".join(h) + "\n")
     print("\n".join(sv))
 

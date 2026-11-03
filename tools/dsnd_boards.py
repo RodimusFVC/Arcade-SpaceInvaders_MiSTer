@@ -501,6 +501,7 @@ from dsnd_schaser import schaser, crashrd     # 8080bw.cpp (Taito), from MAME 20
 from dsnd_cane import cane     # 8080bw.cpp prototype, from MAME CANE_AUDIO 2026-10-15; SN uses the port-selected mixer (MAME's is stuck: bug)
 from dsnd_gmissile import gmissile as gmissile_hw     # schematic 2026-10-15: 8 voices + pan ladders + summers (MAME: 2 samples only)
 from dsnd_invaders import invaders     # Midway board (invaders_sound.sv board 0), A/B vs model.h 2026-11-02; user: indistinguishable
+from dsnd_zac import zac     # Zaccaria 1B1120 (zac_snd.sv), A/B 2026-11-03: raw tone, exact 555, SN76477 noise with the lock-up guard
 BOARDS = {"clowns": clowns_hw, "dogpatch": dogpatch, "boothill": boothill_hw, "tornbase": tornbase_hw, "desertgu": desertgu_hw,
           "bowler": bowler_hw, "shuffle": shuffle, "dplay": dplay_hw, "checkmat": checkmat, "maze": maze_hw,
           "spacwalk": spacwalk, "gunfight": gunfight, "spcenctr": spcenctr, "zzzap": zzzap, "lagunar": lagunar, "blueshrk": blueshrk, "phantom2": phantom2, "m4": m4, "seawolf": seawolf, "8080bw:polaris": polaris, "8080bw:schaser": schaser, "8080bw:crashrd": crashrd, "8080bw:cane": cane, "gmissile": gmissile_hw, "invaders": invaders,
@@ -508,7 +509,8 @@ BOARDS = {"clowns": clowns_hw, "dogpatch": dogpatch, "boothill": boothill_hw, "t
           "invaders:pv": lambda: invaders("PV"),           # board 4 Taito PV, A/B 2026-11-02
           "invaders:cv": lambda: invaders("CV"),           # board 5 Taito CV, A/B 2026-11-02
           "invaders:b1": lambda: invaders("INVAD2CT1"),    # board 2 (invaddlx, mono), A/B 2026-11-02; keys picked by gen_mra.py invaders_board_key()
-          "invad2ct": lambda: EnginePair(invaders("INVAD2CT1"), invaders("INVAD2CT2"))}   # stereo: engine 1 board 1, engine 2 board 2 (A/B 2026-11-03)
+          "invad2ct": lambda: EnginePair(invaders("INVAD2CT1"), invaders("INVAD2CT2")),
+          "zac1b1120:tinvader": zac, "zac1b1120:dodgem": lambda: zac(dodgem=True)}   # stereo: engine 1 board 1, engine 2 board 2 (A/B 2026-11-03)
 
 
 

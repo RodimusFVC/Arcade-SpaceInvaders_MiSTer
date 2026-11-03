@@ -49,7 +49,6 @@ module zac1b1120_board
 
     input  logic signed [3:0] h_adj,   // CRT position: HSYNC moved 4 counts per step
     input  logic signed [3:0] v_adj,   //               VSYNC moved 1 line per step
-    input  logic [13:0] snd_tweak,      // Game Audio {music, aged caps, oscillator, filter, timing} settings
     input  logic        ov_en,          // colour overlay (MAME layout rectangles, raw x 0-719 / line 0-255)
     input  logic [1031:0] ov_tab,
 
@@ -63,7 +62,9 @@ module zac1b1120_board
     output logic        video_hblank,
     output logic        video_vblank,
 
-    output logic signed [15:0] audio
+    output logic  [7:0] ds_latch,       // sound board on the dsnd engine (MRA index 5, tools/dsnd_zac.py): the 1E80 latch,
+    output logic  [7:0] ds_period,      //   the S2636 tone period (C7)
+    output logic        ds_tone         //   and the tone bit itself
 );
 
 // ---------------------------------------------------------------- master clock enable
@@ -233,7 +234,8 @@ always_comb begin
     else                             cpu_dr = 8'hFF;
 end
 
-// sound board (rtl/zac_snd.sv): 74174 latch at 1E80 (bit 6 not on the board), S2636 tone into its filter.
+// sound board: 74174 latch at 1E80 (bit 6 not on the board), S2636 tone into its filter. The board runs on the dsnd
+// engine in the top (MRA index 5, tools/dsnd_zac.py): it reads the latch, the tone period and the tone bit.
 // Dodgem's board is different and not documented: its SN76477 side stays disabled, the tone still plays.
 logic [7:0] snd_l = 8'd0;
 logic       pvi_tone = 1'b0;        // S2636 square wave (generated below)
@@ -244,16 +246,9 @@ always_ff @(posedge clk) begin
         snd_l <= dw_r;
 end
 
-zac_snd u_snd
-(
-    .clk(clk),
-    .reset(reset),
-    .pause(pause),
-    .latch(snd_l),
-    .pvi(pvi_tone),
-    .tweak(snd_tweak),
-    .out(audio)
-);
+assign ds_latch  = snd_l;
+assign ds_period = snd_period;
+assign ds_tone   = pvi_tone;
 
 // ---------------------------------------------------------------- character background (master / 3)
 

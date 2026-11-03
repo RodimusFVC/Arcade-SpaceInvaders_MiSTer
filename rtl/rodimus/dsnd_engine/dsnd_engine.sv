@@ -22,6 +22,7 @@
 //  11 RC a: M[a] += (acc - M[a]) * imm >> 24, acc = M[a]   12 RCM a, b: the same with the coefficient M[b]
 //  13 CMP a: F = acc >= M[a]   14 CMPI: F = acc >= imm   15 MAXI   16 MINI
 //  17 BIT b: F = source bit (a[0] inverts)   18 NOT: F = !F   19 NOISE b: step LFSR b[1:0], F = its new bit
+//     (b[2] = SN76477 lock-up guard: the new bit is 1 while bits 28 and 4:0 are all 0)
 //  20 OUT: mix += acc   21 LDF a: if F acc = M[a]   22 SKF: if F skip imm   23 SKNF: if !F skip imm
 //  24 LDL b: acc = source byte << 16   25 ABS   26 FAND b: F &= bit   27 FOR b: F |= bit   28 STNF a: if !F
 //  29 LDLM b: acc = (source byte & imm[7:0]) << imm[12:8]   30 MACI a: acc += M[a] * imm >> 24
@@ -278,7 +279,8 @@ always_ff @(posedge clk) begin
             f   <= f_n;
             if (op == 8'd19) begin : noise
                 logic nb;
-                nb = lfsr[fb[1:0]][28] ^ lfsr[fb[1:0]][0];      // MAME SN76477 / discrete 31-bit noise taps
+                nb = lfsr[fb[1:0]][28] ^ lfsr[fb[1:0]][0];      // SN76477 / discrete 31-bit noise taps
+                if (fb[2] && lfsr[fb[1:0]][28] == 1'b0 && lfsr[fb[1:0]][4:0] == 5'd0) nb = 1'b1;   // SN76477 lock-up guard
                 lfsr[fb[1:0]] <= {nb, lfsr[fb[1:0]][30:1]};
                 f <= nb;
             end

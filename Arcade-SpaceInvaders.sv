@@ -75,7 +75,8 @@ assign HDMI_BOB_DEINT = 0;
 wire signed [15:0] audio, audio_r;     // audio_r: second sound board (invad2ct), else the same as audio
 wire signed [15:0] b8_audio, b8_audio_r;
 wire zac;                                   // board select (MRA variant 32 / 33): Zaccaria 1B1120
-wire signed [15:0] z_audio;
+wire  [7:0]        z_dslat, z_dsper;      // Zaccaria sound board on the dsnd engine: 1E80 latch, S2636 tone period,
+wire               z_dstone;              //   tone bit (tools/dsnd_zac.py source contract)
 wire signed [15:0] ds_audio;
 wire               ds_on;
 wire  [7:0]        b8_dsp1, b8_dsp2;      // invaders board program (index 1 byte 2 bit 3): the board's remapped p1 / p2
@@ -686,8 +687,8 @@ end
 // sources: 7-6 Game Audio, 5 misc {coin (IN1 D3 inverted, maze), VBLANK}, 4 = IN0 as the CPU reads it (maze), 3-0 latches
 // (8080bw boards: 1 / 2 = sound ports 1 / 2, 3 = port 0 / polaris port 2, 4 = last shift-data write, ozmawars port 4)
 // Invaders board program (index 1 byte 2 bit 3): latches 1 / 2 = the board's inputs after its per-set remaps
-wire [31:0] ds_lat = snd_flags[3] ? {b8_lat[31:16], b8_dsp2, b8_dsp1} : b8_lat;
-wire [63:0] ds_src = {status[48:46], status[45:44], status[43:41], 2'd0, status[40:35], 6'd0, ~in_port[1][3], vblank, in_port[0], ds_lat};
+wire [31:0] ds_lat = zac ? {16'd0, z_dsper, z_dslat} : snd_flags[3] ? {b8_lat[31:16], b8_dsp2, b8_dsp1} : b8_lat;
+wire [63:0] ds_src = {status[48:46], status[45:44], status[43:41], 2'd0, status[40:35], 5'd0, zac & z_dstone, ~in_port[1][3], vblank, in_port[0], ds_lat};
 
 dsnd_engine dsnd
 (
@@ -717,7 +718,7 @@ dsnd_engine dsnd2
 // invaders board program: the board's tune speaker rides on the engine output, as it does on the board's own mix
 wire signed [16:0] ds_sum = ds_audio + (snd_flags[3] ? b8_tune : 17'sd0);
 wire signed [15:0] ds_out = ds_sum > 17'sd32767 ? 16'sd32767 : ds_sum < -17'sd32768 ? -16'sd32768 : 16'(ds_sum);
-assign audio   = zac ? z_audio : ds_on ? ds_out : b8_audio;
+assign audio   = ds_on ? ds_out : zac ? 16'sd0 : b8_audio;
 assign audio_r = zac ? audio : ds_on ? (ds2_on_r ? ds2_audio : ds_out) : b8_audio_r;
 
 wire rotate_ccw = ~game_flags[7];  // ROT270 sets rotate CCW, ROT90 sets CW
@@ -867,7 +868,6 @@ zac1b1120_board zboard
 
 	.h_adj(status[30:27]),
 	.v_adj(status[34:31]),
-	.snd_tweak({status[48:46], status[45:44], status[43:41], status[40:38], status[37:35]}),
 	.ov_en(~status[23] & ~art_run),
 	.ov_tab(ov_tab),
 
@@ -881,7 +881,9 @@ zac1b1120_board zboard
 	.video_hblank(z_hb),
 	.video_vblank(z_vb),
 
-	.audio(z_audio)
+	.ds_latch(z_dslat),
+	.ds_period(z_dsper),
+	.ds_tone(z_dstone)
 );
 
 // Hiscore: config = MRA index 3, dump = index 4; RAM via the board's second port while the CPU is paused
