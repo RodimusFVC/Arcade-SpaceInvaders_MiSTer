@@ -5,3 +5,24 @@ incremental_db/
 output_files/
 verilator/
 .token-savior-cache.json
+# verilator/: sources only. Everything the Makefiles build, and anything made from ROMs, stays out
+verilator/**/obj*/
+verilator/**/out/
+verilator/**/*.zip
+verilator/**/*.7z
+verilator/**/*.rar
+verilator/**/*.bin
+verilator/**/*.rom
+verilator/**/*.chd
+verilator/**/*.nvm
+verilator/**/*.sav
+verilator/**/*.wav
+verilator/**/*.ppm
+verilator/**/*.png
+verilator/**/*.npz
+__pycache__/
+# built by verilator/Makefile
+verilator/6802.uc
+verilator/snd/snd_consts.h
+verilator/snd/model_wav
+verilator/snd/dsnd_run
