@@ -23,7 +23,7 @@ import dsnd_boards                                  # noqa: E402  discrete sound
 
 MAME_VERSION = "0289"
 RBF = "SpaceInvaders"
-MAME_DIR = Path("/Work/Build/mame/src/mame/midw8080")
+MAME_DIR = Path("/Work/Projects/ZZZ_Obsidian_FPGA/FPGA-Brain/Projects/Mame_Source/src/mame/midw8080")   # vault link to the MAME tree
 HISCORE_DAT = Path("/CybertronMD/Mame/plugins/hiscore/hiscore.dat")   # current file (user, 2026-09-27)
 
 # ---------------------------------------------------------------- boards
@@ -784,7 +784,7 @@ def board_cfg(g):
 
 # ---------------------------------------------------------------- colour overlays (MAME layouts)
 
-LAYOUT_DIR = Path("/Work/Build/mame/src/mame/layout")
+LAYOUT_DIR = Path("/Work/Projects/ZZZ_Obsidian_FPGA/FPGA-Brain/Projects/Mame_Source/src/mame/layout")
 RAW_W, RAW_H = 260, 224                                 # the core's picture: hx 1-260 -> x 0-259, rows 0-223
 RAW_DIMS = {8: (256, 224, 4), 10: (256, 192, 4),         # MAME screen (w, h) and its x offset in the core's picture
             32: (720, 256, 0), 33: (720, 256, 0)}           # zac1b1120: master-clock pixels
@@ -1394,6 +1394,33 @@ def rom_segments(g, src):
     return place(parse_roms(src, g["name"]), g["name"], frozenset(ignored), regions)
 
 
+def strip_if0(src):
+    """Drop `#if 0` ... `#endif` blocks (and the `#if 0` half of an `#else`), as the compiler does. MAME parks
+    unverified INPUT_PORTS there: spclaser's Intruder-manual DIPs overwrote its IN1 coin / start / fire / joystick
+    (2026-11-02, Space War had no working controls). Nested `#if` inside a dead block is tracked by depth."""
+    out, dead, depth = [], False, 0
+    for line in src.split("\n"):
+        t = line.strip()
+        if dead:
+            if t.startswith("#if"):
+                depth += 1
+            elif t.startswith("#endif"):
+                if depth == 0:
+                    dead = False
+                else:
+                    depth -= 1
+            elif t.startswith("#else") and depth == 0:
+                dead = False
+            out.append("")
+            continue
+        if t == "#if 0" or t.startswith("#if 0 ") or t.startswith("#if 0\t") or t.startswith("#if 0//"):
+            dead, depth = True, 0
+            out.append("")
+            continue
+        out.append(line)
+    return "\n".join(out)
+
+
 def main():
     """Each driver is parsed on its own: INPUT_PORTS / config names repeat across the drivers."""
     out_dir = Path(sys.argv[2])
@@ -1401,10 +1428,10 @@ def main():
     drivers = [Path(f) for f in sys.argv[1].split(",")]
     all_games = {}
     for d in drivers:
-        for n, g in parse_games(d.read_text()).items():
+        for n, g in parse_games(strip_if0(d.read_text())).items():
             all_games.setdefault(n, dict(g, drv=d.name))
     for d in drivers:
-        src = d.read_text()
+        src = strip_if0(d.read_text())
         games = {n: dict(g, drv=d.name) for n, g in parse_games(src).items()}
         build_inputs = parse_inputs(src)
         names = [n for n in games if n in wanted] if wanted else \

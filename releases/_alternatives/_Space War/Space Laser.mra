@@ -24,14 +24,10 @@
     <players>2 (alternating)</players>
     <joystick>2-way horizontal</joystick>
     <special_controls></special_controls>
-    <num_buttons>0</num_buttons>
-    <buttons names="Not Used,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+    <num_buttons>1</num_buttons>
+    <buttons names="Fire,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
 
-    <switches default="00,8E,00,FF">
-        <dip name="Lives" bits="8,9" ids="3,4,5,6"/>
-        <dip name="Service Mode" bits="10" ids="Off,On" values="1,0"/>
-        <dip name="Bonus Life" bits="11" ids="1000,1500" values="1,0"/>
-        <dip name="Display Coinage" bits="15" ids="Off,On" values="1,0"/>
+    <switches default="00,00,00,FF">
         <dip name="Coinage" bits="23" ids="1 Coin/1 Or 2 Players,1 Coin/1 Player  2 Coins/2 Players"/>
     </switches>
 
@@ -49,8 +45,8 @@
     <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
     <rom index="1">
         <part>
-            00 10 04 00 00 8E 00 FF 00 00 00 00 01 60 00 00
-            00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+            00 10 04 00 00 00 00 FF 00 00 00 00 01 60 00 00
+            00 00 00 00 00 00 00 00 11 14 13 00 05 03 04 00
             00 00 00 00 0D 0B 0C 00 00 00 00 00 00 00 00 00
             00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
             00
