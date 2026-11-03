@@ -504,7 +504,10 @@ from dsnd_invaders import invaders     # Midway board (invaders_sound.sv board 0
 BOARDS = {"clowns": clowns_hw, "dogpatch": dogpatch, "boothill": boothill_hw, "tornbase": tornbase_hw, "desertgu": desertgu_hw,
           "bowler": bowler_hw, "shuffle": shuffle, "dplay": dplay_hw, "checkmat": checkmat, "maze": maze_hw,
           "spacwalk": spacwalk, "gunfight": gunfight, "spcenctr": spcenctr, "zzzap": zzzap, "lagunar": lagunar, "blueshrk": blueshrk, "phantom2": phantom2, "m4": m4, "seawolf": seawolf, "8080bw:polaris": polaris, "8080bw:schaser": schaser, "8080bw:crashrd": crashrd, "8080bw:cane": cane, "gmissile": gmissile_hw, "invaders": invaders,
-          "invaders:taito": lambda: invaders("TAITO")}     # Taito L board (board 1), A/B 2026-11-02; picked by gen_mra.py taito_l_dsnd()
+          "invaders:taito": lambda: invaders("TAITO"),     # invaders_sound board 1 Taito L, A/B 2026-11-02
+          "invaders:pv": lambda: invaders("PV"),           # board 4 Taito PV, A/B 2026-11-02
+          "invaders:cv": lambda: invaders("CV"),           # board 5 Taito CV, A/B 2026-11-02
+          "invaders:b1": lambda: invaders("INVAD2CT1")}    # board 2 (invaddlx, mono), A/B 2026-11-02; keys picked by gen_mra.py invaders_board_key()
 
 
 def program(machine):

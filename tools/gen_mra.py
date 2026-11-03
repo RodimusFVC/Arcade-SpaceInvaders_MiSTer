@@ -177,15 +177,16 @@ def snd_board(g):
 
 
 S_DS_BOARD = 0x08                                       # index 1 byte 2 bit 3: the dsnd program is the invaders board
-INVADERS_PROGRAMS = {"invaders", "invaders:taito"}       # -> engine latches 1 / 2 = the board's remapped p1 / p2, + tune
+INVADERS_BOARD_KEYS = {S_TAITO: "invaders:taito", 4: "invaders:pv", 5: "invaders:cv", 2: "invaders:b1"}
+INVADERS_PROGRAMS = {"invaders"} | set(INVADERS_BOARD_KEYS.values())   # -> engine latches 1 / 2 = board p1 / p2, + tune
 
 
-def taito_l_dsnd(cfg):
-    """Taito L board sets the dsnd program replaces (A/B 2026-11-02): sound board 1 (index 1 byte 2), except sound
-    map 10 (index 1 byte 14: invrvnge, its own sound CPU). S_DS_BOARD makes the engine read the board's p1 / p2 after
-    the per-set remaps (rtl/mw8080_board.sv sp1 / sp2: variants 3-6 / 10 / 11, sound maps 1-8) and mixes the tune
-    speaker after it, so remapped, silent and tune-speaker sets play exactly what the board would get."""
-    return cfg[2] == S_TAITO and cfg[14] != 10
+def invaders_board_key(cfg):
+    """dsnd program for a set whose sound is an invaders_sound board (index 1 byte 2 = board value; A/B 2026-11-02),
+    except sound map 10 (index 1 byte 14: invrvnge, its own sound CPU). Midway board 0 goes by machine ("invaders")
+    since board 0 is also every mw8080bw one-off. S_DS_BOARD makes the engine read the board's p1 / p2 after the
+    per-set remaps (rtl/mw8080_board.sv sp1 / sp2) and mixes the tune speaker after it."""
+    return None if cfg[14] == 10 else INVADERS_BOARD_KEYS.get(cfg[2])
 
 
 def dsnd_key(g):
@@ -1268,8 +1269,8 @@ def mra(g, games, segs, build_inputs, with_art=False):
                           for n, b, i, v in dips)
     cfg = config_bytes(g, idle, imap)
     key = dsnd_key(g)
-    if key not in dsnd_boards.BOARDS and taito_l_dsnd(cfg):
-        key = "invaders:taito"
+    if key not in dsnd_boards.BOARDS:
+        key = invaders_board_key(cfg) or key
     ds = dsnd_boards.program(key) if key else None
     if key in INVADERS_PROGRAMS:
         cfg[2] |= S_DS_BOARD

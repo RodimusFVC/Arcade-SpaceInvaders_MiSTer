@@ -24,7 +24,11 @@ Differences against the RTL (format, not circuit):
     pitch contour and spectrum are unaffected.
   * Q24 / 32-bit arithmetic instead of Q20 volts / Q28 coefficients in 36 bits.
   * The engine has no 16V input: the bonus "480 Hz" gate is a free-running 487.5 Hz square (16V = bit 4 of the line
-    count, 15600 lines / s, no frame wrap: model_wav's convention), so its phase against the video is lost.
+    count, 15600 lines / s, no frame wrap: model_wav's convention), so its phase against the video is lost. PV gates
+    with 8V instead: a free-running 975 Hz square, same convention (power-up phase offset: see bonus).
+  * sn_top (every board; MIDWAY / TAITO since 2026-11-02): the SN76477 VCO's top crossing is at most 15 substeps back
+    (vmax can fall below the previous sample's value while the SLF falls); without it the VCO slips one substep there
+    (PV / INVAD2CT1 8.2K / 0.1uF: audible phase drift; MIDWAY / TAITO: the same slips, smaller effect).
   * The 17-bit noise LFSR (taps 4 / 16, output bit 12, 7515 Hz phase clock) is reproduced bit for bit (not the
     engine's NOISE op).
 
@@ -69,10 +73,12 @@ CAPPED = ({"BN_KC", "BN_KD", "OS_E2", "EX_E1C", "EX_E1D", "MS_E1C", "MS_E1D", "I
 
 
 class Inv(Board):
-    def __init__(self, board="MIDWAY", tweak=True, grid=None):
+    def __init__(self, board="MIDWAY", tweak=True, grid=None, sn_top=None):
         super().__init__("invaders_" + board.lower())
         self.board = board
         self.grid = board != "MIDWAY" if grid is None else grid     # VCO_1s on the exact substep grid (vco1_grid)
+        # SN76477 top crossing at most 15 substeps back (sn76477): off for the shipped MIDWAY / TAITO programs
+        self.sn_top = True if sn_top is None else sn_top    # every board (MIDWAY / TAITO too: user 2026-11-02)
         self.c = SC.BOARDS[board]
         self.p = SC.BOARD_PARAMS[board]
         self.tweak = tweak
@@ -777,6 +783,8 @@ class Inv(Board):
         self.op("SUB", "sn_vmax")
         self.op(ist[0], ist[1], imm=ist[2])           # tau
         self.substeps("_ss")
+        if self.sn_top:                               # vmax fell below last sample's v (SLF falling): the RTL clamps
+            self.op("MINI", imm=ONE - (ONE >> 4))     # at its first substep, 15 substeps fall (not 16)
         self.op("ST", "sn_ov")                        # n / 16
         self.op("ADDI", imm=ONE >> 4)
         self.op("ST", "sn_sq")                        # high from the crossing substep: (n + 1) / 16
@@ -951,6 +959,11 @@ class Inv(Board):
         # ---- bonus missile base (P3 D4): 556 (round robin) output ANDed with the enable and 16V
         self.mark("bonus")
         bit = 3 if self.p.get("bn_8v") else 4         # 16V (PV: 8V): line count bit, sampled before the step
+        if bit == 3:                                  # 8V: the rounded increment runs 0.2 LSB / sample slow, and
+            # model_wav's line count hits an 8V edge exactly every 320 samples: start just under 1/40 line (the
+            # smallest non-zero distance of a sample from an edge) ahead, so those edges land on the sample for
+            # ~11 minutes. (16V: the increment rounds up, 0 is right for ~3 minutes)
+            self.pinit.append(("v16_ph", (1 << 32) // (16 * 40) - 64))
         self.op("LD", "v16_ph")
         self.op("CMPI", imm=0)                        # F = !16V
         self.op("ADDI", imm=int(round(2 ** 32 * 15600 / FS / (2 << bit))))
@@ -1185,8 +1198,8 @@ class Inv(Board):
         return self
 
 
-def invaders(board="MIDWAY", tweak=True, grid=None):
-    return Inv(board, tweak, grid).build()
+def invaders(board="MIDWAY", tweak=True, grid=None, sn_top=None):
+    return Inv(board, tweak, grid, sn_top).build()
 
 
 def report(b):
