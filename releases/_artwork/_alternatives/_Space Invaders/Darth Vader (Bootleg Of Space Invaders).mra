@@ -37,7 +37,7 @@
         <dip name="Unknown" bits="15" ids="Off,On" values="1,0"/>
     </switches>
 
-    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <!-- Index 0: ROM -->
     <rom index="0" md5="none" zip="darthvdr.zip|invaders.zip">
         <part crc="b15785b6" name="rom0"/>
         <part crc="95947743" name="rom1"/>
@@ -47,7 +47,7 @@
         <part crc="cc52a4bb" name="rom5"/>
     </rom>
 
-    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <!-- Index 1: Config -->
     <rom index="1">
         <part>
             05 10 09 00 7F FF FF FF 00 00 00 00 00 00 00 00
@@ -58,7 +58,7 @@
         </part>
     </rom>
 
-    <!-- Index 5: sound board program for the discrete sound engine (tools/dsnd_boards.py) -->
+    <!-- Index 5: Sound program -->
     <rom index="5">
         <part>
             FF 00 00 00 00 30 00 1D 00 00 00 00 00 00 84 08
@@ -551,8 +551,7 @@
         </part>
     </rom>
 
-    <!-- Index 6: MAME artwork, layout table (from default.lay) + PNGs from the artwork zip, as-is -->
-    <!-- OSD Artwork: View 1 = Upright Artwork Midway, View 2 = Upright Artwork Taito, View 3 = Cabaret Artwork, View 4 = Cocktail Inst JPN, View 5 = Cocktail Inst EURO, View 6 = Cocktail Inst US, View 7 = Cocktail Artwork Midway, View 8 = TLPU Artwork, View 9 = Art of Atari, View 10 = Hausjam Artwork -->
+    <!-- Index 6: Artwork -->
     <rom index="6" md5="none" zip="/mame-artwork/invaders.zip">
         <part>
             41 57 0A 00 1B 00 04 01 E0 00 01 00 00 00 00 00 E2 03 34 05 30 01 36 01 80 01 00 02 00 49 0B 00

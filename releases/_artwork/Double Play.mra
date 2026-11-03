@@ -35,7 +35,7 @@
         <dip name="Service Mode" bits="22" ids="Off,On" values="1,0"/>
     </switches>
 
-    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <!-- Index 0: ROM -->
     <rom index="0" md5="none" zip="dplay.zip">
         <part crc="6680669b" name="dplay619.h"/>
         <part crc="0eec7e01" name="dplay619.g"/>
@@ -43,7 +43,7 @@
         <part crc="65cab4fc" name="dplay619.e"/>
     </rom>
 
-    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <!-- Index 1: Config -->
     <rom index="1">
         <part>
             14 00 00 00 81 81 C0 FF 00 00 00 00 00 00 01 00
@@ -54,7 +54,7 @@
         </part>
     </rom>
 
-    <!-- Index 5: sound board program for the discrete sound engine (tools/dsnd_boards.py) -->
+    <!-- Index 5: Sound program -->
     <rom index="5">
         <part>
             00 00 00 00 00 00 FF 01 01 00 00 00 00 00 00 0E
@@ -329,8 +329,7 @@
         </part>
     </rom>
 
-    <!-- Index 6: MAME artwork, layout table (from default.lay) + PNGs from the artwork zip, as-is -->
-    <!-- OSD Artwork: View 1 = Upright Artwork -->
+    <!-- Index 6: Artwork -->
     <rom index="6" md5="none" zip="/mame-artwork/dplay.zip">
         <part>
             41 57 01 00 01 00 04 01 E0 00 00 00 00 00 00 00 AC 03 DC 02 D2 00 44 01 00 02 80 01 00 3C 01 00

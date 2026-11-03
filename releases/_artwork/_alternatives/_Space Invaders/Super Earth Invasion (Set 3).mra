@@ -33,7 +33,7 @@
         <dip name="Coinage" bits="23" ids="2C/1C 50p/3C (+ Bonus Life),1C/1C 50p/5C"/>
     </switches>
 
-    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <!-- Index 0: ROM -->
     <rom index="0" md5="none" zip="searthie.zip|invaders.zip">
         <part crc="92b08b91" name="searthie.h"/>
         <part crc="23e24bcc" name="searthie.g"/>
@@ -41,7 +41,7 @@
         <part crc="baf949b0" name="searthie.e"/>
     </rom>
 
-    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <!-- Index 1: Config -->
     <rom index="1">
         <part>
             00 10 09 00 FF 89 8B FF 00 00 00 00 00 00 00 00
@@ -54,17 +54,18 @@
         </part>
     </rom>
 
-    <!-- Index 3: hiscore config (MAME hiscore.dat), index 4: saved scores -->
+    <!-- Index 3: Hiscore -->
     <rom index="3" md5="none">
         <part>
             00 14 78 00 00 FF 00 02 00 02 00 01 11 11 00 00
             00 00 20 F4 00 02 00 50
         </part>
     </rom>
+    <!-- Index 4: NVRAM -->
     <rom index="4"></rom>
     <nvram index="4" size="2"></nvram>
 
-    <!-- Index 5: sound board program for the discrete sound engine (tools/dsnd_boards.py) -->
+    <!-- Index 5: Sound program -->
     <rom index="5">
         <part>
             FF 00 00 00 00 30 00 1D 00 00 00 00 00 00 84 08
@@ -557,8 +558,7 @@
         </part>
     </rom>
 
-    <!-- Index 6: MAME artwork, layout table (from default.lay) + PNGs from the artwork zip, as-is -->
-    <!-- OSD Artwork: View 1 = Upright Artwork Midway, View 2 = Upright Artwork Taito, View 3 = Cabaret Artwork, View 4 = Cocktail Inst JPN, View 5 = Cocktail Inst EURO, View 6 = Cocktail Inst US, View 7 = Cocktail Artwork Midway, View 8 = TLPU Artwork, View 9 = Art of Atari, View 10 = Hausjam Artwork -->
+    <!-- Index 6: Artwork -->
     <rom index="6" md5="none" zip="/mame-artwork/invaders.zip">
         <part>
             41 57 0A 00 1B 00 04 01 E0 00 01 00 00 00 00 00 E2 03 34 05 30 01 36 01 80 01 00 02 00 49 0B 00

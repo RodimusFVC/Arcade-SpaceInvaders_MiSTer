@@ -1,11 +1,9 @@
 //============================================================================
 //
 //  Discrete sound engine: one small fixed-point processor that runs a per-game circuit program (MRA index 5,
-//  tools/dsnd.py) once per sample, so each discrete sound board costs a program, not logic.
-//  Ported from Arcade-SpaceInvaders_MiSTer rtl/dsnd_engine.sv. Exidy changes: 22.578 MHz clock (832 clocks per
-//  sample = 27.137 kHz), op 33 OUTR (right channel mix), out_r, sample strobe for box-averaged sources.
-//  MASTER (merged Exidy + Phoenix copies): TICK = clocks per sample (default 832 = Exidy 22.578 MHz / Space Invaders
-//  39.936 MHz; Phoenix instances with #(.TICK(917)) at 44 MHz). out_r / sample are optional (leave unconnected for mono).
+//  assembled by RodimusCoresMaster_MiSTer/tools/dsnd.py) once per sample, so each discrete sound board costs a
+//  program, not logic. TICK = clocks per sample (at least 832); out_r / sample are optional (unconnected for mono).
+//  How it works: README.md of this chip folder.
 //  Copyright (C) 2026 Rodimus
 //
 //  SPDX-License-Identifier: BSD-3-Clause
@@ -15,7 +13,8 @@
 
 // Instruction (64 bits, little endian in the MRA; up to 1024): [63:56] op, [55:48] a, [47:40] b, [31:0] imm. Values are Q24
 // (1.0 = 1 << 24), the accumulator and the 256-word state memory M are 32 bits and wrap. 2 clocks per instruction,
-// at most 410 instructions per sample (824 of the 832 clocks); the sample ends at END. Output = mix >> 9, saturated (1.0 = full scale). Bit-exact with verilator/snd/dsnd_model.h.
+// at most 410 instructions per sample (up to 824 clocks); the sample ends at END. Output = mix >> 9, saturated
+// (1.0 = full scale). Bit-exact with verify/dsnd_model.h.
 //   0 END              1 LD a: acc = M[a]          2 LDI: acc = imm            3 ADD a: acc += M[a]
 //   4 SUB a: acc -= M[a]  5 ADDI: acc += imm       6 MULI: acc = acc * imm >> 24   7 MUL a: acc = acc * M[a] >> 24
 //   8 ST a: M[a] = acc  9 STF a: if F           10 LDIF: if F acc = imm
@@ -31,7 +30,7 @@
 //  32 RCP: acc = 1 / acc (normalise, linear seed, 3 Newton-Raphson steps in Q24; 0 -> 7FFFFFFF, saturated)
 // Budget units: 1 per instruction, EXP 4 (8 clocks), RCP 5 (10 clocks); a sample stops after the instruction that
 // reaches 410 units.
-// Sources (b[5:3]): 0-5 board sources (see tools/dsnd_boards.py), 6 / 7 Game Audio settings; b[2:0] = bit.
+// Sources (b[5:3]): 0-5 board sources (the core's tools/dsnd_boards.py), 6 / 7 Game Audio settings; b[2:0] = bit.
 
 module dsnd_engine #(parameter int TICK = 832)
 (

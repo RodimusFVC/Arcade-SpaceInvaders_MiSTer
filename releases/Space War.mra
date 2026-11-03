@@ -31,7 +31,7 @@
         <dip name="Coinage" bits="23" ids="1 Coin/1 Or 2 Players,1 Coin/1 Player  2 Coins/2 Players"/>
     </switches>
 
-    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <!-- Index 0: ROM -->
     <rom index="0" md5="none" zip="spcewarl.zip">
         <part crc="1fcd34d2" name="spcewarl.1"/>
         <part crc="43bc65c5" name="spcewarl.2"/>
@@ -42,7 +42,7 @@
         <part crc="2bdf83a0" name="02.2"/>
     </rom>
 
-    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <!-- Index 1: Config -->
     <rom index="1">
         <part>
             00 10 0C 00 00 00 00 FF 00 00 00 00 01 60 00 00
@@ -53,7 +53,7 @@
         </part>
     </rom>
 
-    <!-- Index 5: sound board program for the discrete sound engine (tools/dsnd_boards.py) -->
+    <!-- Index 5: Sound program -->
     <rom index="5">
         <part>
             FF 00 00 00 00 30 00 1D 00 00 00 00 00 00 84 08

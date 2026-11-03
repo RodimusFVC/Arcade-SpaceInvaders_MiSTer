@@ -31,7 +31,7 @@
 
     </switches>
 
-    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <!-- Index 0: ROM -->
     <rom index="0" md5="none" zip="attackfcu.zip|attackfc.zip">
         <part crc="653bbb40" name="egs0.bin"/>
         <part crc="56024445" name="egs1.bin"/>
@@ -43,7 +43,7 @@
         <part crc="7e705388" name="egs7.bin"/>
     </rom>
 
-    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <!-- Index 1: Config -->
     <rom index="1">
         <part>
             06 00 09 00 FF 01 FF FF 00 00 00 00 00 00 00 00
@@ -54,7 +54,7 @@
         </part>
     </rom>
 
-    <!-- Index 5: sound board program for the discrete sound engine (tools/dsnd_boards.py) -->
+    <!-- Index 5: Sound program -->
     <rom index="5">
         <part>
             FF 00 00 00 00 30 00 1D 00 00 00 00 00 00 84 08

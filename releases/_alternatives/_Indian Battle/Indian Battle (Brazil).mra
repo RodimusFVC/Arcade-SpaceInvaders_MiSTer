@@ -32,7 +32,7 @@
         <dip name="Invulnerability (Cheat)" bits="19" ids="Off,On"/>
     </switches>
 
-    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <!-- Index 0: ROM -->
     <rom index="0" md5="none" zip="indianbtbr.zip|indianbt.zip">
         <part crc="5cf6316b" name="1.36"/>
         <part crc="882c7421" name="2.35"/>
@@ -48,7 +48,7 @@
         <part crc="62cb3419" name="mb7054.2"/>
     </rom>
 
-    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <!-- Index 1: Config -->
     <rom index="1">
         <part>
             00 10 09 00 00 81 80 FF 00 00 00 00 01 10 04 00
@@ -59,17 +59,18 @@
         </part>
     </rom>
 
-    <!-- Index 3: hiscore config (MAME hiscore.dat), index 4: saved scores -->
+    <!-- Index 3: Hiscore -->
     <rom index="3" md5="none">
         <part>
             00 14 78 00 00 FF 00 02 00 02 00 01 11 11 00 00
             00 00 23 14 00 02 00 00
         </part>
     </rom>
+    <!-- Index 4: NVRAM -->
     <rom index="4"></rom>
     <nvram index="4" size="2"></nvram>
 
-    <!-- Index 5: sound board program for the discrete sound engine (tools/dsnd_boards.py) -->
+    <!-- Index 5: Sound program -->
     <rom index="5">
         <part>
             FF 00 00 00 00 30 00 1D 00 00 00 00 00 00 84 08

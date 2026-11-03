@@ -36,7 +36,7 @@
         <dip name="Service Mode" bits="19" ids="Off,On"/>
     </switches>
 
-    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <!-- Index 0: ROM -->
     <rom index="0" md5="none" zip="spacecom.zip|invaders.zip">
         <part crc="703f2cbe" name="1f.ic67"/>
         <part crc="7269b719" name="2g.ic82"/>
@@ -49,7 +49,7 @@
         <patch offset="0x10">F5</patch>
     </rom>
 
-    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <!-- Index 1: Config -->
     <rom index="1">
         <part>
             08 10 09 00 FF 1B 00 00 00 00 00 00 00 00 00 00
@@ -62,17 +62,18 @@
         </part>
     </rom>
 
-    <!-- Index 3: hiscore config (MAME hiscore.dat), index 4: saved scores -->
+    <!-- Index 3: Hiscore -->
     <rom index="3" md5="none">
         <part>
             00 14 78 00 00 FF 00 02 00 02 00 01 11 11 00 00
             00 00 20 F4 00 02 00 00
         </part>
     </rom>
+    <!-- Index 4: NVRAM -->
     <rom index="4"></rom>
     <nvram index="4" size="2"></nvram>
 
-    <!-- Index 5: sound board program for the discrete sound engine (tools/dsnd_boards.py) -->
+    <!-- Index 5: Sound program -->
     <rom index="5">
         <part>
             FF 00 00 00 00 30 00 1D 00 00 00 00 00 00 84 08

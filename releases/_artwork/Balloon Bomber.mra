@@ -31,7 +31,7 @@
         <dip name="Lives" bits="16,17" ids="3,4,5,6"/>
     </switches>
 
-    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <!-- Index 0: ROM -->
     <rom index="0" md5="none" zip="ballbomb.zip">
         <part crc="551585b5" name="tn01"/>
         <part crc="7e1f734f" name="tn02"/>
@@ -44,7 +44,7 @@
         <part crc="deb0ac82" name="tn07"/>
     </rom>
 
-    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <!-- Index 1: Config -->
     <rom index="1">
         <part>
             00 10 09 00 FF 88 00 FF 00 00 00 00 01 22 02 01
@@ -55,17 +55,18 @@
         </part>
     </rom>
 
-    <!-- Index 3: hiscore config (MAME hiscore.dat), index 4: saved scores -->
+    <!-- Index 3: Hiscore -->
     <rom index="3" md5="none">
         <part>
             00 66 58 00 00 FF 00 02 00 02 00 01 11 11 00 00
             00 00 20 DC 00 03 00 00
         </part>
     </rom>
+    <!-- Index 4: NVRAM -->
     <rom index="4"></rom>
     <nvram index="4" size="3"></nvram>
 
-    <!-- Index 5: sound board program for the discrete sound engine (tools/dsnd_boards.py) -->
+    <!-- Index 5: Sound program -->
     <rom index="5">
         <part>
             FF 00 00 00 00 30 00 1D 00 00 00 00 00 00 84 08
@@ -558,8 +559,7 @@
         </part>
     </rom>
 
-    <!-- Index 6: MAME artwork, layout table (from default.lay) + PNGs from the artwork zip, as-is -->
-    <!-- OSD Artwork: View 1 = TLPU Artwork -->
+    <!-- Index 6: Artwork -->
     <rom index="6" md5="none" zip="/mame-artwork/ballbomb.zip">
         <part>
             41 57 01 00 02 00 04 01 E0 00 01 00 00 00 00 00 88 03 00 02 04 01 00 00 80 01 00 02 00 09 02 00

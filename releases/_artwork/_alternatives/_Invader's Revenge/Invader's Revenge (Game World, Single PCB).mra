@@ -35,7 +35,7 @@
         <dip name="Coinage" bits="23" ids="2C/1C,1C/1C" values="1,0"/>
     </switches>
 
-    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <!-- Index 0: ROM -->
     <rom index="0" md5="none" zip="invrvngegw.zip|invrvnge.zip">
         <part crc="4fe35d1f" name="ir.5m"/>
         <part crc="92d0442c" name="ir.5n"/>
@@ -49,7 +49,7 @@
         <part crc="6ce639bf" name="ir.3r"/>
     </rom>
 
-    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <!-- Index 1: Config -->
     <rom index="1">
         <part>
             00 10 01 00 80 81 08 FF 00 00 00 00 01 00 0A 20
@@ -60,18 +60,18 @@
         </part>
     </rom>
 
-    <!-- Index 3: hiscore config (MAME hiscore.dat), index 4: saved scores -->
+    <!-- Index 3: Hiscore -->
     <rom index="3" md5="none">
         <part>
             00 14 78 00 00 FF 00 02 00 02 00 01 11 11 00 00
             00 00 20 19 00 03 00 00
         </part>
     </rom>
+    <!-- Index 4: NVRAM -->
     <rom index="4"></rom>
     <nvram index="4" size="3"></nvram>
 
-    <!-- Index 6: MAME artwork, layout table (from default.lay) + PNGs from the artwork zip, as-is -->
-    <!-- OSD Artwork: View 1 = Upright Artwork -->
+    <!-- Index 6: Artwork -->
     <rom index="6" md5="none" zip="/mame-artwork/invrvnge.zip">
         <part>
             41 57 01 00 01 00 04 01 E0 00 01 00 00 00 00 00 64 04 A8 04 72 01 8C 01 80 01 00 02 00 39 04 00

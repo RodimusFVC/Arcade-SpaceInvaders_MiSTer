@@ -35,7 +35,7 @@
         <dip name="Extended Time At" bits="22,23" ids="150,175,225,275" values="3,2,1,0"/>
     </switches>
 
-    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <!-- Index 0: ROM -->
     <rom index="0" md5="none" zip="dogpatch.zip">
         <part crc="74ebdf4d" name="dogpatch.h"/>
         <part crc="ac246f70" name="dogpatch.g"/>
@@ -43,7 +43,7 @@
         <part crc="c12b1f60" name="dogpatch.e"/>
     </rom>
 
-    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <!-- Index 1: Config -->
     <rom index="1">
         <part>
             14 00 00 00 BF BF 72 FF 00 00 00 00 00 00 01 00
@@ -68,7 +68,7 @@
         </part>
     </rom>
 
-    <!-- Index 5: sound board program for the discrete sound engine (tools/dsnd_boards.py) -->
+    <!-- Index 5: Sound program -->
     <rom index="5">
         <part>
             00 00 00 00 00 00 FF 01 01 00 00 00 00 00 00 0E
@@ -238,8 +238,7 @@
         </part>
     </rom>
 
-    <!-- Index 6: MAME artwork, layout table (from default.lay) + PNGs from the artwork zip, as-is -->
-    <!-- OSD Artwork: View 1 = Upright Artwork, View 2 = Upright Artwork Blacklight -->
+    <!-- Index 6: Artwork -->
     <rom index="6" md5="none" zip="/mame-artwork/dogpatch.zip">
         <part>
             41 57 02 00 05 00 04 01 E0 00 00 00 00 00 00 00 54 04 20 05 18 01 E4 01 00 02 80 01 00 48 04 00

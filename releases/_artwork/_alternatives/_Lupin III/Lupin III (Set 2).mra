@@ -35,7 +35,7 @@
         <dip name="Language" bits="20" ids="English,Japanese"/>
     </switches>
 
-    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <!-- Index 0: ROM -->
     <rom index="0" md5="none" zip="lupin3a.zip|lupin3.zip">
         <part crc="68a7f47a" name="lp12.bin"/>
         <part crc="cae9a17b" name="lp13.bin"/>
@@ -47,7 +47,7 @@
         <part crc="2f07b4ba" name="lp18.bin"/>
     </rom>
 
-    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <!-- Index 1: Config -->
     <rom index="1">
         <part>
             00 10 09 00 00 00 00 FF 00 00 00 00 02 08 01 00
@@ -58,7 +58,7 @@
         </part>
     </rom>
 
-    <!-- Index 5: sound board program for the discrete sound engine (tools/dsnd_boards.py) -->
+    <!-- Index 5: Sound program -->
     <rom index="5">
         <part>
             FF 00 00 00 00 30 00 1D 00 00 00 00 00 00 84 08
@@ -551,8 +551,7 @@
         </part>
     </rom>
 
-    <!-- Index 6: MAME artwork, layout table (from default.lay) + PNGs from the artwork zip, as-is -->
-    <!-- OSD Artwork: View 1 = Upright Artwork -->
+    <!-- Index 6: Artwork -->
     <rom index="6" md5="none" zip="/mame-artwork/lupin3.zip">
         <part>
             41 57 01 00 01 00 04 01 E0 00 01 00 00 00 00 00 DC 02 9A 02 AE 00 92 00 80 01 00 02 00 5D 01 00

@@ -33,7 +33,7 @@
         <dip name="Coin Info" bits="23" ids="Off,On" values="1,0"/>
     </switches>
 
-    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <!-- Index 0: ROM -->
     <rom index="0" md5="none" zip="moonbasea.zip|invadpt2.zip">
         <part crc="82dbf2c7" name="ze3-1.a4"/>
         <part crc="c867f5b4" name="ze3-2.c4"/>
@@ -51,7 +51,7 @@
         <part crc="2bdf83a0" name="cv02.h7"/>
     </rom>
 
-    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <!-- Index 1: Config -->
     <rom index="1">
         <part>
             00 10 0C 00 F4 81 00 FF 00 00 00 00 01 60 00 00
@@ -62,7 +62,7 @@
         </part>
     </rom>
 
-    <!-- Index 3: hiscore config (MAME hiscore.dat), index 4: saved scores -->
+    <!-- Index 3: Hiscore -->
     <rom index="3" md5="none">
         <part>
             00 14 78 00 00 FF 00 02 00 02 00 01 11 11 00 00
@@ -70,10 +70,11 @@
             00 00 20 F4 00 02 00 05
         </part>
     </rom>
+    <!-- Index 4: NVRAM -->
     <rom index="4"></rom>
     <nvram index="4" size="12"></nvram>
 
-    <!-- Index 5: sound board program for the discrete sound engine (tools/dsnd_boards.py) -->
+    <!-- Index 5: Sound program -->
     <rom index="5">
         <part>
             FF 00 00 00 00 30 00 1D 00 00 00 00 00 00 84 08
@@ -567,8 +568,7 @@
         </part>
     </rom>
 
-    <!-- Index 6: MAME artwork, layout table (from default.lay) + PNGs from the artwork zip, as-is -->
-    <!-- OSD Artwork: View 1 = Upright Artwork JPN, View 2 = Upright Artwork USA, View 3 = Cocktail Inst, View 4 = TLPU Artwork -->
+    <!-- Index 6: Artwork -->
     <rom index="6" md5="none" zip="/mame-artwork/invadpt2.zip">
         <part>
             41 57 04 00 09 00 04 01 E0 00 01 00 00 00 00 00 CE 03 4E 05 26 01 6A 01 80 01 00 02 00 46 05 00

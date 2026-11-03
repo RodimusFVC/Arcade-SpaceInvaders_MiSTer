@@ -31,7 +31,7 @@
         <dip name="Lives" bits="0,1" ids="2,3,4,5"/>
     </switches>
 
-    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <!-- Index 0: ROM -->
     <rom index="0" md5="none" zip="astropal.zip">
         <part crc="e6883322" name="2708.0a"/>
         <part crc="4401df1d" name="2708.1a"/>
@@ -43,7 +43,7 @@
         <part crc="aeca51c1" name="2708.7a"/>
     </rom>
 
-    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <!-- Index 1: Config -->
     <rom index="1">
         <part>
             02 00 09 00 FC 81 FF 80 00 00 00 00 00 00 00 00
@@ -54,7 +54,7 @@
         </part>
     </rom>
 
-    <!-- Index 5: sound board program for the discrete sound engine (tools/dsnd_boards.py) -->
+    <!-- Index 5: Sound program -->
     <rom index="5">
         <part>
             FF 00 00 00 00 30 00 1D 00 00 00 00 00 00 84 08

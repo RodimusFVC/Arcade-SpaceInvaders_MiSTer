@@ -2,24 +2,24 @@
 """Space Invaders sound board (Midway A084-90700-B000 and its variants) as a discrete sound engine program
 (master tools/dsnd.py, rtl/rodimus/dsnd_engine/dsnd_engine.sv).
 
-A circuit-for-circuit port of rtl/invaders_sound.sv (bit-exact C model verilator/snd/model.h): same topology, same
+A circuit-for-circuit port of the board's integer reference model (verilator/snd/model.h, model_wav): same topology, same
 constants (tools/snd_consts.py BOARDS[board], Q20 volts / Q28 coefficients converted to Q24), same summer, rail clamp,
 output scaling (OUT_G counts per volt) and P35 mute. `board` selects the constant set (snd_consts BOARD_PARAMS key);
-MIDWAY and TAITO (L-shaped, RTL board 1: constants only, its trimmer mix is folded into the G_ gains by snd_consts)
+MIDWAY and TAITO (L-shaped, reference board 1: constants only, its trimmer mix is folded into the G_ gains by snd_consts)
 are A/B-verified (Factory Game Audio). The other sets differ in constants only, plus INVAD2CT2's C37 low-pass, PV's
 8V gate and MAME's unclamped summer. `grid` (default: every board; MIDWAY since 2026-11-03)
-puts the saucer-hit / invader-hit VCO_1s on the RTL's exact substep grid (vco1_grid; their steps and reciprocals
+puts the saucer-hit / invader-hit VCO_1s on the reference's exact substep grid (vco1_grid; their steps and reciprocals
 move to the round robin's idle slots), which also lowers the static worst case (Taito 407 vs 409).
 
-Differences against the RTL (format, not circuit):
-  * Oscillators: the RTL steps its op-amp oscillators and the SN76477 VCO in 16 substeps per sample and averages the
+Differences against the reference (format, not circuit):
+  * Oscillators: the reference steps its op-amp oscillators and the SN76477 VCO in 16 substeps per sample and averages the
     square outputs over them. Here each takes one 48 kHz step; a threshold crossing carries the overshoot time into
     the next phase (exact for linear ramps), and a square output gets the crossing sample's exact high fraction
-    (overshoot / step; RCP where the step varies). The RTL clamps a crossing to the threshold and loses on average
+    (overshoot / step; RCP where the step varies). The reference clamps a crossing to the threshold and loses on average
     half a substep per edge: the carry subtracts that 1/32 sample, so the periods agree on average.
   * Slow parts run in an 8-sample round robin with 8-step coefficients (engine budget): the two OSC_1 LFOs (values
     held 8 samples), the bonus 556 gate timer and the three one-shots' timing caps (one-shot lengths quantized to 8
-    samples). With `grid`, a VCO_1's phase still moves against the RTL's at each LFO turnaround (the held control
+    samples). With `grid`, a VCO_1's phase still moves against the reference's at each LFO turnaround (the held control
     integrates differently over that hold: up to ~1 sample per turnaround with the invader-hit LFO's fast charge);
     pitch contour and spectrum are unaffected.
   * Q24 / 32-bit arithmetic instead of Q20 volts / Q28 coefficients in 36 bits.
@@ -33,8 +33,8 @@ Differences against the RTL (format, not circuit):
     engine's NOISE op).
 
 Sources: P3 (port 3) = LATCH1, P5 (port 5) = LATCH2 (8080bw boards: sound ports 1 / 2), Game Audio = sources 6 / 7
-(T timing / F filter / O oscillator capacitor groups + Aged Caps, as invaders_sound.sv `tweak`).
-Every state register powers up 0 = the RTL's reset state (no init block).
+(T timing / F filter / O oscillator capacitor groups + Aged Caps).
+Every state register powers up 0 = the reference's reset state (no init block).
 
     python3 dsnd_invaders.py [board] [out.bin]     -> program binary; prints size and worst-case budget per block
 """
@@ -61,7 +61,7 @@ COEF = ({"SH_VCO_KA", "SH_VCO_KB", "FL_KD", "FL_RC1", "FL_RC2", "BN_KC", "BN_KD"
 # per-substep rates in snd_consts (x 16 = per sample)
 PER_SUB = {"SH_OSC_D0", "SH_OSC_D1", "SH_VCO_KA", "SH_VCO_KB", "IH_OSC_D0", "IH_OSC_D1", "IH_VCO_KA", "IH_VCO_KB",
            "MS_VCO_IF", "MS_VCO_K1", "MS_VCO_K6", "MS_VCO_T1", "SN_VCO_STEP"}
-# Game Audio scaling exactly as invaders_sound.sv KG (group) / KC (RC coefficient, capped at 1.0)
+# Game Audio scaling: KG (group) / KC (RC coefficient, capped at 1.0)
 GROUP = dict(SH_ENV_UP="T", SH_ENV_DN="T", BN_KC="T", BN_KD="T", OS_E2="T", EX_E1C="T", EX_E1D="T", MS_E1C="T",
              MS_E1D="T", IH_E1C="T", IH_E1D="T", IH_ENV_UP="T", IH_ENV_DN="T", EX_EC="T", EX_ED="T", MS_ENV_UP="T",
              MS_ENV_DN="T", MS_CR="T", MS_EC="T", MS_ED="T", NZ_INC="O", SH_OSC_D0="O", SH_OSC_D1="O",
@@ -103,7 +103,7 @@ class Inv(Board):
         self.kcuts.append(len(self.kcode))           # complete sequences: the settings block may split here
 
     def k(self, name, steps=1, scale=1.0, raw=False):
-        """register = a snd_consts rate scaled by its Game Audio group (capped at 1.0 as the RTL), then x scale; steps
+        """register = a snd_consts rate scaled by its Game Audio group (capped at 1.0 as the reference), then x scale; steps
         > 1: an RC coefficient for that many samples, 1 - (1 - k)^steps (x the group factor). Built in the settings
         block (free per sample)"""
         reg = f"k_{name}" + (f"_n{steps}" if steps > 1 else "") + (f"_x{scale:g}" if scale != 1.0 else "") + \
@@ -111,7 +111,7 @@ class Inv(Board):
         if reg in self.regs:
             return reg
         g = GROUP.get(name) if self.tweak else None
-        cap = name in CAPPED and self.f(name) / 0.7 / 0.7 >= 1.0      # the RTL's 1.0 cap can act at all
+        cap = name in CAPPED and self.f(name) / 0.7 / 0.7 >= 1.0      # the reference's 1.0 cap can act at all
 
         def emit():
             if steps > 1:                             # Factory value exact; settings scale it (error ~ steps x k / 2)
@@ -129,7 +129,7 @@ class Inv(Board):
         self._kemit(emit)
         return reg
 
-    # --- the RTL's own integer arithmetic (Q20 / Q28, model.h), for power-up states and exact phase counts -------
+    # --- the reference's own integer arithmetic (Q20 / Q28, model.h), for power-up states and exact phase counts -------
     def rtl_mul(self, a, b):
         return (a * b) >> 28
 
@@ -155,8 +155,8 @@ class Inv(Board):
         return charge(0) - 1, n2, charge(tr)
 
     def rtl_sn_start(self, nmin=2400):
-        """(n, v0): the RTL's SN76477 VCO is rising at sample n; a dsnd VCO that powers up at v0 (rising, below the
-        low limit) reaches exactly the RTL's value there without a crossing, so it skips the SLF power-up transient
+        """(n, v0): the reference's SN76477 VCO is rising at sample n; a dsnd VCO that powers up at v0 (rising, below the
+        low limit) reaches exactly the reference's value there without a crossing, so it skips the SLF power-up transient
         (VCO span below one sample step) that a one-step VCO cannot follow. v0 ~ -(n + 1) step must fit 32 bits: a
         faster VCO (Taito 3.9K / 0.22uF: 2.1 x Midway's step) starts earlier (Midway: nmin as given)"""
         c = self.c
@@ -252,9 +252,9 @@ class Inv(Board):
 
     def osc1(self, n, d0, d1, steps=1):
         """Norton OSC_1 (constant charge / discharge steps), cap n_v, n_lo = 1.0 while discharging (power-up charging
-        from 0 V), `steps` samples per call. A crossing carries the overshoot time less the RTL's substep loss"""
+        from 0 V), `steps` samples per call. A crossing carries the overshoot time less the reference's substep loss"""
         tl, th = self.v("OSC_TL"), self.v("OSC_TH")
-        D0, D1 = self.c[d0], self.c[d1]               # integer ratio: the RTL's substep rates exactly
+        D0, D1 = self.c[d0], self.c[d1]               # integer ratio: the reference's substep rates exactly
         k0, k1 = self.k(d0, scale=steps), self.k(d1, scale=steps)
         self.flag01(n + "_lo")
         at = self.skip_if(True)
@@ -290,10 +290,10 @@ class Inv(Board):
     def vco1(self, n, ctl, ka, kb, frac):
         """Norton VCO_1: per sample d1 = (ctl - VBE) KB (charge, flip-flop n_hi = 0, power-up), d0 = (ctl - VBE) KA
         (discharge, n_hi = 1); thresholds VCO_TL / VCO_TH. The steps share ctl: the carry ratio is the constant
-        KA / KB. frac: n_sq = fraction of the sample the flip-flop was high (the RTL's substep average)"""
+        KA / KB. frac: n_sq = fraction of the sample the flip-flop was high (the reference's substep average)"""
         tl, th = self.v("VCO_TL"), self.v("VCO_TH")
         r = self.c[ka] / self.c[kb]
-        # the RTL floors cv x K once per substep (Q20): on average its step is 16 x 0.5 Q20 LSB = 128 Q24 LSB short;
+        # the reference floors cv x K once per substep (Q20): on average its step is 16 x 0.5 Q20 LSB = 128 Q24 LSB short;
         # folded into the control offset: (cv - 128 LSB / K) K
         fb_b, fb_a = 128 / ONE / self.f(kb), 128 / ONE / self.f(ka)
         self.flag01(n + "_hi")
@@ -362,12 +362,12 @@ class Inv(Board):
     # Norton VCO_1 on the exact substep grid: the cap register w holds v while charging (n_hi = 0) and s v + c while
     # discharging, so the flip-flop costs no register: IH (v drives the output) s = -1, c = 0 (|w| = v; its LFO
     # passes VBE within a few samples, so v stays >= 0); SH s = +1, c = -32 V (its slow LFO holds the control below
-    # VBE for ~200 samples after power-up: v charges negative, as the RTL's, down to about -2.5 V)
+    # VBE for ~200 samples after power-up: v charges negative, as the reference's, down to about -2.5 V)
     VCO1_ENC = {"ihv": (-1, 0.0), "shv": (1, -32.0)}
 
     def vco1_rr(self, n, ctl, ka, kb):
         """round-robin half of vco1_grid, run once per LFO hold (the slot after the LFO's): n_d1 = the charge step,
-        n_dd = the discharge step on w (-s d0), both as vco1 (incl. the RTL's floor offset); n_i1 = 1 / d1,
+        n_dd = the discharge step on w (-s d0), both as vco1 (incl. the reference's floor offset); n_i1 = 1 / d1,
         n_id = 1 / dd (= i1 KB / KA x -s)"""
         sg = self.VCO1_ENC[n][0]
         r = self.c[ka] / self.c[kb]
@@ -383,13 +383,13 @@ class Inv(Board):
         self.op("ST", n + "_id")
 
     def rtl_vco1_start(self, osc, kb, slot):
-        """power-up value of w: the RTL's VCO (model.h integer arithmetic) less this program's, both charging from 0
-        over the first 3/4 of the samples before the RTL's first crossing. The program's steps exist only from the round-robin
+        """power-up value of w: the reference's VCO (model.h integer arithmetic) less this program's, both charging from 0
+        over the first 3/4 of the samples before the reference's first crossing. The program's steps exist only from the round-robin
         slot's first run (body sample slot - 1) and are held 8 samples, its LFO starting at the osc1 power-up lead;
-        the remaining offset makes every later edge land on the RTL's substep grid"""
+        the remaining offset makes every later edge land on the reference's substep grid"""
         c, mul = self.c, self.rtl_mul
         d0, d1 = c[osc + "_D0"], c[osc + "_D1"]
-        lv, lff, v = 0, 1, 0                          # RTL: Osc1 (charging), Vco charging from 0
+        lv, lff, v = 0, 1, 0                          # reference: Osc1 (charging), Vco charging from 0
         rtl = []
         while True:
             for _ in range(SUB):
@@ -421,9 +421,9 @@ class Inv(Board):
         return q(rtl[-1] - w)
 
     def vco1_grid(self, n, frac):
-        """Norton VCO_1 on the RTL's exact 16-substep edge grid (as vco3_ms / sn76477): after a crossing the new phase
+        """Norton VCO_1 on the reference's exact 16-substep edge grid (as vco3_ms / sn76477): after a crossing the new phase
         runs floor(16 tau) whole substeps, tau = overshoot / step (x the round robin's reciprocal: the steps are
-        constant over an LFO hold). w = n_v: see VCO1_ENC. frac: n_sq = the RTL's substep average of the flip-flop
+        constant over an LFO hold). w = n_v: see VCO1_ENC. frac: n_sq = the reference's substep average of the flip-flop
         (high while discharging): (n + 1) / 16 at the top crossing, (15 - n) / 16 at the bottom one"""
         sg, c = self.VCO1_ENC[n]
         c = q(c)
@@ -488,9 +488,9 @@ class Inv(Board):
             self.land(e)
 
     def ne555_fast(self, n, kd):
-        """fleet 555 step in the RTL's own integer arithmetic: n_v in Q20, coefficients raw Q28, each step
+        """fleet 555 step in the reference's own integer arithmetic: n_v in Q20, coefficients raw Q28, each step
         v += floor((target - v) k / 2^28) (= floor(floor(x k / 2^24) / 16)), so the threshold crossings - the tone's
-        period - match the RTL sample for sample. Charging -> toward n_tg with n_k; discharging -> v -= floor(v KD);
+        period - match the reference sample for sample. Charging -> toward n_tg with n_k; discharging -> v -= floor(v KD);
         2/3 / 1/3 of 5 V clamp and flip. n_lo = 1.0 while discharging"""
         th, tr = self.c["V555_TH"], self.c["V555_TR"]
         self.flag01(n + "_lo")
@@ -524,9 +524,9 @@ class Inv(Board):
     def fleet_kc(self):
         """fl_k = FL_KC[p5 & 15] (raw Q28; tree on D3-D1, D0 by LDIF), fl_tg = 4.4 V in Q20 (0 V for d = 0: the
         charge path is open, the cap bleeds through the 10M)"""
-        vch = self.c["FL_VCH"]                                  # RTL units: Q20 volts, Q28 coefficients
+        vch = self.c["FL_VCH"]                                  # reference units: Q20 volts, Q28 coefficients
         ks = [self.c[f"FL_KC{d}"] for d in range(16)]           # x Game Audio factor after the lookup
-        # d = 0: the RTL bleeds v -= floor(v KC0); the charge step floor((tg - v) KC0) equals that for every v when
+        # d = 0: the reference bleeds v -= floor(v KC0); the charge step floor((tg - v) KC0) equals that for every v when
         # tg KC0 is just below 2^28 (misses only when v KC0 mod 2^28 is within 2^28 - tg KC0 of the top: ~1e-5)
         tg0 = ((1 << 28) - 1) // ks[0]
         self.op("LDI", imm=vch)
@@ -559,13 +559,13 @@ class Inv(Board):
             self.land(e)
         if self.tweak:
             self.groups.add("O")
-            self.op("MUL", "_fO")                     # (never reaches the RTL's 1.0 cap)
+            self.op("MUL", "_fO")                     # (never reaches the reference's 1.0 cap)
         self.op("ST", "fl_k")
 
     def bonus_timer(self, steps):
-        """556 gate (P3 D4 = reset input, low: charging from 0 V) as phase counters with the RTL's exact phase lengths
+        """556 gate (P3 D4 = reset input, low: charging from 0 V) as phase counters with the reference's exact phase lengths
         (Game Audio: x 1 / timing factor), `steps` samples per call; the remainder carries into the next phase, so
-        edges land within `steps` - 1 samples of the RTL's and never drift. bn_lo = 1.0 while the output is low.
+        edges land within `steps` - 1 samples of the reference's and never drift. bn_lo = 1.0 while the output is low.
         Counts are samples << 16"""
         n1, n2, n3 = self.rtl_bonus_counts()
         if self.tweak:
@@ -614,7 +614,7 @@ class Inv(Board):
         self.land(e2)
 
     def one_shot(self, n, trig):
-        """DST_OP_AMP_1SHT comparator, per sample (RTL): out = (trig - c2) r3 / r2 + vout r3 / r5 > pos(c1 - VBE) +
+        """DST_OP_AMP_1SHT comparator, per sample (reference): out = (trig - c2) r3 / r2 + vout r3 / r5 > pos(c1 - VBE) +
         i_fixed r3. n_on = 0 / 1.0. (trig - c2_old) = (trig - c2_new) / (1 - E2)"""
         self.pinit.append((n + "_r1", self.v("OS_IFIX")))
         self.op("BIT", 0, self.src(*trig))
@@ -665,7 +665,7 @@ class Inv(Board):
         self.op("ST", n + "_r1")
 
     def substeps(self, tmp):
-        """acc = tau (samples after a crossing, 0 .. 1) -> floor(16 tau) / 16: the RTL clamps a crossing at the end of
+        """acc = tau (samples after a crossing, 0 .. 1) -> floor(16 tau) / 16: the reference clamps a crossing at the end of
         its substep, so the new phase runs that many whole substeps. (tau - 1/32) minus its remainder modulo 1/16,
         centred: (x << 12, wrapped) >> 12"""
         self.op("ADDI", imm=-(ONE >> 5))
@@ -680,7 +680,7 @@ class Inv(Board):
     def vco3_ms(self):
         """missile VCO_3: charges by md1 while msv_dis = 0 (power-up), discharges by md0 (msv_dn = -md0). Both steps
         follow the noise / envelope: the carry divides by the step (RCP). msv_sq = fraction of the sample charging
-        (the RTL's square: high while charging)"""
+        (the reference's square: high while charging)"""
         tl, th = self.v("MS_VCO_TL"), self.v("MS_VCO_TH")
         n = "msv"
         self.flag01(n + "_dis")
@@ -739,7 +739,7 @@ class Inv(Board):
             self.land(e)
 
     def sn76477(self):
-        """SLF exactly as the RTL (per sample, clamp at the turning limit); VCO one step per sample with the carry
+        """SLF exactly as the reference (per sample, clamp at the turning limit); VCO one step per sample with the carry
         mirrored about the limit (equal up / down steps) less the 1/32-sample substep loss. sn_sq = time high"""
         mn, mx, dv = self.v("SN_SLF_MIN"), self.v("SN_SLF_MAX"), self.v("SN_VCO_DIFF")
         self.sn_start = self.rtl_sn_start()
@@ -784,7 +784,7 @@ class Inv(Board):
         self.op("SUB", "sn_vmax")
         self.op(ist[0], ist[1], imm=ist[2])           # tau
         self.substeps("_ss")
-        if self.sn_top:                               # vmax fell below last sample's v (SLF falling): the RTL clamps
+        if self.sn_top:                               # vmax fell below last sample's v (SLF falling): the reference clamps
             self.op("MINI", imm=ONE - (ONE >> 4))     # at its first substep, 15 substeps fall (not 16)
         self.op("ST", "sn_ov")                        # n / 16
         self.op("ADDI", imm=ONE >> 4)
@@ -882,10 +882,10 @@ class Inv(Board):
         self.noise()
 
         self.mark("round robin")
-        # the two LFOs (OSC_1, value held 8 samples): started 3.5 samples ahead, so the hold is centred on the RTL's
+        # the two LFOs (OSC_1, value held 8 samples): started 3.5 samples ahead, so the hold is centred on the reference's
         # value and the VCOs' phase integrates the same over each hold
         # slot k runs at body samples n = k - 1 (mod 8); its first call steps 8 samples, so the state it holds over
-        # n .. n + 7 is the RTL's at 7 + lead: lead = slot sample - 3.5 centres it
+        # n .. n + 7 is the reference's at 7 + lead: lead = slot sample - 3.5 centres it
         for n, d1, k in (("sho", "SH_OSC_D1", 0), ("iho", "IH_OSC_D1", 4)):
             self.pinit.append((n + "_v", q(self.f(d1) * (((k - 1) % NRR) - (NRR - 1) / 2))))
             if self.grid:
@@ -1019,7 +1019,7 @@ class Inv(Board):
         self.op("ADDI", imm=-VBE)
         self.op("MAXI", imm=0)
         self.op("ST", "m73")                          # clamp(env - VBE, 0, 12)
-        # (RTL: each floored product makes the substep step 0.5 Q20 LSB short on average = 128 Q24 LSB per sample:
+        # (reference: each floored product makes the substep step 0.5 Q20 LSB short on average = 128 Q24 LSB per sample:
         # the K6 term always, the K1 term while it is non-zero - folded into its input offset)
         self.op("ADDI", imm=-VBE)
         self.op("MULI", imm=-self.v("MS_VCO_K6"))

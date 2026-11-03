@@ -1,7 +1,7 @@
 """Polaris (Taito 1980) sound for the discrete sound engine (master tools/dsnd.py, rtl/dsnd_engine.sv).
 
 No schematic yet: MAME polaris_discrete (src/mame/midw8080/8080bw_a.cpp, D. Renaud) is the reference, node for node.
-Sources (rtl/mw8080_board.sv, v_pol io_a renumbering): LATCH1 = port 4 (D0 SX0 shot, D1 SX1 sub hit, D2 SX2 ship,
+Sources (rtl/boards/mw8080/mw8080_board.sv, v_pol io_a renumbering): LATCH1 = port 4 (D0 SX0 shot, D1 SX1 sub hit, D2 SX2 ship,
 D3 SX3 explosion, D5 SX5 sound enable), LATCH2 = port 6 (D0 SX6 plane down, D1 SX7 plane up, D3 SX9 / D4 SX10 hit),
 LATCH3 = port 2 music data (FF = stopped).
 Trimmers at MAME's defaults: VR1 80 %, VR2 70 %, VR3 90 % (x 0.5376 resistor scaling = the music input; the Game

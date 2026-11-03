@@ -33,14 +33,14 @@
         <dip name="Coinage" bits="23" ids="1C/1C,1C/2C"/>
     </switches>
 
-    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <!-- Index 0: ROM -->
     <rom index="0" md5="none" zip="cosmicm2.zip|invaders.zip">
         <part crc="bbffede6" name="3907.bin"/>
         <part repeat="0x3000">00</part>
         <part crc="b841f894" name="3906.bin"/>
     </rom>
 
-    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <!-- Index 1: Config -->
     <rom index="1">
         <part>
             00 10 09 00 FF 89 01 FF 00 00 00 00 00 00 00 00
@@ -52,17 +52,18 @@
         </part>
     </rom>
 
-    <!-- Index 3: hiscore config (MAME hiscore.dat), index 4: saved scores -->
+    <!-- Index 3: Hiscore -->
     <rom index="3" md5="none">
         <part>
             00 14 78 00 00 FF 00 02 00 02 00 01 11 11 00 00
             00 00 20 F4 00 03 00 00
         </part>
     </rom>
+    <!-- Index 4: NVRAM -->
     <rom index="4"></rom>
     <nvram index="4" size="3"></nvram>
 
-    <!-- Index 5: sound board program for the discrete sound engine (tools/dsnd_boards.py) -->
+    <!-- Index 5: Sound program -->
     <rom index="5">
         <part>
             FF 00 00 00 00 30 00 1D 00 00 00 00 00 00 84 08
@@ -555,8 +556,7 @@
         </part>
     </rom>
 
-    <!-- Index 6: MAME artwork, layout table (from default.lay) + PNGs from the artwork zip, as-is -->
-    <!-- OSD Artwork: View 1 = Upright Artwork, View 2 = Upright Artwork (NoBacklight) -->
+    <!-- Index 6: Artwork -->
     <rom index="6" md5="none" zip="/mame-artwork/cosmicm2.zip">
         <part>
             41 57 02 00 03 00 04 01 E0 00 01 00 00 00 00 00 56 03 CC 03 E6 00 78 01 80 01 00 02 00 6B 09 00

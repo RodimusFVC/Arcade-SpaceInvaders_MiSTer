@@ -31,7 +31,7 @@
         <dip name="Lives" bits="16,17" ids="3,4,5,6"/>
     </switches>
 
-    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <!-- Index 0: ROM -->
     <rom index="0" md5="none" zip="desterth.zip|lrescue.zip">
         <part crc="f86923e5" name="36_h.bin"/>
         <part crc="797f440d" name="35_g.bin"/>
@@ -46,7 +46,7 @@
         <part crc="8b2e38de" name="7643-1.cpu" offset="0x0" length="0x400"/>
     </rom>
 
-    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <!-- Index 1: Config -->
     <rom index="1">
         <part>
             00 10 0C 00 FF 89 00 FF 00 00 00 00 01 20 07 01
@@ -57,7 +57,7 @@
         </part>
     </rom>
 
-    <!-- Index 3: hiscore config (MAME hiscore.dat), index 4: saved scores -->
+    <!-- Index 3: Hiscore -->
     <rom index="3" md5="none">
         <part>
             00 85 0C 00 00 FF 00 02 00 02 00 01 11 11 00 00
@@ -66,10 +66,11 @@
             00 00 20 F4 00 02 00 05
         </part>
     </rom>
+    <!-- Index 4: NVRAM -->
     <rom index="4"></rom>
     <nvram index="4" size="13"></nvram>
 
-    <!-- Index 5: sound board program for the discrete sound engine (tools/dsnd_boards.py) -->
+    <!-- Index 5: Sound program -->
     <rom index="5">
         <part>
             FF 00 00 00 00 30 00 1D 00 00 00 00 00 00 84 08
@@ -563,8 +564,7 @@
         </part>
     </rom>
 
-    <!-- Index 6: MAME artwork, layout table (from default.lay) + PNGs from the artwork zip, as-is -->
-    <!-- OSD Artwork: View 1 = Upright Artwork, View 2 = TLPU Artwork -->
+    <!-- Index 6: Artwork -->
     <rom index="6" md5="none" zip="/mame-artwork/lrescue.zip">
         <part>
             41 57 02 00 04 00 04 01 E0 00 01 00 00 00 00 00 C8 02 AA 02 A4 00 6E 00 80 01 00 02 00 61 02 00

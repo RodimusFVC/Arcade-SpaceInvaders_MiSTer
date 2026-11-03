@@ -34,7 +34,7 @@
         <dip name="Bonus Life" bits="23" ids="1500,2000" values="1,0"/>
     </switches>
 
-    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <!-- Index 0: ROM -->
     <rom index="0" md5="none" zip="invad2ct.zip">
         <part crc="51d02a71" name="invad2ct.h"/>
         <part crc="533ac770" name="invad2ct.g"/>
@@ -45,7 +45,7 @@
         <part crc="efdabb03" name="invad2ct.a"/>
     </rom>
 
-    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <!-- Index 1: Config -->
     <rom index="1">
         <part>
             14 90 08 00 F5 81 8C FF 00 00 00 00 00 00 09 00
@@ -61,7 +61,7 @@
         </part>
     </rom>
 
-    <!-- Index 5: sound board program for the discrete sound engine (tools/dsnd_boards.py) -->
+    <!-- Index 5: Sound program -->
     <rom index="5">
         <part>
             FF 00 00 00 00 30 00 1D 00 00 00 00 00 00 84 08
@@ -1068,8 +1068,7 @@
         </part>
     </rom>
 
-    <!-- Index 6: MAME artwork, layout table (from default.lay) + PNGs from the artwork zip, as-is -->
-    <!-- OSD Artwork: View 1 = Cocktail Artwork -->
+    <!-- Index 6: Artwork -->
     <rom index="6" md5="none" zip="/mame-artwork/invad2ct.zip">
         <part>
             41 57 01 00 02 00 04 01 E0 00 02 00 00 00 00 00 A6 02 DA 03 90 00 EC 00 80 01 00 02 00 4C 17 00

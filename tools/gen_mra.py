@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate MRAs for the Space Invaders (Midway / Taito 8080) core straight from MAME mw8080bw.cpp / 8080bw.cpp.
 
-Region placement matches rtl/mw8080_board.sv; images are copied as dumped.
+Region placement matches rtl/boards/mw8080/mw8080_board.sv; images are copied as dumped.
 DIP switches and the input map come from the set's MAME INPUT_PORTS.
 
 Release layout: a parent set (MAME parent 0) goes to <releases>/<Title>.mra with the
@@ -20,6 +20,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import dsnd_boards                                  # noqa: E402  discrete sound engine programs (MRA index 5)
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "RodimusCoresMaster_MiSTer" / "tools"))
+import mra_tidy                                     # noqa: E402  fleet MRA comment format
 
 MAME_VERSION = "0289"
 RBF = "SpaceInvaders"
@@ -28,7 +30,7 @@ HISCORE_DAT = Path("/CybertronMD/Mame/plugins/hiscore/hiscore.dat")   # current 
 
 # ---------------------------------------------------------------- boards
 
-# (driver, machine config, init) -> board variant (rtl/mw8080_board.sv)
+# (driver, machine config, init) -> board variant (rtl/boards/mw8080/mw8080_board.sv)
 SUPPORTED = {
     ("mw8080bw.cpp", "invaders", "empty_init"): 0,     # Midway Space Invaders board
     ("8080bw.cpp", "invaders", "empty_init"): 0,       # Taito / bootleg sets on the same board
@@ -49,7 +51,7 @@ SUPPORTED = {
 }
 
 # Family 3 (Taito colour boards and relatives): machine config -> (board variant, colour mode, colour flags,
-# sound map, board flags) = MRA index 1 bytes 0 / 12 / 13 / 14 / 15 (rtl/mw8080_board.sv)
+# sound map, board flags) = MRA index 1 bytes 0 / 12 / 13 / 14 / 15 (rtl/boards/mw8080/mw8080_board.sv)
 #   colour mode: 0 none, 1 colour PROM, 2 colour RAM (C000, per 4 rows), 3 schaser, 4 polaris, 5 rollingc, 6 cosmo
 #   colour flags: [2:0] background pen, [3] inverted colour RAM, [4] RGB palette (else RBG), [5] port 3 bit 2 =
 #     screen red, [7:6] PROM half: 0 first, 1 port 5 bit 5, 2 inverted port 5 bit 5, 3 port 5 bit 6
@@ -98,7 +100,7 @@ def family3(g):
     return FAMILY3.get(g["machine"]) if g["drv"] == "8080bw.cpp" else None
 
 
-# Family 4 (Midway one-offs, mw8080bw.cpp): board variant 20 = table-driven I/O (rtl/mw8080_board.sv).
+# Family 4 (Midway one-offs, mw8080bw.cpp): board variant 20 = table-driven I/O (rtl/boards/mw8080/mw8080_board.sv).
 #   rd: source per port A2-A0 (index 1 bytes 48-55): 0 open (0), 1-4 IN0-IN3, 5 shifter, 6 shifter bit-reversed,
 #       7 shifter inverted, 8 reversible shifter (count bit 3 selects reversed)
 #   wr: target bits per port A2-A0 (bytes 56-63): [0] shift count, [1] shift data, [2] watchdog, [3]-[6] sound latch
@@ -139,7 +141,7 @@ for _m in FAMILY4:
     SUPPORTED[("mw8080bw.cpp", _m, "empty_init")] = 20
 
 
-# Zaccaria 1B1120 (zaccaria/zac1b1120.cpp): its own board (rtl/zac1b1120_board.sv), variant 32 / 33 (Dodgem)
+# Zaccaria 1B1120 (zaccaria/zac1b1120.cpp): its own board (rtl/boards/zac1b1120/zac1b1120_board.sv), variant 32 / 33 (Dodgem)
 SUPPORTED[("zac1b1120.cpp", "tinvader", "empty_init")] = 32
 SUPPORTED[("zac1b1120.cpp", "dodgem", "empty_init")] = 33
 
@@ -163,7 +165,7 @@ NAME_OVERRIDE = {"invaders": "Space Invaders"}
 F_VERT, F_ROT90 = 0x10, 0x80
 S_TAITO = 0x01                                          # index 1 byte 2: Taito L-shaped sound board
 TAITO_SOUND_DRIVERS = {"8080bw.cpp"}                   # Taito SV/TV sets and their bootlegs; mw8080bw.cpp = Midway
-# index 1 byte 2 = sound board values (rtl/invaders_sound.sv `board`): 0 Midway, 1 Taito L-shaped, 2 invad2ct board 1,
+# index 1 byte 2 = sound board values (the invaders_sound board number): 0 Midway, 1 Taito L-shaped, 2 invad2ct board 1,
 # 4 Taito PV, 5 Taito CV. Per 8080bw.cpp machine config, then per set (tools/snd_consts.py RTL_BOARDS).
 SND_BOARD_MACHINE = {"invadpt2": 4, "lrescue": 4, "lrescuem2": 4, "escmars": 4, "ozmawars": 4}
 SND_BOARD_SET = {"sicv": 5, "sicv1": 5,                 # CV board (CVR00002)
@@ -185,7 +187,7 @@ def invaders_board_key(cfg):
     """dsnd program for a set whose sound is an invaders_sound board (index 1 byte 2 = board value; A/B 2026-11-02),
     except sound map 10 (index 1 byte 14: invrvnge, its own sound CPU). Midway board 0 goes by machine ("invaders")
     since board 0 is also every mw8080bw one-off. S_DS_BOARD makes the engine read the board's p1 / p2 after the
-    per-set remaps (rtl/mw8080_board.sv sp1 / sp2) and mixes the tune speaker after it."""
+    per-set remaps (rtl/boards/mw8080/mw8080_board.sv sp1 / sp2) and mixes the tune speaker after it."""
     return None if cfg[14] == 10 else INVADERS_BOARD_KEYS.get(cfg[2])
 
 
@@ -1463,7 +1465,7 @@ def main_one(name, games, all_games, src, build_inputs, out_dir):
     for root, with_art in [(out_dir, False)] + ([(out_dir / "_artwork", True)] if art_zip(g, all_games) else []):
         path = out_path(root, g, all_games)
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(mra(g, all_games, segs, build_inputs, with_art))
+        path.write_text(mra_tidy.tidy(mra(g, all_games, segs, build_inputs, with_art)))
         print(f'{name:12s} {path.relative_to(out_dir)}')
 
 

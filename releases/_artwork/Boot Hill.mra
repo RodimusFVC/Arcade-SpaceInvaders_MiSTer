@@ -33,7 +33,7 @@
         <dip name="Service Mode" bits="20" ids="Off,On"/>
     </switches>
 
-    <!-- Index 0: CPU 0x0000-0x7FFF (MAME maincpu) -->
+    <!-- Index 0: ROM -->
     <rom index="0" md5="none" zip="boothill.zip">
         <part crc="1615d077" name="romh.cpu"/>
         <part crc="65a90420" name="romg.cpu"/>
@@ -41,7 +41,7 @@
         <part crc="374529f4" name="rome.cpu"/>
     </rom>
 
-    <!-- Index 1: board variant, flags, sound board, input map, colour overlay (see Arcade-SpaceInvaders.sv) -->
+    <!-- Index 1: Config -->
     <rom index="1">
         <part>
             14 00 00 00 BF BF E4 FF 00 00 00 00 00 00 01 02
@@ -66,7 +66,7 @@
         </part>
     </rom>
 
-    <!-- Index 5: sound board program for the discrete sound engine (tools/dsnd_boards.py) -->
+    <!-- Index 5: Sound program -->
     <rom index="5">
         <part>
             00 00 00 00 00 00 FF 01 01 00 00 00 00 00 00 0E
@@ -277,8 +277,7 @@
         </part>
     </rom>
 
-    <!-- Index 6: MAME artwork, layout table (from default.lay) + PNGs from the artwork zip, as-is -->
-    <!-- OSD Artwork: View 1 = Upright Artwork -->
+    <!-- Index 6: Artwork -->
     <rom index="6" md5="none" zip="/mame-artwork/boothill.zip">
         <part>
             41 57 01 00 02 00 04 01 E0 00 00 00 00 00 00 00 D6 03 68 03 E0 00 76 01 00 02 80 01 00 45 02 00

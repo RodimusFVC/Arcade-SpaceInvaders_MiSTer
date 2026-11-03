@@ -2,7 +2,8 @@
 """Zaccaria 1B1120 sound board (The Invaders tinv2650 / sia2650, Dodgem) as a discrete sound engine program
 (master tools/dsnd.py, rtl/rodimus/dsnd_engine/dsnd_engine.sv).
 
-A port of rtl/zac_snd.sv (constants tools/zac_snd_consts.py): SN76477 with latch-switched components (one-shot,
+A port of zac_snd, the board's integer reference model (zac_snd.sv / zac_model.h with the A/B rig; constants
+tools/zac_snd_consts.py): SN76477 with latch-switched components (one-shot,
 attack / decay, SLF, VCO, noise generator + noise filter, mixer), the 555 VCO sweep (DB3) and the S2636 tone through
 its filter. zac_snd updates 4 times per 48 kHz sample (192 kHz); every part here advances those 4 updates per
 sample with zac_snd's own Q24 integers (rates per update, the same truncating multiplies): linear ramps and RC
@@ -75,7 +76,7 @@ FS192 = int(Z.FS)
 # Game Audio music gains (P1 x 1 / 0.7 / 0.5 / 1.4 / 2, integers as zac_snd)
 MUSIC_G = [Z.PVI_GAIN, Z.PVI_GAIN * 7 // 10, Z.PVI_GAIN // 2, Z.PVI_GAIN * 14 // 10, Z.PVI_GAIN * 2]
 GSRC = {"T": (6, 0x07, 16), "F": (6, 0x38, 13), "O": (7, 0x07, 16)}
-# Board line clock (rtl/zac1b1120_board.sv): master clock enable = step / 39936 per 39.936 MHz clock, the tone
+# Board line clock (rtl/boards/zac1b1120/zac1b1120_board.sv): master clock enable = step / 39936 per 39.936 MHz clock, the tone
 # counter acts on the enable with h == 0 (master clock k = 1 + 908 L, from power-up); zac_snd updates on clock
 # 208 n + 207 and sees event k iff 39936 k <= step (208 n + 207).
 LINE_L = 39936 * 908
