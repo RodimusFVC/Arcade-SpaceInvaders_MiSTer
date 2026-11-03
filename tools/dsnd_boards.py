@@ -507,7 +507,21 @@ BOARDS = {"clowns": clowns_hw, "dogpatch": dogpatch, "boothill": boothill_hw, "t
           "invaders:taito": lambda: invaders("TAITO"),     # invaders_sound board 1 Taito L, A/B 2026-11-02
           "invaders:pv": lambda: invaders("PV"),           # board 4 Taito PV, A/B 2026-11-02
           "invaders:cv": lambda: invaders("CV"),           # board 5 Taito CV, A/B 2026-11-02
-          "invaders:b1": lambda: invaders("INVAD2CT1")}    # board 2 (invaddlx, mono), A/B 2026-11-02; keys picked by gen_mra.py invaders_board_key()
+          "invaders:b1": lambda: invaders("INVAD2CT1"),    # board 2 (invaddlx, mono), A/B 2026-11-02; keys picked by gen_mra.py invaders_board_key()
+          "invad2ct": lambda: EnginePair(invaders("INVAD2CT1"), invaders("INVAD2CT2"))}   # stereo: engine 1 board 1, engine 2 board 2 (A/B 2026-11-03)
+
+
+
+class EnginePair:
+    """Two programs for the core's two engines (Arcade-SpaceInvaders.sv): engine 1 = index 5 from 0x0000, engine 2 =
+    index 5 from 0x2000 (invad2ct: board 1 left on latches 1 / 2, board 2 right on latches 3 / 4)."""
+    def __init__(self, a, b):
+        self.a, self.b = a, b
+
+    def binary(self):
+        x = self.a.binary()
+        assert len(x) <= 0x2000, len(x)
+        return x + bytes(0x2000 - len(x)) + self.b.binary()
 
 
 def program(machine):

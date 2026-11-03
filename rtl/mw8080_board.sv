@@ -61,7 +61,6 @@ module mw8080_board
     input  logic  [7:0] in2,
     input  logic  [7:0] in3,
     input  logic        cocktail,
-    input  logic  [2:0] snd_board,      // sound board values (rtl/invaders_sound.sv `board`): 0 Midway, 1 Taito L, 4 PV ...
     input  logic  [2:0] rom_dec,
     input  logic  [7:0] gun_x,          // light gun: bitmap pixel 0-255
     input  logic  [7:0] gun_y,          //            picture row 0-223
@@ -82,7 +81,6 @@ module mw8080_board
     input  logic        crt_flip,
     input  logic signed [3:0] h_adj,   // CRT position: HSYNC moved 2 pixels per step
     input  logic signed [3:0] v_adj,   //               VSYNC moved 1 line per step
-    input  logic [10:0] snd_tweak,      // Game Audio {aged caps, oscillator, filter, timing} settings
     input  logic        ov_en,          // colour overlay on
     input  logic [1031:0] ov_tab,       // overlay: byte 0 count, then 8 bytes per rectangle (MRA index 1 from 64)
 
@@ -1273,37 +1271,9 @@ always_ff @(posedge clk) if (irv_ecen) irv_dc <= irv_dc + {{15{irv_x[11]}}, irv_
 wire  signed [17:0] irv_y  = irv_x * IRV_GAIN;
 wire  signed [15:0] irv_snd = irv_y > 18'sd32767 ? 16'sd32767 : irv_y < -18'sd32768 ? -16'sd32768 : 16'(irv_y);
 
-logic signed [15:0] board_snd;
-invaders_sound u_sound
-(
-    .clk(clk),
-    .reset(~rst_n),
-    .pause(pause),
-    .p1(sp1),
-    .p2(sp2),
-    .v16(cnt_e7[0]),
-    .v8(cnt_e6[3]),
-    .board(smap == 8'd9 ? 3'd2 : snd_board),            // invad2ct board 1, else the set's board (MRA index 1 byte 2)
-    .tweak(snd_tweak),
-    .out(board_snd)
-);
-
-// invad2ct: the second player's invaders sound board on latches 3 / 4, right channel
-logic signed [15:0] board2_snd;
-invaders_sound u_sound2
-(
-    .clk(clk),
-    .reset(~rst_n | smap != 8'd9),
-    .pause(pause),
-    .p1(snd3),
-    .p2(snd4),
-    .v16(cnt_e7[0]),
-    .v8(cnt_e6[3]),
-    .board(3'd3),                                        // invad2ct board 2 values
-    .tweak(snd_tweak),
-    .out(board2_snd)
-);
-assign audio_r = smap == 8'd9 ? board2_snd : audio;
+// Invaders sound boards (Midway, Taito L / PV / CV, invad2ct x2): the dsnd engine in the top runs them from MRA index 5
+// (tools/dsnd_invaders.py); the board hands it ds_p1 / ds_p2 / ds_tune. invad2ct's second board = the second engine.
+assign audio_r = audio;
 
 // 1-bit tune speakers the CPU bit-bangs: spcewars / spcewarla port 3 (4) bit 4, lrescue port 5 bit 3 (sound
 // enable port 3 bit 5), schasercv port 5 bit 0
@@ -1313,7 +1283,7 @@ wire signed [16:0] tune = tune_bit ? 17'sd6000 : 17'sd0;
 assign ds_p1   = sp1;
 assign ds_p2   = sp2;
 assign ds_tune = tune;
-wire signed [15:0] snd_src = v_irv ? irv_snd : board_snd;        // invrvnge: its own sound board
+wire signed [15:0] snd_src = v_irv ? irv_snd : 16'sd0;           // invrvnge: its own sound board
 wire signed [16:0] mix  = snd_src + tune;
 assign audio = mix > 17'sd32767 ? 16'sd32767 : 16'(mix);
 

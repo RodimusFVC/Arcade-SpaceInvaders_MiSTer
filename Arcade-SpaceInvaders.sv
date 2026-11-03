@@ -676,6 +676,12 @@ always @(posedge CLK_40M) if (ioctl_wr) begin
 	if (ioctl_index == 8'd5) ds_on_r <= 1'b1;
 end
 assign ds_on = ds_on_r;
+// second engine (invad2ct's second sound board, right channel): its program is index 5 from 0x2000
+reg ds2_on_r = 1'b0;
+always @(posedge CLK_40M) if (ioctl_wr) begin
+	if (ioctl_index == 8'd1 && ioctl_addr == 25'd0) ds2_on_r <= 1'b0;
+	if (ioctl_index == 8'd5 && ioctl_addr[13]) ds2_on_r <= 1'b1;
+end
 
 // sources: 7-6 Game Audio, 5 misc {coin (IN1 D3 inverted, maze), VBLANK}, 4 = IN0 as the CPU reads it (maze), 3-0 latches
 // (8080bw boards: 1 / 2 = sound ports 1 / 2, 3 = port 0 / polaris port 2, 4 = last shift-data write, ozmawars port 4)
@@ -688,17 +694,31 @@ dsnd_engine dsnd
 	.clk(CLK_40M),
 	.reset(reset),
 	.pause(pause_cpu),
-	.prog_wr(ioctl_wr && ioctl_index == 8'd5),
+	.prog_wr(ioctl_wr && ioctl_index == 8'd5 && !ioctl_addr[13]),
 	.prog_addr(ioctl_addr[12:0]),
 	.prog_data(ioctl_dout),
 	.src(ds_src),
 	.out(ds_audio)
 );
+// invad2ct board 2: latches 3 / 4 as the program's latches 1 / 2 (no remaps, no tune)
+wire [63:0] ds2_src = {ds_src[63:16], b8_lat[31:16]};
+wire signed [15:0] ds2_audio;
+dsnd_engine dsnd2
+(
+	.clk(CLK_40M),
+	.reset(reset),
+	.pause(pause_cpu),
+	.prog_wr(ioctl_wr && ioctl_index == 8'd5 && ioctl_addr[13]),
+	.prog_addr(ioctl_addr[12:0]),
+	.prog_data(ioctl_dout),
+	.src(ds2_src),
+	.out(ds2_audio)
+);
 // invaders board program: the board's tune speaker rides on the engine output, as it does on the board's own mix
 wire signed [16:0] ds_sum = ds_audio + (snd_flags[3] ? b8_tune : 17'sd0);
 wire signed [15:0] ds_out = ds_sum > 17'sd32767 ? 16'sd32767 : ds_sum < -17'sd32768 ? -16'sd32768 : 16'(ds_sum);
 assign audio   = zac ? z_audio : ds_on ? ds_out : b8_audio;
-assign audio_r = zac ? audio : ds_on ? ds_out : b8_audio_r;
+assign audio_r = zac ? audio : ds_on ? (ds2_on_r ? ds2_audio : ds_out) : b8_audio_r;
 
 wire rotate_ccw = ~game_flags[7];  // ROT270 sets rotate CCW, ROT90 sets CW
 wire no_rotate  = ~game_vert | status[12] | direct_video;
@@ -781,7 +801,6 @@ mw8080_board board
 	.in2(in_port[2]),
 	.in3(in_port[3]),
 	.cocktail(1'b0),
-	.snd_board(snd_flags[2:0]),
 	.rom_dec(rom_dec[2:0]),
 	.gun_x(gun_x),
 	.gun_y(gun_y),
@@ -801,7 +820,6 @@ mw8080_board board
 	.crt_flip(status[22]),
 	.h_adj(status[30:27]),
 	.v_adj(status[34:31]),
-	.snd_tweak({status[45:44], status[43:41], status[40:38], status[37:35]}),
 	.ov_en(~status[23] & ~art_run),
 	.ov_tab(ov_tab),
 

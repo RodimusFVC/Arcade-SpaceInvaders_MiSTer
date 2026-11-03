@@ -178,7 +178,7 @@ def snd_board(g):
 
 S_DS_BOARD = 0x08                                       # index 1 byte 2 bit 3: the dsnd program is the invaders board
 INVADERS_BOARD_KEYS = {S_TAITO: "invaders:taito", 4: "invaders:pv", 5: "invaders:cv", 2: "invaders:b1"}
-INVADERS_PROGRAMS = {"invaders"} | set(INVADERS_BOARD_KEYS.values())   # -> engine latches 1 / 2 = board p1 / p2, + tune
+INVADERS_PROGRAMS = {"invaders", "invad2ct"} | set(INVADERS_BOARD_KEYS.values())   # -> engine latches 1 / 2 = board p1 / p2, + tune
 
 
 def invaders_board_key(cfg):
