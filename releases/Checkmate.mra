@@ -25,7 +25,7 @@
     <joystick>2-way horizontal</joystick>
     <special_controls></special_controls>
     <num_buttons>0</num_buttons>
-    <buttons names="Not Used,Not Used,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+    <buttons names="-,-,-,-,Coin,Start 1P,Start 2P,Pause,-,-" default="Select,Start,R,L"/>
 
     <switches default="00,00,04,00">
         <dip name="Coinage" bits="16" ids="1 Coin/1 or 2 Players,1 Coin/1 or 2 Players; 2 Coins/3 or 4 Players"/>

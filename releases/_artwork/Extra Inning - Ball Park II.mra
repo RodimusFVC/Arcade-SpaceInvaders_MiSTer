@@ -25,7 +25,7 @@
     <joystick>2-way horizontal</joystick>
     <special_controls></special_controls>
     <num_buttons>3</num_buttons>
-    <buttons names="P1 Hit,P1 Move Outfield Left,P1 Move Outfield Right,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+    <buttons names="P1 Hit,P1 Move Outfield Left,P1 Move Outfield Right,-,Coin,Start 1P,Start 2P,Pause,-,-" default="A,Y,B,Select,Start,R,L"/>
 
     <switches default="81,81,C0,FF">
         <dip name="Coinage" bits="16,18" ids="2 Coins/1 Inning/1 Player; 4 Coins/1 Inning/2 Players; 8 Coins/3 Innings/2 Players,1 Coin/1 Inning/1 Player; 2 Coins/1 Inning/2 Players; 4 Coins/3 Innings/2 Players,2 Coins per Inning,2 Coins/1 Inning; 4 Coins/3 Innings,1 Coin per Inning,1 Coin/1 Inning; 2 Coins/3 Innings" values="5,4,2,3,0,1"/>

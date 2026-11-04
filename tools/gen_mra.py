@@ -1245,8 +1245,8 @@ def mra(g, games, segs, build_inputs, with_art=False):
     idle, dips, imap, buttons = input_config(g, ports)
     flags = (F_VERT if g["rot"] in ("ROT90", "ROT270") else 0) | (F_ROT90 if g["rot"] == "ROT90" else 0)
     nbtn = max(buttons) if buttons else 0
-    names = ",".join([buttons.get(i, "Not Used") for i in range(1, 5)] + ["Coin", "Start 1P", "Start 2P", "Pause"] +
-                     [buttons.get(i, "Not Used") for i in (5, 6)])
+    names = ",".join([buttons.get(i, "-") for i in range(1, 5)] + ["Coin", "Start 1P", "Start 2P", "Pause"] +
+                     [buttons.get(i, "-") for i in (5, 6)])
     parent = g["parent"] or g["name"]
     zipname = f'{g["name"]}.zip' + (f'|{g["parent"]}.zip' if g["parent"] else "")
     rotation = {"ROT0": "horizontal", "ROT270": "vertical (ccw)", "ROT90": "vertical (cw)"}[g["rot"]]
@@ -1312,7 +1312,7 @@ def mra(g, games, segs, build_inputs, with_art=False):
     <joystick>2-way horizontal</joystick>
     <special_controls></special_controls>
     <num_buttons>{nbtn}</num_buttons>
-    <buttons names="{names}" default="A,Y,B,X,Select,Start,R,L"/>
+    <buttons names="{names}" default="{mra_tidy.button_defaults(names, 'A,Y,B,X,Select,Start,R,L')}"/>
 
     <switches default="{",".join(f"{b:02X}" for b in idle)}">
 {dip_lines}

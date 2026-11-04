@@ -25,7 +25,7 @@
     <joystick>2-way horizontal</joystick>
     <special_controls></special_controls>
     <num_buttons>2</num_buttons>
-    <buttons names="Hook/Straight,Game Select,Not Used,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+    <buttons names="Hook/Straight,Game Select,-,-,Coin,Start 1P,Start 2P,Pause,-,-" default="A,Y,Select,Start,R,L"/>
 
     <switches default="2C,00,00,00">
         <dip name="Language" bits="0,1" ids="English,French,German" values="0,1,2"/>

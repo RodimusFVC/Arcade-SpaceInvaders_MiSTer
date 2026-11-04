@@ -25,7 +25,7 @@
     <joystick>2-way horizontal</joystick>
     <special_controls></special_controls>
     <num_buttons>3</num_buttons>
-    <buttons names="P1 Hit,P1 Move Outfield Left,P1 Move Outfield Right,Not Used,Coin,Start 1P,Start 2P,Pause,Not Used,Not Used" default="A,Y,B,X,Select,Start,R,L"/>
+    <buttons names="P1 Hit,P1 Move Outfield Left,P1 Move Outfield Right,-,Coin,Start 1P,Start 2P,Pause,-,-" default="A,Y,B,Select,Start,R,L"/>
 
     <switches default="00,00,40,FF">
         <dip name="Unused" bits="7" ids="Off,On"/>
