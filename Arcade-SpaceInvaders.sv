@@ -191,7 +191,7 @@ localparam CONF_STR = {
 	"DIP;",
 	"-;",
 	"R0,Reset;",
-	"J1,Fire,Btn 2,Btn 3,Btn 4,Coin,Start 1P,Start 2P,Pause,Btn 5,Btn 6;",
+	"J1,Fire,Button 2,Button 3,Button 4,Coin,Start 1P,Start 2P,Pause,Button 5,Button 6;",
 	"jn,A,Y,B,X,Select,Start,R,L;",
 	"V,v",`BUILD_DATE
 };
